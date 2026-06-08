@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Guided Intake — Telefonopkald</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5; color: #1a202c; font-size: 14px; line-height: 1.6;
+    }
+    .wiz-page { max-width: 700px; margin: 2rem auto; padding: 0 1rem 4rem; }
+
+    /* ── Step indicator ── */
+    .step-bar {
+      display: flex; align-items: center; margin-bottom: 2rem; gap: 0;
+    }
+    .step-item {
+      display: flex; flex-direction: column; align-items: center; flex: 1;
+    }
+    .step-circle {
+      width: 34px; height: 34px; border-radius: 50%; border: 2px solid #cbd5e0;
+      background: #fff; color: #a0aec0; font-weight: 700; font-size: .85rem;
+      display: flex; align-items: center; justify-content: center;
+    }
+    .step-circle.active { background: #2b6cb0; border-color: #2b6cb0; color: #fff; }
+    .step-circle.done { background: #48bb78; border-color: #48bb78; color: #fff; }
+    .step-label {
+      font-size: .72rem; color: #718096; margin-top: .25rem; white-space: nowrap;
+    }
+    .step-label.active { color: #2b6cb0; font-weight: 600; }
+    .step-connector { flex: 1; height: 2px; background: #cbd5e0; margin-bottom: 1.5rem; }
+    .step-connector.done { background: #48bb78; }
+
+    /* ── Card ── */
+    .wiz-card {
+      background: #fff; border-radius: 10px; padding: 1.75rem 2rem;
+      box-shadow: 0 1px 6px rgba(0,0,0,.08);
+    }
+    .wiz-card h2 { font-size: 1.1rem; font-weight: 700; margin-bottom: 1.2rem; color: #1a1a2e; }
+
+    /* ── Form rows ── */
+    .f-row { margin-bottom: 1rem; }
+    .f-row label { display: block; font-size: .82rem; font-weight: 600; color: #4a5568; margin-bottom: .3rem; }
+    .f-row input, .f-row textarea, .f-row select {
+      width: 100%; padding: .5rem .75rem; border: 1.5px solid #cbd5e0; border-radius: 6px;
+      font-size: .88rem; font-family: inherit; outline: none; background: #fff;
+    }
+    .f-row input:focus, .f-row textarea:focus { border-color: #4299e1; }
+    .f-row textarea { min-height: 90px; resize: vertical; }
+    .f-inline { display: flex; gap: .5rem; }
+    .f-inline input { flex: 1; }
+    .f-inline button {
+      padding: .5rem 1rem; background: #2b6cb0; color: #fff; border: none;
+      border-radius: 6px; cursor: pointer; font-size: .82rem; font-weight: 600; white-space: nowrap;
+    }
+    .f-inline button:hover { background: #2c5282; }
+
+    /* ── Search results ── */
+    .search-results {
+      border: 1px solid #e2e8f0; border-radius: 6px; background: #fff;
+      margin-top: .25rem; display: none;
+    }
+    .search-result-item {
+      padding: .45rem .75rem; cursor: pointer; font-size: .83rem; border-bottom: 1px solid #f0f2f5;
+    }
+    .search-result-item:last-child { border-bottom: none; }
+    .search-result-item:hover { background: #ebf8ff; color: #2b6cb0; }
+
+    /* ── CVR notice ── */
+    .notice {
+      padding: .4rem .75rem; border-radius: 5px; font-size: .8rem;
+      margin-top: .4rem; display: none;
+    }
+    .notice.info { background: #ebf8ff; color: #2b6cb0; display: block; }
+    .notice.warn { background: #fff3cd; color: #856404; display: block; }
+    .notice.error-persistent {
+      background: #fff5f5; color: #c53030; display: block;
+      border: 1px solid #fed7d7; font-weight: 600;
+    }
+
+    /* ── Chips ── */
+    .chips { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: .5rem; }
+    .btn-regen { background: none; border: 1px solid #a0aec0; border-radius: 4px; color: #4a5568; cursor: pointer; font-size: .75rem; padding: .15rem .45rem; margin-left: .5rem; vertical-align: middle; }
+    .btn-regen:hover { background: #ebf4ff; border-color: #3182ce; color: #2b6cb0; }
+    .chip {
+      background: #e2e8f0; color: #4a5568; padding: .25rem .6rem; border-radius: 12px;
+      font-size: .78rem; cursor: pointer; border: none; font-family: inherit;
+    }
+    .chip:hover { background: #bee3f8; color: #2b6cb0; }
+
+    /* ── SMTP notice ── */
+    .smtp-notice {
+      background: #fff3cd; border: 1px solid #ffc107; color: #856404;
+      border-radius: 6px; padding: .6rem 1rem; font-size: .83rem;
+      font-weight: 600; margin-bottom: 1rem; display: none;
+    }
+
+    /* ── Navigation buttons ── */
+    .wiz-nav { display: flex; justify-content: space-between; margin-top: 1.5rem; }
+    .btn { padding: .55rem 1.4rem; border-radius: 7px; border: none; cursor: pointer; font-size: .88rem; font-weight: 600; }
+    .btn-back { background: #e2e8f0; color: #4a5568; }
+    .btn-back:hover { background: #cbd5e0; }
+    .btn-next { background: #2b6cb0; color: #fff; }
+    .btn-next:hover { background: #2c5282; }
+    .btn-finish { background: #48bb78; color: #fff; }
+    .btn-finish:hover { background: #38a169; }
+    .btn:disabled { opacity: .5; cursor: not-allowed; }
+
+    /* ── Success screen ── */
+    .success-screen {
+      background: #fff; border-radius: 10px; padding: 2.5rem 2rem;
+      box-shadow: 0 1px 6px rgba(0,0,0,.08); text-align: center;
+    }
+    .success-screen h2 { color: #38a169; font-size: 1.3rem; margin-bottom: 1rem; }
+    .success-screen p { color: #4a5568; font-size: .9rem; margin-bottom: .5rem; }
+    .success-screen a { color: #2b6cb0; text-decoration: none; font-weight: 600; }
+    .success-screen a:hover { text-decoration: underline; }
+    .id-list { background: #f0f2f5; border-radius: 6px; padding: 1rem; margin: 1rem 0; text-align: left; font-size: .83rem; color: #4a5568; }
+    .id-list div { margin-bottom: .3rem; }
+
+    /* ── Hide/show steps ── */
+    .wiz-step { display: none; }
+    .wiz-step.visible { display: block; }
+  </style>
+</head>
+<body>
+<script src="/static/nav.js"></script>
+
+<div class="wiz-page">
+
+  <!-- ── Step indicator ── -->
+  <div class="step-bar" id="step-bar">
+    <div class="step-item">
+      <div class="step-circle active" id="sc-1" data-wizard-step="1">1</div>
+      <div class="step-label active" id="sl-1">Trin 1</div>
+    </div>
+    <div class="step-connector" id="conn-1"></div>
+    <div class="step-item">
+      <div class="step-circle" id="sc-2" data-wizard-step="2">2</div>
+      <div class="step-label" id="sl-2">Trin 2</div>
+    </div>
+    <div class="step-connector" id="conn-2"></div>
+    <div class="step-item">
+      <div class="step-circle" id="sc-3" data-wizard-step="3">3</div>
+      <div class="step-label" id="sl-3">Trin 3</div>
+    </div>
+    <div class="step-connector" id="conn-3"></div>
+    <div class="step-item">
+      <div class="step-circle" id="sc-4" data-wizard-step="4">4</div>
+      <div class="step-label" id="sl-4">Trin 4</div>
+    </div>
+  </div>
+
+  <!-- ── Step 1: Kundeoplysninger ── -->
+  <div class="wiz-step visible" id="step-1">
+    <div class="wiz-card">
+      <h2>Trin 1 — Kundeoplysninger</h2>
+
+      <!-- Existing-customer search (RISK-06 dedup helper) -->
+      <div class="f-row">
+        <label for="cust-search">Søg eksisterende kunde</label>
+        <input type="text" id="cust-search" placeholder="Navn eller telefonnummer…" autocomplete="off">
+        <div class="search-results" id="cust-search-results"></div>
+      </div>
+
+      <!-- CVR lookup -->
+      <div class="f-row">
+        <label for="cvr-input">CVR-nummer (valgfrit)</label>
+        <div class="f-inline">
+          <input type="text" id="cvr-input" placeholder="12345678" maxlength="8">
+          <button type="button" id="cvr-btn">Opslag</button>
+        </div>
+        <div class="notice" id="cvr-notice"></div>
+      </div>
+
+      <div class="f-row">
+        <label for="customer-name">Navn <span style="color:#e53e3e">*</span></label>
+        <input type="text" id="customer-name" placeholder="Fulde navn eller firmanavn" required>
+      </div>
+      <div class="f-row">
+        <label for="customer-email">E-mail</label>
+        <input type="email" id="customer-email" placeholder="navn@firma.dk">
+      </div>
+      <div class="f-row">
+        <label for="customer-phone">Telefon</label>
+        <input type="text" id="customer-phone" placeholder="+45 12 34 56 78">
+      </div>
+      <div class="f-row">
+        <label for="address">Adresse</label>
+        <input type="text" id="address" placeholder="Gadenavn nr., postnr. By">
+      </div>
+
+      <div class="wiz-nav">
+        <span></span>
+        <button class="btn btn-next" id="step1-next">Næste →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Step 2: Opgavebeskrivelse ── -->
+  <div class="wiz-step" id="step-2">
+    <div class="wiz-card">
+      <h2>Trin 2 — Opgavebeskrivelse &amp; forslag</h2>
+
+      <!-- Kort kategori — bruges til DB-søgning -->
+      <div class="f-row">
+        <label for="task-type">Opgavetype</label>
+        <input type="text" id="task-type" placeholder="F.eks. malerarbejde, VVS, tømrer…">
+      </div>
+
+      <!-- Brugerens rånotater — INPUT til AI og DB-søgning -->
+      <div class="f-row">
+        <label for="job-notes">Hvad ved du om opgaven?</label>
+        <textarea id="job-notes" style="min-height:110px"
+          placeholder="Skriv alt du ved: antal rum, areal, tilstand, kundens ønsker, adgangsinformation, særlige hensyn…"></textarea>
+        <div class="chips" id="suggestion-chips"></div>
+      </div>
+
+      <!-- AI status og knap -->
+      <div id="ai-draft-notice" class="notice info" style="display:none">
+        ✦ AI skriver udkast…
+        <span id="ai-elapsed" style="color:#2c5282;font-size:.78rem;font-weight:600;margin-left:.25rem">0s</span>
+        <button type="button" id="ai-cancel-btn" class="btn-regen" style="margin-left:.5rem">Annuller</button>
+      </div>
+      <div id="ai-error-bar" class="notice warn" style="display:none">
+        <span id="ai-error-text">AI svarede ikke</span>
+        <button type="button" id="ai-retry-btn" class="btn-regen" style="margin-left:.5rem">↺ Prøv igen</button>
+      </div>
+      <div style="text-align:right; margin-bottom:1rem">
+        <button type="button" id="ai-regen-btn" class="btn btn-next"
+          style="font-size:.82rem;padding:.4rem 1.1rem">✦ Generer AI-udkast</button>
+      </div>
+
+      <!-- AI output — redigérbare felter -->
+      <div class="f-row">
+        <label for="short-summary">Opsummering
+          <span style="color:#a0aec0;font-weight:400;font-size:.75rem">— AI-udkast, rediger gerne</span>
+        </label>
+        <input type="text" id="short-summary" placeholder="AI genererer en kort sætning her…">
+      </div>
+      <div class="f-row">
+        <label for="detailed-description">Projektbeskrivelse
+          <span style="color:#a0aec0;font-weight:400;font-size:.75rem">— AI-udkast, rediger gerne</span>
+        </label>
+        <textarea id="detailed-description" placeholder="AI genererer en beskrivelse her…"></textarea>
+      </div>
+
+      <div class="wiz-nav">
+        <button class="btn btn-back" id="step2-back">← Tilbage</button>
+        <button class="btn btn-next" id="step2-next">Næste →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Step 3: Interne noter ── -->
+  <div class="wiz-step" id="step-3">
+    <div class="wiz-card">
+      <h2>Trin 3 — Interne noter</h2>
+
+      <div class="f-row">
+        <label for="internal-notes">Interne noter (vises ikke for kunden)</label>
+        <textarea id="internal-notes" placeholder="Prisforventning, særlige aftaler, adgangsinformation…"></textarea>
+      </div>
+
+      <div class="wiz-nav">
+        <button class="btn btn-back" id="step3-back">← Tilbage</button>
+        <button class="btn btn-next" id="step3-next">Næste →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Step 4: Bekræftelsesmail & afslut ── -->
+  <div class="wiz-step" id="step-4">
+    <div class="wiz-card">
+      <h2>Trin 4 — Bekræftelsesmail &amp; afslut</h2>
+
+      <!--
+        SMTP status: attribute set to "unknown" at page-load time.
+        A future /session/smtp-status endpoint would let us check this
+        and set the attribute to "ok" or "unconfigured" dynamically.
+        JS reads this attribute to show/hide the notice and disable the send button.
+      -->
+      <div id="smtp-notice" class="smtp-notice" data-smtp-status="unknown">
+        SMTP er ikke konfigureret — bekræftelsesmail kan ikke sendes.
+        Fjern markering i "Send bekræftelsesmail" nedenfor.
+      </div>
+
+      <div class="f-row">
+        <label for="email-subject">Emne</label>
+        <input type="text" id="email-subject" value="Tak for din henvendelse">
+      </div>
+      <div class="f-row">
+        <label for="email-body">Besked</label>
+        <textarea id="email-body" style="min-height:120px"></textarea>
+      </div>
+
+      <div class="f-row" style="display:flex;align-items:center;gap:.5rem;">
+        <input type="checkbox" id="send-email-chk" style="width:auto" checked>
+        <label for="send-email-chk" style="display:inline;font-weight:400">
+          Send bekræftelsesmail til kunden
+        </label>
+      </div>
+
+      <div id="email-error-notice" class="notice error-persistent" style="display:none"></div>
+
+      <div class="wiz-nav">
+        <button class="btn btn-back" id="step4-back">← Tilbage</button>
+        <button class="btn btn-finish" id="finish-btn" data-smtp="sendBtn">Bekræft og afslut</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Success screen (hidden until finish) ── -->
+  <div id="success-screen" class="success-screen" style="display:none">
+    <h2>Oprettet!</h2>
+    <p>Henvendelsen er registreret og behandling er påbegyndt.</p>
+    <div class="id-list" id="result-ids"></div>
+    <div id="email-sent-notice" style="margin-bottom:.75rem"></div>
+    <a href="/ui?tab=projects">← Gå til projekter</a>
+  </div>
+
+</div><!-- .wiz-page -->
+
+<script>
+(function () {
+  "use strict";
+
+  // ── Wizard state ──────────────────────────────────────────────────────────
+  window._wiz = {
+    preparation_id: null,
+    customer_name: "",
+    customer_email: "",
+  };
+
+  var currentStep = 1;
+  var totalSteps = 4;
+
+  // ── Step navigation ───────────────────────────────────────────────────────
+  function showStep(n) {
+    for (var i = 1; i <= totalSteps; i++) {
+      var el = document.getElementById("step-" + i);
+      if (el) el.className = "wiz-step" + (i === n ? " visible" : "");
+
+      var sc = document.getElementById("sc-" + i);
+      var sl = document.getElementById("sl-" + i);
+      if (sc) {
+        sc.className = "step-circle" + (i < n ? " done" : i === n ? " active" : "");
+      }
+      if (sl) {
+        sl.className = "step-label" + (i === n ? " active" : "");
+      }
+      if (i < totalSteps) {
+        var conn = document.getElementById("conn-" + i);
+        if (conn) conn.className = "step-connector" + (i < n ? " done" : "");
+      }
+    }
+    currentStep = n;
+  }
+
+  // ── Error display helper ──────────────────────────────────────────────────
+  function fmtError(detail) {
+    if (typeof detail === "string") return detail;
+    if (Array.isArray(detail)) {
+      return detail.map(function (e) {
+        return ((e.loc || []).slice(1).join("→") || "felt") + ": " + (e.msg || "");
+      }).join("\n");
+    }
+    if (detail && detail.message) return detail.message;
+    return JSON.stringify(detail);
+  }
+
+  // ── Debounce ──────────────────────────────────────────────────────────────
+  function debounce(fn, ms) {
+    var t;
+    return function () {
+      var args = arguments;
+      clearTimeout(t);
+      t = setTimeout(function () { fn.apply(null, args); }, ms);
+    };
+  }
+
+  // ── Step 1: Customer search ───────────────────────────────────────────────
+  var custSearch = document.getElementById("cust-search");
+  var custResults = document.getElementById("cust-search-results");
+
+  custSearch.addEventListener("keyup", debounce(function () {
+    var q = custSearch.value.trim();
+    if (q.length < 2) { custResults.style.display = "none"; custResults.innerHTML = ""; return; }
+    fetch("/customers/?search=" + encodeURIComponent(q), { credentials: "include" })
+      .then(function (res) {
+        if (!res.ok) { custResults.style.display = "none"; return; }
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data) return;
+        var items = Array.isArray(data) ? data : (data.items || data.results || []);
+        custResults.innerHTML = "";
+        if (!items.length) { custResults.style.display = "none"; return; }
+        items.slice(0, 5).forEach(function (c) {
+          var div = document.createElement("div");
+          div.className = "search-result-item";
+          div.textContent = (c.name || "") + (c.phone ? "  —  " + c.phone : "");
+          div.addEventListener("click", function () {
+            document.getElementById("customer-name").value = c.name || "";
+            document.getElementById("customer-email").value = c.email || "";
+            document.getElementById("customer-phone").value = c.phone || "";
+            document.getElementById("address").value = c.address || "";
+            custResults.style.display = "none";
+            custResults.innerHTML = "";
+            custSearch.value = "";
+          });
+          custResults.appendChild(div);
+        });
+        custResults.style.display = "block";
+      })
+      .catch(function () { custResults.style.display = "none"; });
+  }, 300));
+
+  // ── Step 1: CVR lookup ────────────────────────────────────────────────────
+  var cvrNotice = document.getElementById("cvr-notice");
+
+  document.getElementById("cvr-btn").addEventListener("click", function () {
+    var cvr = document.getElementById("cvr-input").value.trim();
+    if (!cvr) { alert("Indtast et CVR-nummer."); return; }
+    cvrNotice.className = "notice";
+    cvrNotice.textContent = "Slår op…";
+    cvrNotice.style.display = "block";
+
+    fetch("/wizard/cvr-lookup", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ cvr_number: cvr }),
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error("HTTP " + res.status);
+        return res.json();
+      })
+      .then(function (data) {
+        if (data.looked_up) {
+          document.getElementById("customer-name").value = data.name || "";
+          document.getElementById("address").value = data.address || "";
+          document.getElementById("customer-phone").value = data.phone || "";
+          cvrNotice.className = "notice info";
+          cvrNotice.textContent = "CVR-data udfyldt automatisk.";
+        } else {
+          cvrNotice.className = "notice warn";
+          cvrNotice.textContent = "CVR ikke fundet — udfyld manuelt.";
+        }
+      })
+      .catch(function (e) {
+        cvrNotice.className = "notice warn";
+        cvrNotice.textContent = "CVR-opslag mislykkedes — udfyld manuelt.";
+      });
+  });
+
+  // ── Step 1: Næste — create draft via POST /quote-preparations/ ────────────
+  document.getElementById("step1-next").addEventListener("click", function () {
+    var name = document.getElementById("customer-name").value.trim();
+    if (!name) { alert("Navn er påkrævet."); return; }
+
+    var payload = { customer_name: name };
+    var email = document.getElementById("customer-email").value.trim();
+    var phone = document.getElementById("customer-phone").value.trim();
+    var addr  = document.getElementById("address").value.trim();
+    if (email) payload.customer_email = email;
+    if (phone) payload.customer_phone = phone;
+    if (addr)  payload.address = addr;
+
+    fetch("/quote-preparations/", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    })
+      .then(function (res) {
+        if (!res.ok) return res.json().then(function (err) { throw new Error(fmtError(err.detail || err)); });
+        return res.json();
+      })
+      .then(function (data) {
+        window._wiz.preparation_id = data.id;
+        window._wiz.customer_name = name;
+        window._wiz.customer_email = email;
+        window._wiz.address = addr;
+        prefillEmailStep();
+        showStep(2);
+      })
+      .catch(function (e) { alert("Fejl ved oprettelse af kladde:\n" + e.message); });
+  });
+
+  // ── Step 2: Suggestions ───────────────────────────────────────────────────
+  var taskType    = document.getElementById("task-type");
+  var jobNotes    = document.getElementById("job-notes");
+  var detailedDesc = document.getElementById("detailed-description");
+  var chipsEl     = document.getElementById("suggestion-chips");
+
+  function loadSuggestions() {
+    var wt = taskType.value.trim();
+    if (!wt) { chipsEl.innerHTML = ""; return; }
+    fetch("/wizard/suggestions", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ work_type: wt, description: jobNotes.value.trim() }),
+    })
+      .then(function (res) {
+        if (!res.ok) return;
+        return res.json();
+      })
+      .then(function (data) {
+        if (!data) return;
+        chipsEl.innerHTML = "";
+        (data.suggested_lines || []).forEach(function (line) {
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "chip";
+          btn.textContent = line.description;
+          btn.addEventListener("click", function () {
+            var cur = jobNotes.value;
+            jobNotes.value = cur ? cur + "\n" + line.description : line.description;
+          });
+          chipsEl.appendChild(btn);
+        });
+      })
+      .catch(function () { /* suggestions are non-blocking */ });
+  }
+
+  taskType.addEventListener("input", debounce(loadSuggestions, 500));
+
+  // ── Step 2: AI draft ──────────────────────────────────────────────────────
+  var shortSummary = document.getElementById("short-summary");
+  var aiNotice   = document.getElementById("ai-draft-notice");
+  var aiErrorBar = document.getElementById("ai-error-bar");
+  var aiErrorTxt = document.getElementById("ai-error-text");
+  var aiElapsedEl = document.getElementById("ai-elapsed");
+  var _aiAbort   = null;
+  var _aiTimer   = null;
+  var _aiSecs    = 0;
+
+  function setAiState(state, msg) {
+    if (_aiTimer) { clearInterval(_aiTimer); _aiTimer = null; }
+    if (state === "loading") {
+      _aiSecs = 0;
+      aiElapsedEl.textContent = "0s";
+      _aiTimer = setInterval(function () {
+        _aiSecs++;
+        aiElapsedEl.textContent = _aiSecs + "s";
+      }, 1000);
+      aiNotice.style.display = "block";
+      aiErrorBar.style.display = "none";
+    } else if (state === "idle") {
+      aiNotice.style.display = "none";
+      aiErrorBar.style.display = "none";
+    } else {
+      aiNotice.style.display = "none";
+      aiErrorBar.style.display = "block";
+      if (msg) aiErrorTxt.textContent = msg;
+    }
+  }
+
+  function _applyStreamedText(text) {
+    var sumMatch = text.match(/Opsummering:\s*([^\n]+)/);
+    var descMatch = text.match(/Beskrivelse:\s*([\s\S]+)/);
+    if (sumMatch) shortSummary.value = sumMatch[1].trim();
+    if (descMatch) detailedDesc.value = descMatch[1].trim();
+  }
+
+  async function loadAiDraft() {
+    var wt = taskType.value.trim();
+    if (!wt) return;
+
+    if (_aiAbort) _aiAbort.abort();
+    _aiAbort = new AbortController();
+
+    shortSummary.value = "";
+    detailedDesc.value = "";
+    setAiState("loading");
+
+    var payload = { task_type: wt };
+    if (window._wiz.customer_name) payload.customer_name = window._wiz.customer_name;
+    if (window._wiz.address) payload.address = window._wiz.address;
+    if (jobNotes.value.trim()) payload.job_notes = jobNotes.value.trim();
+
+    try {
+      var resp = await fetch("/wizard/ai-draft-stream", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        signal: _aiAbort.signal,
+        body: JSON.stringify(payload),
+      });
+      if (!resp.ok) throw new Error("HTTP " + resp.status);
+
+      var reader = resp.body.getReader();
+      var decoder = new TextDecoder();
+      var buf = "";
+      var accumulated = "";
+
+      while (true) {
+        var chunk = await reader.read();
+        if (chunk.done) break;
+        buf += decoder.decode(chunk.value, { stream: true });
+        var events = buf.split("\n\n");
+        buf = events.pop();
+        for (var i = 0; i < events.length; i++) {
+          var ev = events[i].trim();
+          if (!ev.startsWith("data: ")) continue;
+          var d;
+          try { d = JSON.parse(ev.slice(6)); } catch (e) { continue; }
+          if (d.t) {
+            accumulated += d.t;
+            _applyStreamedText(accumulated);
+          }
+          if (d.done) {
+            if (!d.ai_used) {
+              setAiState("failed", "AI svarede ikke — ingen model tilgængelig");
+            } else {
+              if (d.short_summary) shortSummary.value = d.short_summary;
+              if (d.detailed_description) detailedDesc.value = d.detailed_description;
+              setAiState("idle");
+            }
+            return;
+          }
+        }
+      }
+      setAiState("idle");
+    } catch (e) {
+      if (e && e.name === "AbortError") {
+        setAiState("cancelled", "AI-udkast annulleret");
+      } else {
+        setAiState("failed", "AI-udkast fejlede — prøv igen");
+      }
+    }
+  }
+
+  document.getElementById("ai-cancel-btn").addEventListener("click", function () {
+    if (_aiAbort) _aiAbort.abort();
+  });
+
+  document.getElementById("ai-retry-btn").addEventListener("click", loadAiDraft);
+  document.getElementById("ai-regen-btn").addEventListener("click", loadAiDraft);
+
+  // ── Step 2: Næste — PATCH /quote-preparations/{id} ───────────────────────
+  document.getElementById("step2-back").addEventListener("click", function () { showStep(1); });
+  document.getElementById("step2-next").addEventListener("click", function () {
+    var id = window._wiz.preparation_id;
+    if (!id) { showStep(3); return; }
+    var payload = {
+      task_type: taskType.value.trim(),
+      job_notes: jobNotes.value.trim(),
+      short_summary: document.getElementById("short-summary").value.trim(),
+      detailed_description: detailedDesc.value.trim(),
+    };
+    fetch("/quote-preparations/" + id, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    })
+      .then(function (res) {
+        if (!res.ok) return res.json().then(function (err) { throw new Error(fmtError(err.detail || err)); });
+        return res.json();
+      })
+      .then(function () { showStep(3); })
+      .catch(function (e) { alert("Fejl ved gemning af opgave:\n" + e.message); });
+  });
+
+  // ── Step 3: Næste — PATCH /quote-preparations/{id} with internal_notes ───
+  document.getElementById("step3-back").addEventListener("click", function () { showStep(2); });
+  document.getElementById("step3-next").addEventListener("click", function () {
+    var id = window._wiz.preparation_id;
+    if (!id) { showStep(4); return; }
+    var payload = { internal_notes: document.getElementById("internal-notes").value.trim() };
+    fetch("/quote-preparations/" + id, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(payload),
+    })
+      .then(function (res) {
+        if (!res.ok) return res.json().then(function (err) { throw new Error(fmtError(err.detail || err)); });
+        return res.json();
+      })
+      .then(function () { showStep(4); })
+      .catch(function (e) { alert("Fejl ved gemning af noter:\n" + e.message); });
+  });
+
+  // ── Step 4: Pre-fill email ────────────────────────────────────────────────
+  function prefillEmailStep() {
+    var name = window._wiz.customer_name || "kunde";
+    document.getElementById("email-subject").value = "Tak for din henvendelse";
+    document.getElementById("email-body").value =
+      "Kære " + name + ",\n\nTak for din henvendelse. Vi vender tilbage hurtigst muligt.\n\nMed venlig hilsen";
+
+    // Checkbox: default checked only if customer email is known
+    var chk = document.getElementById("send-email-chk");
+    chk.checked = !!window._wiz.customer_email;
+
+    // data-smtp-status is "unknown" in the HTML (set at page-load).
+    // A future /session/smtp-status endpoint would let us update this at runtime.
+    // For now we leave the attribute as "unknown" — the notice is hidden by default
+    // and can be shown by calling updateSmtpNotice("unconfigured").
+    updateSmtpNotice(document.getElementById("smtp-notice").dataset.smtpStatus);
+  }
+
+  function updateSmtpNotice(status) {
+    var notice = document.getElementById("smtp-notice");
+    var finishBtn = document.getElementById("finish-btn");
+    if (status === "unconfigured") {
+      notice.style.display = "block";
+      finishBtn.disabled = true;
+    } else {
+      notice.style.display = "none";
+      finishBtn.disabled = false;
+    }
+  }
+
+  // ── Step 4: Finish — POST /quote-preparations/{id}/convert-to-flow ────────
+  document.getElementById("step4-back").addEventListener("click", function () { showStep(3); });
+  document.getElementById("finish-btn").addEventListener("click", function () {
+    var id = window._wiz.preparation_id;
+    if (!id) { alert("Ingen kladde-ID fundet. Start venligst forfra."); return; }
+
+    var sendEmail = document.getElementById("send-email-chk").checked;
+    var body = {
+      source: "phone",
+      send_email: sendEmail,
+      email_subject: document.getElementById("email-subject").value.trim(),
+      email_body: document.getElementById("email-body").value.trim(),
+    };
+
+    fetch("/quote-preparations/" + id + "/convert-to-flow", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify(body),
+    })
+      .then(function (res) {
+        if (!res.ok) return res.json().then(function (err) { throw new Error(fmtError(err.detail || err)); });
+        return res.json();
+      })
+      .then(function (data) {
+        // Show success screen
+        document.querySelector(".wiz-page > *:not(#success-screen)");
+        var stepsPage = document.getElementById("step-1").parentElement ||
+                        document.querySelector(".wiz-page");
+
+        // Hide all step elements and step bar
+        document.getElementById("step-bar").style.display = "none";
+        for (var i = 1; i <= 4; i++) {
+          var el = document.getElementById("step-" + i);
+          if (el) el.style.display = "none";
+        }
+
+        // Populate result IDs
+        var ids = document.getElementById("result-ids");
+        ids.innerHTML = "";
+        var fields = [
+          ["Kunde-ID", data.customer_id],
+          ["Henvendelse-ID", data.enquiry_id],
+          ["Projekt-ID", data.project_id],
+          ["Tilbud-ID", data.quote_id],
+        ];
+        fields.forEach(function (f) {
+          if (f[1]) {
+            var d = document.createElement("div");
+            d.textContent = f[0] + ": " + f[1];
+            ids.appendChild(d);
+          }
+        });
+
+        // Email feedback — Iron Law 2: visible, never silent
+        var emailNotice = document.getElementById("email-sent-notice");
+        if (sendEmail && data.email_sent === false) {
+          emailNotice.innerHTML =
+            '<div class="notice error-persistent" style="display:block">E-mail ikke sendt: ' +
+            (data.email_error || "Ukendt fejl") + "</div>";
+        } else if (sendEmail && data.email_sent === true) {
+          emailNotice.innerHTML =
+            '<div class="notice info" style="display:block">Bekræftelsesmail sendt.</div>';
+        }
+
+        document.getElementById("success-screen").style.display = "block";
+      })
+      .catch(function (e) { alert("Fejl ved afslutning:\n" + e.message); });
+  });
+
+})();
+</script>
+</body>
+</html>
