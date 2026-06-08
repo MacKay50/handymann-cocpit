@@ -1,0 +1,6 @@
+Fakturanummer;Debitor;Nettobeloeb;Momsbeloeb;Bruttobeloeb;Forfaldsdato;Bogfoeringsdato
+10001;Hansen Byggeri;8.000,00;2.000,00;10.000,00;31-03-2026;01-03-2026
+10002;Jensen Service;4.400,00;1.100,00;5.500,00;15-03-2026;01-03-2026
+10003;Nord Bygg ApS;1.800,00;450,00;2.250,00;30-03-2026;02-03-2026
+10004;Klima Service;7.000,40;1.750,10;8.750,50;25-03-2026;05-03-2026
+10005;Nordmann Renovering;960,00;240,00;1.200,00;20-03-2026;10-03-2026

@@ -1,0 +1,214 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tilbudssvar</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+           background: #f0f2f5; color: #1a202c; font-size: 15px; line-height: 1.6;
+           min-height: 100vh; display: flex; align-items: flex-start; justify-content: center;
+           padding: 2rem 1rem; }
+    .card { background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.1);
+            max-width: 620px; width: 100%; padding: 2.5rem; }
+    .logo { font-size: 1.5rem; font-weight: 800; color: #1a1a2e; margin-bottom: .2rem; }
+    .sub  { font-size: .88rem; color: #718096; margin-bottom: 2rem; }
+    h1 { font-size: 1.25rem; font-weight: 700; color: #1a202c; margin-bottom: .3rem; }
+    .qnr { font-size: .82rem; color: #718096; margin-bottom: 1.5rem; }
+    .section { border-top: 1px solid #e2e8f0; padding-top: 1rem; margin-top: 1rem; }
+    .section h2 { font-size: .78rem; font-weight: 600; color: #718096;
+                  text-transform: uppercase; letter-spacing: .4px; margin-bottom: .5rem; }
+    table { width: 100%; border-collapse: collapse; font-size: .88rem; }
+    thead th { text-align: left; padding: .4rem .5rem; font-size: .75rem; font-weight: 600;
+               color: #718096; text-transform: uppercase; letter-spacing: .3px;
+               border-bottom: 1.5px solid #e2e8f0; }
+    tbody td { padding: .5rem .5rem; border-bottom: 1px solid #f0f2f5; }
+    tbody tr:last-child td { border-bottom: none; }
+    .amt { text-align: right; }
+    .totals { margin-top: 1rem; }
+    .totals-row { display: flex; justify-content: space-between; padding: .3rem 0;
+                  font-size: .9rem; color: #4a5568; }
+    .totals-row.total { font-size: 1.05rem; font-weight: 700; color: #1a202c;
+                        border-top: 2px solid #e2e8f0; padding-top: .5rem; margin-top: .3rem; }
+    .valid { font-size: .83rem; color: #718096; margin-top: .7rem; }
+    .notes-box { background: #f7fafc; border-radius: 8px; padding: .8rem 1rem;
+                 font-size: .88rem; color: #4a5568; margin-top: .5rem; }
+    .actions { margin-top: 2rem; display: flex; flex-direction: column; gap: .8rem; }
+    .btn-accept { background: #276749; color: #fff; border: none; padding: .9rem 1.5rem;
+                  border-radius: 10px; font-size: 1rem; font-weight: 700; cursor: pointer;
+                  width: 100%; letter-spacing: .2px; }
+    .btn-accept:hover { background: #22543d; }
+    .btn-accept:disabled { opacity: .55; cursor: not-allowed; }
+    .reject-toggle { background: none; border: none; color: #718096; font-size: .85rem;
+                     cursor: pointer; text-decoration: underline; align-self: center; }
+    .reject-panel { display: none; padding: 1rem; background: #fff5f5; border-radius: 10px;
+                    border: 1px solid #fc8181; }
+    .reject-panel.show { display: block; }
+    .reject-panel label { font-size: .82rem; font-weight: 600; color: #c53030;
+                          display: block; margin-bottom: .4rem; }
+    .reject-panel textarea { width: 100%; padding: .55rem .75rem; border: 1.5px solid #fc8181;
+                              border-radius: 7px; font-size: .88rem; resize: vertical;
+                              min-height: 80px; font-family: inherit; outline: none; }
+    .btn-reject { background: #c53030; color: #fff; border: none; padding: .65rem 1.2rem;
+                  border-radius: 8px; font-size: .88rem; font-weight: 600; cursor: pointer;
+                  margin-top: .6rem; width: 100%; }
+    .btn-reject:hover { background: #9b2c2c; }
+    .status-box { padding: 1.5rem; border-radius: 12px; text-align: center; margin-top: 1.5rem; }
+    .status-box.accepted { background: #f0fff4; border: 2px solid #68d391; }
+    .status-box.rejected { background: #fff5f5; border: 2px solid #fc8181; }
+    .status-icon { font-size: 2.5rem; }
+    .status-title { font-size: 1.1rem; font-weight: 700; margin-top: .5rem; }
+    .status-sub   { font-size: .85rem; color: #718096; margin-top: .3rem; }
+    .err-box { background: #fff5f5; border: 1px solid #fc8181; border-radius: 8px;
+               padding: 1rem; color: #c53030; font-size: .9rem; }
+    .loading { color: #718096; padding: 2rem 0; text-align: center; }
+  </style>
+</head>
+<body>
+<div class="card">
+  <div id="content" class="loading">Indlæser tilbud…</div>
+</div>
+
+<script>
+const BASE = "";
+
+function fmt(n) {
+  return Number(n).toLocaleString("da-DK", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function esc(s) {
+  return String(s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+function fdate(d) {
+  if (!d) return "—";
+  const [y,m,day] = String(d).slice(0,10).split("-");
+  return `${day}/${m}/${y}`;
+}
+
+const token = new URLSearchParams(location.search).get("token");
+
+async function load() {
+  const el = document.getElementById("content");
+  if (!token) {
+    el.innerHTML = `<div class="err-box">Ugyldigt link — mangler token.</div>`;
+    return;
+  }
+  try {
+    const q = await fetch(`${BASE}/quotes/by-token/${token}`).then(r => {
+      if (!r.ok) throw new Error(r.status === 404 ? "Tilbuddet blev ikke fundet." : "Serverfejl.");
+      return r.json();
+    });
+    renderQuote(q);
+  } catch(e) {
+    el.innerHTML = `<div class="err-box">${esc(e.message)}</div>`;
+  }
+}
+
+function renderQuote(q) {
+  const linesHtml = q.lines.map(l => `
+    <tr>
+      <td>${esc(l.description)}</td>
+      <td class="amt">${l.quantity} ${esc(l.unit)}</td>
+      <td class="amt">${fmt(l.unit_price)} kr</td>
+      <td class="amt"><strong>${fmt(l.line_total)} kr</strong></td>
+    </tr>`).join("");
+
+  const alreadyDone = q.status === "accepted" || q.status === "rejected";
+
+  let statusHtml = "";
+  if (q.status === "accepted") {
+    statusHtml = `<div class="status-box accepted">
+      <div class="status-icon">✅</div>
+      <div class="status-title">Tilbud accepteret</div>
+      <div class="status-sub">Accepteret ${fdate(q.accepted_at)}. Vi kontakter dig snarest.</div>
+    </div>`;
+  } else if (q.status === "rejected") {
+    statusHtml = `<div class="status-box rejected">
+      <div class="status-icon">❌</div>
+      <div class="status-title">Tilbud afvist</div>
+      <div class="status-sub">Afvist ${fdate(q.rejected_at)}.${q.rejection_reason ? " Grund: "+esc(q.rejection_reason) : ""}</div>
+    </div>`;
+  }
+
+  const actionsHtml = alreadyDone ? "" : `
+    <div class="actions">
+      <button class="btn-accept" id="btn-accept" onclick="doAccept()">
+        ✓ Ja, jeg accepterer tilbuddet
+      </button>
+      <button class="reject-toggle" onclick="toggleReject()">Ønsker at afvise tilbuddet</button>
+      <div class="reject-panel" id="reject-panel">
+        <label>Grund til afvisning (valgfri)</label>
+        <textarea id="reject-reason" placeholder="Fx: For dyrt, valgte anden leverandør…"></textarea>
+        <button class="btn-reject" onclick="doReject()">Afvis tilbuddet</button>
+      </div>
+    </div>`;
+
+  document.getElementById("content").innerHTML = `
+    <div class="logo">${esc(q.company_name)}</div>
+    <div class="sub">Tilbudssvar</div>
+    <h1>${esc(q.title)}</h1>
+    <div class="qnr">Tilbud ${esc(q.quote_number)}${q.valid_until ? " · Gyldig til "+fdate(q.valid_until) : ""}</div>
+    ${q.description ? `<p style="color:#4a5568;font-size:.9rem;margin-bottom:1rem">${esc(q.description)}</p>` : ""}
+
+    <div class="section">
+      <h2>Tilbudslinjer</h2>
+      <table>
+        <thead><tr><th>Beskrivelse</th><th class="amt">Antal</th><th class="amt">Enhedspris</th><th class="amt">Beløb</th></tr></thead>
+        <tbody>${linesHtml}</tbody>
+      </table>
+      <div class="totals">
+        <div class="totals-row"><span>Subtotal</span><span>${fmt(q.subtotal)} kr</span></div>
+        <div class="totals-row"><span>Moms (25%)</span><span>${fmt(q.vat_amount)} kr</span></div>
+        <div class="totals-row total"><span>Total inkl. moms</span><span>${fmt(q.total)} kr</span></div>
+      </div>
+      ${q.valid_until ? `<div class="valid">Tilbud er gyldigt til ${fdate(q.valid_until)}.</div>` : ""}
+    </div>
+    ${q.notes ? `<div class="section"><h2>Noter</h2><div class="notes-box">${esc(q.notes)}</div></div>` : ""}
+    ${statusHtml}
+    ${actionsHtml}`;
+}
+
+function toggleReject() {
+  const p = document.getElementById("reject-panel");
+  p.classList.toggle("show");
+}
+
+async function doAccept() {
+  const btn = document.getElementById("btn-accept");
+  btn.disabled = true; btn.textContent = "Sender…";
+  try {
+    const r = await fetch(`${BASE}/quotes/by-token/${token}/accept`, { method: "POST" });
+    if (!r.ok) {
+      const err = await r.json();
+      throw new Error(err.detail || r.status);
+    }
+    renderQuote(await r.json());
+  } catch(e) {
+    btn.disabled = false; btn.textContent = "✓ Ja, jeg accepterer tilbuddet";
+    alert("Fejl: " + e.message);
+  }
+}
+
+async function doReject() {
+  const reason = document.getElementById("reject-reason")?.value.trim() || null;
+  try {
+    const r = await fetch(`${BASE}/quotes/by-token/${token}/reject`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ reason }),
+    });
+    if (!r.ok) {
+      const err = await r.json();
+      throw new Error(err.detail || r.status);
+    }
+    renderQuote(await r.json());
+  } catch(e) {
+    alert("Fejl: " + e.message);
+  }
+}
+
+load();
+</script>
+<script src="/static/nav.js"></script>
+</body>
+</html>

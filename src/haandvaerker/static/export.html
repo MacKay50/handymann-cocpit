@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Eksport</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+           background: #f0f2f5; color: #1a202c; font-size: 14px; line-height: 1.5; }
+
+    /* ── Toolbar ── */
+    .toolbar { background: #1a1a2e; color: #fff; padding: .85rem 1.5rem;
+               display: flex; align-items: center; gap: .65rem; flex-wrap: wrap; }
+    .toolbar-title { font-size: 1rem; font-weight: 700; margin-right: .5rem; white-space: nowrap; }
+    .toolbar input[type=text] { padding: .38rem .75rem; border: 1.5px solid rgba(255,255,255,.25);
+      border-radius: 6px; font-size: .85rem; background: rgba(255,255,255,.1); color: #fff;
+      outline: none; min-width: 180px; }
+    .toolbar input[type=text]::placeholder { color: rgba(255,255,255,.45); }
+    .toolbar input[type=text]:focus { border-color: #63b3ed; background: rgba(255,255,255,.15); }
+    .toolbar select { padding: .38rem .65rem; border: 1.5px solid rgba(255,255,255,.25);
+      border-radius: 6px; font-size: .85rem; background: rgba(255,255,255,.1); color: #fff;
+      outline: none; cursor: pointer; }
+    .toolbar select option { background: #1a1a2e; color: #fff; }
+    .toolbar-sep { width: 1px; height: 1.4rem; background: rgba(255,255,255,.2); flex-shrink: 0; }
+    .btn-exp { padding: .38rem .85rem; border-radius: 6px; font-size: .82rem; font-weight: 600;
+               cursor: pointer; border: 1.5px solid transparent; white-space: nowrap; }
+    .btn-csv  { background: #276749; color: #fff; border-color: #276749; }
+    .btn-csv:hover  { background: #22543d; }
+    .btn-xlsx { background: #2b6cb0; color: #fff; border-color: #2b6cb0; }
+    .btn-xlsx:hover { background: #2c5282; }
+    .btn-print { background: rgba(255,255,255,.15); color: #fff; border-color: rgba(255,255,255,.3); }
+    .btn-print:hover { background: rgba(255,255,255,.25); }
+    .fmt-toggle { display: flex; border-radius: 6px; overflow: hidden; border: 1.5px solid rgba(255,255,255,.25); }
+    .fmt-btn { padding: .28rem .65rem; font-size: .78rem; font-weight: 600; cursor: pointer;
+               background: transparent; color: rgba(255,255,255,.6); border: none; }
+    .fmt-btn.active { background: rgba(255,255,255,.2); color: #fff; }
+
+    /* ── Stats bar ── */
+    .stats-bar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: .55rem 1.5rem;
+                 font-size: .82rem; color: #718096; display: flex; align-items: center; gap: 1rem; }
+    .stats-bar strong { color: #2d3748; }
+    .back-link { color: #2b6cb0; text-decoration: none; font-size: .82rem; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* ── Table ── */
+    .tbl-wrap { padding: 1rem 1.5rem 2rem; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: #fff;
+            border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.07);
+            overflow: hidden; font-size: .85rem; }
+    thead th { background: #f7fafc; text-align: left; padding: .55rem .85rem;
+               font-size: .72rem; font-weight: 700; text-transform: uppercase;
+               letter-spacing: .4px; color: #718096; border-bottom: 2px solid #e2e8f0;
+               cursor: pointer; user-select: none; white-space: nowrap; }
+    thead th:hover { background: #edf2f7; }
+    thead th .sort-icon { margin-left: .25rem; opacity: .4; }
+    thead th.sorted .sort-icon { opacity: 1; }
+    tbody td { padding: .55rem .85rem; border-bottom: 1px solid #f0f2f5; vertical-align: middle; }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr:hover td { background: #ebf8ff; }
+    .b { display: inline-block; padding: .1rem .45rem; border-radius: 4px;
+         font-size: .72rem; font-weight: 600; white-space: nowrap; }
+    .b-draft     { background:#ebf8ff;  color:#2b6cb0; }
+    .b-sent      { background:#fefcbf;  color:#744210; }
+    .b-paid      { background:#f0fff4;  color:#276749; }
+    .b-cancelled { background:#fff5f5;  color:#c53030; }
+    .b-active    { background:#f0fff4;  color:#276749; }
+    .b-completed { background:#faf5ff;  color:#553c9a; }
+    .b-accepted  { background:#f0fff4;  color:#276749; }
+    .b-rejected  { background:#fff5f5;  color:#c53030; }
+    .b-unread    { background:#ebf8ff;  color:#2b6cb0; }
+    .b-read      { background:#f7fafc;  color:#718096; }
+    .b-archived  { background:#fff5f5;  color:#a0aec0; }
+    .b-pending   { background:#fffaf0;  color:#744210; }
+    .b-skipped   { background:#f7fafc;  color:#a0aec0; }
+    .b-scheduled { background:#ebf8ff;  color:#2b6cb0; }
+    .b-needs_review { background:#fffaf0; color:#744210; }
+    .b-approved  { background:#f0fff4;  color:#276749; }
+    .b-extracted { background:#faf5ff;  color:#553c9a; }
+    .b-failed    { background:#fff5f5;  color:#c53030; }
+    .b-converted { background:#f0fff4;  color:#276749; }
+    .amt { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; }
+    .empty-row td { text-align: center; color: #a0aec0; padding: 2.5rem; }
+    .loading { text-align: center; color: #718096; padding: 3rem; }
+    .err-box { background: #fff5f5; border: 1px solid #fc8181; color: #c53030;
+               border-radius: 8px; padding: 1rem; margin: 1.5rem; font-size: .9rem; }
+
+    /* ── Print ── */
+    @media print {
+      @page { margin: 1.5cm; }
+      body { background: #fff; font-size: 10pt; }
+      .toolbar, .stats-bar .back-link, .btn-exp, .fmt-toggle { display: none !important; }
+      .stats-bar { border: none; padding: 0 0 .5rem; }
+      .tbl-wrap { padding: 0; overflow: visible; }
+      table { box-shadow: none; font-size: 9pt; }
+      thead th { background: #f7fafc !important; }
+      tbody td { border-bottom: 1px solid #e8ecf0 !important; }
+      tbody tr:hover td { background: transparent !important; }
+      tr { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<div class="toolbar" id="toolbar">
+  <span class="toolbar-title" id="tb-title">Eksport</span>
+  <div class="toolbar-sep"></div>
+  <input type="text" id="search" placeholder="Søg i listen…" oninput="applyFilters()">
+  <select id="status-filter" onchange="applyFilters()">
+    <option value="">Alle statusser</option>
+  </select>
+  <div class="fmt-toggle">
+    <button class="fmt-btn active" id="fmt-da"  onclick="setFmt('da')">DA</button>
+    <button class="fmt-btn"        id="fmt-raw" onclick="setFmt('raw')">Rå</button>
+  </div>
+  <div class="toolbar-sep"></div>
+  <button class="btn-exp btn-csv"   onclick="downloadCSV()">⬇ CSV</button>
+  <button class="btn-exp btn-xlsx"  onclick="downloadXLSX()">⬇ XLSX</button>
+  <button class="btn-exp btn-print" onclick="window.print()">🖨 Print / PDF</button>
+</div>
+
+<div class="stats-bar">
+  <a class="back-link" id="back-link" href="/ui">← Tilbage til dashboard</a>
+  <span id="stats-text">Indlæser…</span>
+</div>
+
+<div class="tbl-wrap">
+  <div class="loading" id="loading">Indlæser data…</div>
+  <table id="data-table" style="display:none">
+    <thead id="thead"></thead>
+    <tbody id="tbody"></tbody>
+  </table>
+</div>
+
+<script>
+"use strict";
+const BASE = "";
+
+// ── URL params ────────────────────────────────────────────────────────────────
+const P       = new URLSearchParams(location.search);
+const TYPE    = P.get("type") || "";
+const CID     = P.get("company_id") || "";
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function esc(s) { return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+function fdate(d) {
+  if (!d) return "—";
+  const s = String(d).slice(0,10);
+  if (!s || s === "None") return "—";
+  const [y,m,day] = s.split("-");
+  return `${day}/${m}/${y}`;
+}
+function fdateRaw(d) { return d ? String(d).slice(0,10) : ""; }
+function fmt(n)  { return n == null ? "—" : Number(n).toLocaleString("da-DK",{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function fmtRaw(n) { return n == null ? "" : String(n); }
+
+const STATUS_LABELS = {
+  draft:"Kladde", sent:"Sendt", paid:"Betalt", cancelled:"Annulleret",
+  accepted:"Accepteret", rejected:"Afvist", active:"Aktiv", completed:"Afsluttet",
+  unread:"Ulæst", read:"Læst", archived:"Arkiveret", converted:"Konverteret",
+  pending:"Afventer", skipped:"Sprunget over", scheduled:"Planlagt",
+  needs_review:"Gennemgå", approved:"Godkendt", extracted:"Udtrukket", failed:"Fejl",
+  email:"Email", phone:"Telefon", website:"Website", walk_in:"Walk-in", other:"Andet",
+  site_visit:"Besøg", meeting:"Møde", estimate:"Estimat",
+  vat_report:"Momsafregning", salary_run:"Lønkørsel", annual_accounts:"Årsregnskab",
+  corporate_tax:"Selskabsskat", insurance:"Forsikring",
+};
+function slabel(v) { return STATUS_LABELS[v] || v || "—"; }
+
+async function fetchJSON(path) {
+  const r = await fetch(BASE + path);
+  if (!r.ok) throw new Error(`${r.status} ${path}`);
+  return r.json();
+}
+
+// ── Format state ──────────────────────────────────────────────────────────────
+let FMT = "da";
+function setFmt(f) {
+  FMT = f;
+  document.getElementById("fmt-da").classList.toggle("active", f === "da");
+  document.getElementById("fmt-raw").classList.toggle("active", f === "raw");
+  renderTable();
+}
+
+// ── Type configs ──────────────────────────────────────────────────────────────
+const TYPE_CONFIGS = {
+
+  invoices: {
+    label: "Fakturaer",
+    statusOptions: ["draft","sent","paid","cancelled"],
+    async fetch() {
+      const [items, custs, projs] = await Promise.all([
+        fetchJSON(`/invoices/?company_id=${CID}`),
+        fetchJSON(`/customers/?company_id=${CID}`),
+        fetchJSON(`/projects/?company_id=${CID}`),
+      ]);
+      const CM = Object.fromEntries(custs.map(c=>[c.id,c.name]));
+      const PM = Object.fromEntries(projs.map(p=>[p.id,p.title]));
+      return items.map(i=>({...i, _cust:CM[i.customer_id]||"—", _proj:PM[i.project_id]||"—"}));
+    },
+    columns: [
+      {key:"invoice_number", label:"Fakturanr.", t:"text"},
+      {key:"title",          label:"Titel",      t:"text"},
+      {key:"_cust",          label:"Kunde",       t:"text"},
+      {key:"_proj",          label:"Projekt",     t:"text"},
+      {key:"issue_date",     label:"Udstedt",     t:"date"},
+      {key:"due_date",       label:"Forfald",     t:"date"},
+      {key:"status",         label:"Status",      t:"status"},
+      {key:"subtotal",       label:"Subtotal ekskl. (kr)", t:"amount"},
+      {key:"vat_amount",     label:"Moms (kr)",   t:"amount"},
+      {key:"total",          label:"Total inkl. (kr)", t:"amount"},
+    ],
+    searchKeys: ["invoice_number","title","_cust","_proj"],
+  },
+
+  quotes: {
+    label: "Tilbud",
+    statusOptions: ["draft","sent","accepted","rejected"],
+    async fetch() {
+      const [items, projs, custs] = await Promise.all([
+        fetchJSON(`/quotes/?company_id=${CID}`),
+        fetchJSON(`/projects/?company_id=${CID}`),
+        fetchJSON(`/customers/?company_id=${CID}`),
+      ]);
+      const PM = Object.fromEntries(projs.map(p=>[p.id,{t:p.title,cid:p.customer_id}]));
+      const CM = Object.fromEntries(custs.map(c=>[c.id,c.name]));
+      return items.map(q=>{
+        const pinfo = PM[q.project_id]||{t:"—",cid:""};
+        return {...q, _proj:pinfo.t, _cust:CM[pinfo.cid]||"—"};
+      });
+    },
+    columns: [
+      {key:"quote_number",   label:"Tilbudsnr.", t:"text"},
+      {key:"title",          label:"Titel",      t:"text"},
+      {key:"_proj",          label:"Projekt",    t:"text"},
+      {key:"_cust",          label:"Kunde",      t:"text"},
+      {key:"status",         label:"Status",     t:"status"},
+      {key:"valid_until",    label:"Gyldig til", t:"date"},
+      {key:"subtotal",       label:"Subtotal ekskl. (kr)", t:"amount"},
+      {key:"vat_amount",     label:"Moms (kr)",  t:"amount"},
+      {key:"total",          label:"Total inkl. (kr)", t:"amount"},
+      {key:"accepted_at",    label:"Accepteret", t:"date"},
+    ],
+    searchKeys: ["quote_number","title","_proj","_cust"],
+  },
+
+  projects: {
+    label: "Projekter",
+    statusOptions: ["draft","active","completed","cancelled"],
+    async fetch() {
+      const [items, custs] = await Promise.all([
+        fetchJSON(`/projects/?company_id=${CID}`),
+        fetchJSON(`/customers/?company_id=${CID}`),
+      ]);
+      const CM = Object.fromEntries(custs.map(c=>[c.id,c.name]));
+      return items.map(p=>({...p, _cust:CM[p.customer_id]||"—"}));
+    },
+    columns: [
+      {key:"title",      label:"Titel",    t:"text"},
+      {key:"_cust",      label:"Kunde",    t:"text"},
+      {key:"address",    label:"Adresse",  t:"text"},
+      {key:"status",     label:"Status",   t:"status"},
+      {key:"start_date", label:"Start",    t:"date"},
+      {key:"end_date",   label:"Slut",     t:"date"},
+    ],
+    searchKeys: ["title","_cust","address"],
+  },
+
+  customers: {
+    label: "Kunder",
+    statusOptions: [],
+    async fetch() { return fetchJSON(`/customers/?company_id=${CID}`); },
+    columns: [
+      {key:"name",    label:"Navn",    t:"text"},
+      {key:"email",   label:"Email",   t:"text"},
+      {key:"phone",   label:"Tlf.",    t:"text"},
+      {key:"address", label:"Adresse", t:"text"},
+    ],
+    searchKeys: ["name","email","phone","address"],
+  },
+
+  employees: {
+    label: "Medarbejdere",
+    statusOptions: [],
+    async fetch() { return fetchJSON(`/employees/?company_id=${CID}`); },
+    columns: [
+      {key:"name",                 label:"Navn",           t:"text"},
+      {key:"role",                 label:"Rolle",          t:"text"},
+      {key:"default_hourly_rate",  label:"Timepris (kr)",  t:"amount"},
+      {key:"hired_date",           label:"Ansat dato",     t:"date"},
+    ],
+    searchKeys: ["name","role"],
+  },
+
+  inbox: {
+    label: "Indbakke",
+    statusOptions: ["unread","read","archived","converted"],
+    async fetch() { return fetchJSON(`/inbox/?company_id=${CID}`); },
+    columns: [
+      {key:"sender_name",  label:"Afsender",  t:"text"},
+      {key:"sender_email", label:"Email",     t:"text"},
+      {key:"sender_phone", label:"Tlf.",      t:"text"},
+      {key:"subject",      label:"Emne",      t:"text"},
+      {key:"source",       label:"Kanal",     t:"status"},
+      {key:"received_at",  label:"Modtaget",  t:"date"},
+      {key:"status",       label:"Status",    t:"status"},
+    ],
+    searchKeys: ["sender_name","sender_email","subject"],
+  },
+
+  deadlines: {
+    label: "Frister (kalender)",
+    statusOptions: ["pending","completed","skipped"],
+    async fetch() {
+      return fetchJSON(`/admin-deadlines/?company_id=${CID}`);
+    },
+    columns: [
+      {key:"title",    label:"Titel",       t:"text"},
+      {key:"category", label:"Kategori",    t:"status"},
+      {key:"due_date", label:"Forfaldsdato",t:"date"},
+      {key:"status",   label:"Status",      t:"status"},
+      {key:"notes",    label:"Noter",       t:"text"},
+    ],
+    searchKeys: ["title","notes"],
+  },
+
+  appointments: {
+    label: "Aftaler (kalender)",
+    statusOptions: ["scheduled","completed","cancelled"],
+    async fetch() {
+      const [items, custs, emps] = await Promise.all([
+        fetchJSON(`/appointments/?company_id=${CID}&active_only=true`),
+        fetchJSON(`/customers/?company_id=${CID}`),
+        fetchJSON(`/employees/?company_id=${CID}`),
+      ]);
+      const CM = Object.fromEntries(custs.map(c=>[c.id,c.name]));
+      const EM = Object.fromEntries(emps.map(e=>[e.id,e.name]));
+      return items.map(a=>({...a,
+        _cust: CM[a.customer_id||""]||"—",
+        _emp:  EM[a.employee_id||""]||"—",
+      }));
+    },
+    columns: [
+      {key:"title",            label:"Titel",        t:"text"},
+      {key:"appointment_type", label:"Type",         t:"status"},
+      {key:"start_datetime",   label:"Start",        t:"date"},
+      {key:"end_datetime",     label:"Slut",         t:"date"},
+      {key:"location",         label:"Sted",         t:"text"},
+      {key:"_cust",            label:"Kunde",        t:"text"},
+      {key:"_emp",             label:"Medarbejder",  t:"text"},
+      {key:"status",           label:"Status",       t:"status"},
+    ],
+    searchKeys: ["title","location","_cust","_emp"],
+  },
+
+  erfaringsbank: {
+    label: "Erfaringsbank",
+    statusOptions: ["needs_review","approved","extracted","failed"],
+    async fetch() { return fetchJSON(`/historical-offers/?active_only=true`); },
+    columns: [
+      {key:"title",            label:"Titel",                 t:"text"},
+      {key:"job_type",         label:"Jobbtype",              t:"text"},
+      {key:"area_m2",          label:"Areal m2",              t:"num"},
+      {key:"price_ex_vat",     label:"Pris ekskl. moms (kr)", t:"amount"},
+      {key:"price_per_m2",     label:"Pris/m2 (kr)",          t:"amount"},
+      {key:"year",             label:"År",                    t:"num"},
+      {key:"extraction_status",label:"Status",               t:"status"},
+    ],
+    searchKeys: ["title","job_type","building_type"],
+  },
+};
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let allRows = [];
+let filteredRows = [];
+let sortCol = -1;
+let sortAsc = true;
+const CFG = TYPE_CONFIGS[TYPE];
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+(async function boot() {
+  const loading = document.getElementById("loading");
+  const table   = document.getElementById("data-table");
+  const stats   = document.getElementById("stats-text");
+
+  if (!CFG || !CID) {
+    loading.outerHTML = `<div class="err-box">Mangler type eller company_id i URL.</div>`;
+    return;
+  }
+
+  document.getElementById("tb-title").textContent = CFG.label;
+  document.getElementById("back-link").href = `/ui?company_id=${CID}`;
+  document.title = `${CFG.label} — Eksport`;
+
+  // status filter options
+  const sf = document.getElementById("status-filter");
+  CFG.statusOptions.forEach(s => {
+    const opt = document.createElement("option");
+    opt.value = s; opt.textContent = slabel(s);
+    sf.appendChild(opt);
+  });
+  if (!CFG.statusOptions.length) sf.style.display = "none";
+
+  // build thead
+  const thead = document.getElementById("thead");
+  thead.innerHTML = `<tr>${CFG.columns.map((c,i) =>
+    `<th data-idx="${i}" onclick="sortBy(${i})">${esc(c.label)}<span class="sort-icon">⇅</span></th>`
+  ).join("")}</tr>`;
+
+  try {
+    stats.textContent = "Indlæser…";
+    const raw = await CFG.fetch();
+    // compute price_per_m2 for erfaringsbank
+    allRows = raw.map(r => {
+      if (TYPE === "erfaringsbank" && r.price_ex_vat && r.area_m2 > 0) {
+        return {...r, price_per_m2: Math.round(r.price_ex_vat / r.area_m2 * 100) / 100};
+      }
+      return r;
+    });
+    applyFilters();
+    loading.style.display = "none";
+    table.style.display = "";
+  } catch(e) {
+    loading.outerHTML = `<div class="err-box">Fejl ved indlæsning: ${esc(e.message)}</div>`;
+  }
+})();
+
+// ── Filter + render ───────────────────────────────────────────────────────────
+function applyFilters() {
+  const q  = (document.getElementById("search").value || "").toLowerCase().trim();
+  const st = document.getElementById("status-filter").value;
+  filteredRows = allRows.filter(row => {
+    if (st && row.status !== st && row.extraction_status !== st) return false;
+    if (q) {
+      const haystack = CFG.searchKeys.map(k => String(row[k]||"")).join(" ").toLowerCase();
+      if (!haystack.includes(q)) return false;
+    }
+    return true;
+  });
+  if (sortCol >= 0) doSort();
+  renderTable();
+  updateStats();
+}
+
+function updateStats() {
+  const el = document.getElementById("stats-text");
+  el.innerHTML = `<strong>${filteredRows.length}</strong> poster vist af <strong>${allRows.length}</strong> i alt`;
+}
+
+function cellValue(row, col) {
+  const v = row[col.key];
+  if (col.t === "date") return FMT === "raw" ? fdateRaw(v) : fdate(v);
+  if (col.t === "amount") return FMT === "raw" ? fmtRaw(v) : (v == null ? "—" : fmt(v) + " kr");
+  if (col.t === "num") return v == null ? "—" : v;
+  if (col.t === "status") return FMT === "raw" ? (v||"") : slabel(v);
+  return v == null ? "—" : String(v);
+}
+
+function cellHtml(row, col) {
+  const v = row[col.key];
+  if (col.t === "status") {
+    const raw = v || "";
+    return `<span class="b b-${raw}">${slabel(raw)}</span>`;
+  }
+  if (col.t === "amount") {
+    if (v == null) return `<span style="color:#a0aec0">—</span>`;
+    return `<span class="amt">${FMT === "raw" ? fmtRaw(v) : fmt(v) + " kr"}</span>`;
+  }
+  if (col.t === "date") return esc(FMT === "raw" ? fdateRaw(v) : fdate(v));
+  return esc(v == null ? "—" : String(v));
+}
+
+function renderTable() {
+  const tbody = document.getElementById("tbody");
+  if (!filteredRows.length) {
+    tbody.innerHTML = `<tr class="empty-row"><td colspan="${CFG.columns.length}">Ingen poster matcher filteret</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filteredRows.map(row =>
+    `<tr>${CFG.columns.map(col => `<td>${cellHtml(row, col)}</td>`).join("")}</tr>`
+  ).join("");
+}
+
+// ── Sorting ───────────────────────────────────────────────────────────────────
+function sortBy(idx) {
+  if (sortCol === idx) sortAsc = !sortAsc;
+  else { sortCol = idx; sortAsc = true; }
+  document.querySelectorAll("thead th").forEach((th, i) => {
+    th.classList.toggle("sorted", i === sortCol);
+    if (i === sortCol) th.querySelector(".sort-icon").textContent = sortAsc ? "↑" : "↓";
+    else th.querySelector(".sort-icon").textContent = "⇅";
+  });
+  doSort();
+  renderTable();
+}
+
+function doSort() {
+  const col = CFG.columns[sortCol];
+  filteredRows.sort((a, b) => {
+    let av = cellValue(a, col), bv = cellValue(b, col);
+    if (av == null || av === "—") av = "";
+    if (bv == null || bv === "—") bv = "";
+    const cmp = String(av).localeCompare(String(bv), "da", {numeric: true});
+    return sortAsc ? cmp : -cmp;
+  });
+}
+
+// ── CSV export ────────────────────────────────────────────────────────────────
+function downloadCSV() {
+  const BOM = "﻿";
+  const headers = CFG.columns.map(c => `"${c.label.replace(/"/g,'""')}"`).join(";");
+  const lines = filteredRows.map(row =>
+    CFG.columns.map(col => {
+      const v = cellValue(row, col);
+      return `"${String(v == null ? "" : v).replace(/"/g,'""')}"`;
+    }).join(";")
+  );
+  const csv = BOM + [headers, ...lines].join("\r\n");
+  const blob = new Blob([csv], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `${TYPE}_${new Date().toISOString().slice(0,10)}.csv`;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+// ── XLSX export (server) ──────────────────────────────────────────────────────
+function downloadXLSX() {
+  const q  = document.getElementById("search").value.trim();
+  const st = document.getElementById("status-filter").value;
+  let url = `/export/xlsx?type=${TYPE}&company_id=${encodeURIComponent(CID)}`;
+  if (st) url += `&status=${encodeURIComponent(st)}`;
+  if (q)  url += `&q=${encodeURIComponent(q)}`;
+  window.location.href = url;
+}
+</script>
+<script src="/static/nav.js"></script>
+</body>
+</html>

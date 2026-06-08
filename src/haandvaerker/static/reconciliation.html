@@ -1,0 +1,1104 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bankafstemning</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+           background: #f0f2f5; color: #1a202c; font-size: 14px; line-height: 1.5; }
+
+    /* ── Toolbar ── */
+    .toolbar { background: #1a1a2e; color: #fff; padding: .75rem 1.25rem;
+               display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; }
+    .toolbar-title { font-size: 1rem; font-weight: 700; margin-right: .25rem; white-space: nowrap; }
+    .toolbar-sep { width: 1px; height: 1.4rem; background: rgba(255,255,255,.2); flex-shrink: 0; }
+    .tb-select { padding: .35rem .6rem; border: 1.5px solid rgba(255,255,255,.25);
+      border-radius: 6px; font-size: .82rem; background: rgba(255,255,255,.1); color: #fff;
+      outline: none; cursor: pointer; max-width: 200px; }
+    .tb-select option { background: #1a1a2e; color: #fff; }
+    .btn-tb { padding: .35rem .8rem; border-radius: 6px; font-size: .82rem; font-weight: 600;
+              cursor: pointer; border: 1.5px solid transparent; white-space: nowrap; }
+    .btn-import { background: #2b6cb0; color: #fff; border-color: #2b6cb0; }
+    .btn-import:hover { background: #2c5282; }
+    .btn-match  { background: #276749; color: #fff; border-color: #276749; }
+    .btn-match:hover  { background: #22543d; }
+    .btn-confirm-all { background: #553c9a; color: #fff; border-color: #553c9a; }
+    .btn-confirm-all:hover { background: #44337a; }
+    .btn-pipeline { background: #2c7a7b; color: #fff; border-color: #2c7a7b; }
+    .btn-pipeline:hover { background: #285e61; }
+    .btn-muted  { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.25); }
+    .btn-muted:hover { background: rgba(255,255,255,.22); }
+    .btn-danger { background: rgba(180,0,0,.55); color: #fff; border-color: rgba(220,0,0,.7); }
+    .btn-danger:hover { background: rgba(180,0,0,.75); }
+
+    /* ── Drop zone ── */
+    .drop-zone { display:flex; align-items:center; gap:.4rem; padding:.32rem .75rem;
+      border:1.5px dashed rgba(255,255,255,.35); border-radius:6px; cursor:pointer;
+      font-size:.8rem; color:rgba(255,255,255,.8); background:rgba(255,255,255,.06);
+      min-width:190px; transition:background .15s,border-color .15s; user-select:none; }
+    .drop-zone:hover,.drop-zone.drag-over { background:rgba(255,255,255,.17); border-color:#63b3ed; }
+    .drop-zone.has-file { border-color:#68d391; color:#9ae6b4; border-style:solid; }
+
+    /* ── Stats / back bar ── */
+    .stats-bar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: .45rem 1.25rem;
+                 font-size: .82rem; color: #718096; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .back-link { color: #2b6cb0; text-decoration: none; font-size: .82rem; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* ── Filter tabs ── */
+    .filter-wrap { padding: .75rem 1.25rem .3rem; display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
+    .tab-btn { padding: .32rem .85rem; border-radius: 20px; font-size: .8rem; font-weight: 600;
+               cursor: pointer; border: 1.5px solid #cbd5e0; background: #fff; color: #4a5568;
+               transition: background .12s, color .12s, border-color .12s; }
+    .tab-btn:hover { border-color: #a0aec0; background: #f7fafc; }
+    .tab-btn.active { background: #2b6cb0; color: #fff; border-color: #2b6cb0; }
+    .tab-cnt { display: inline-block; margin-left: .3rem; background: rgba(0,0,0,.12);
+               border-radius: 10px; padding: 0 .4rem; font-size: .7rem; }
+    .tab-btn.active .tab-cnt { background: rgba(255,255,255,.25); }
+
+    /* ── Main section ── */
+    .section { padding: .5rem 1.25rem; }
+    .sh { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem; }
+    .sh h2 { font-size: .9rem; font-weight: 600; color: #2d3748; }
+    .sh-cnt { background: #e2e8f0; color: #4a5568; font-size: .72rem; padding: .1rem .42rem; border-radius: 10px; font-weight: 600; }
+
+    /* ── Table ── */
+    .tbl-wrap { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.07);
+                overflow: hidden; margin-bottom: 1.2rem; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    thead th { background: #f7fafc; text-align: left; padding: .5rem .85rem;
+               font-size: .71rem; font-weight: 700; text-transform: uppercase;
+               letter-spacing: .4px; color: #718096; border-bottom: 2px solid #e2e8f0;
+               white-space: nowrap; }
+
+    /* ── Bank transaction rows ── */
+    .tx-row td { padding: .55rem .85rem; border-bottom: 1px solid #f0f2f5; vertical-align: middle;
+                 transition: background .1s; }
+    .tx-row:hover td { background: #ebf8ff; cursor: pointer; }
+    .tx-row.expanded td { background: #f0f7ff; border-bottom: none; }
+    .tx-row td.expand-cell { width: 28px; color: #718096; font-size: .75rem; text-align: center;
+                             user-select: none; }
+    .tx-row td.desc-cell { max-width: 280px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    td.amt { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    td.amt.pos { color: #276749; }
+    td.amt.neg { color: #c53030; }
+    td.center-cell { text-align: center; }
+    .match-count { background: #ebf8ff; color: #2b6cb0; font-size: .75rem; font-weight: 700;
+                   padding: .08rem .4rem; border-radius: 10px; }
+
+    /* ── Detail rows ── */
+    .detail-row td { padding: 0 !important; border-bottom: 1px solid #e2e8f0 !important; }
+    .detail-row.hidden { display: none; }
+    .detail-cell { padding: 0 0 .6rem !important; background: #f8faff !important; }
+    .detail-empty { padding: .7rem 3rem; color: #718096; font-size: .82rem; font-style: italic; }
+    .sum-check { font-size: .78rem; padding: .35rem 3rem; font-weight: 600; }
+    .sum-ok { color: #276749; }
+    .sum-mismatch { color: #c53030; }
+    .detail-tx-desc { padding: .5rem 3rem .25rem; font-size: .82rem; color: #4a5568; border-bottom: 1px solid #edf2f7; margin-bottom: .3rem; }
+    .detail-tx-desc strong { color: #2d3748; margin-right: .3rem; }
+    .detail-tx-besked { color: #2b6cb0; font-style: italic; }
+    .mm-balance { font-size: .82rem; font-weight: 600; color: #2d3748; margin-bottom: .5rem;
+                  background: #f7fafc; border: 1px solid #e2e8f0; border-radius: 6px;
+                  padding: .4rem .7rem; max-width: 560px; }
+    .mm-balance .rem-ok  { color: #276749; }
+    .mm-balance .rem-off { color: #c53030; }
+    .mm-inv-exact { background: #f0fff4 !important; }
+    .mm-inv-exact:hover { background: #c6f6d5 !important; }
+    .mm-match-note { font-size: .75rem; color: #c53030; font-style: italic; padding: .15rem .85rem; }
+
+    /* ── Sub-table (invoice matches) ── */
+    .sub-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+    .sub-table th { background: #edf2f7; padding: .3rem .85rem; font-size: .69rem; font-weight: 700;
+                    text-transform: uppercase; letter-spacing: .3px; color: #718096;
+                    border-bottom: 1px solid #e2e8f0; text-align: left; white-space: nowrap; }
+    .sub-table td { padding: .42rem .85rem; border-bottom: 1px solid #edf2f7; vertical-align: middle; }
+    .sub-table tbody tr:last-child td { border-bottom: none; }
+    .sub-table tbody tr:hover td { background: #ebf8ff; }
+    .sub-table td.amt { text-align: right; }
+
+    /* ── Manual match panel rows ── */
+    .mm-row td { padding: 0 !important; border-bottom: 1px solid #e2e8f0 !important; }
+    .mm-row.hidden { display: none; }
+    .mm-cell { background: #fffaf0 !important; padding: 0 !important; }
+    .mm-inner { padding: .75rem 1rem .75rem 3rem; }
+    .mm-header { font-size: .8rem; font-weight: 600; color: #744210; margin-bottom: .55rem; }
+    .mm-search { width: 100%; max-width: 480px; padding: .38rem .7rem; border: 1.5px solid #cbd5e0;
+                 border-radius: 6px; font-size: .83rem; outline: none; margin-bottom: .5rem; }
+    .mm-search:focus { border-color: #4299e1; }
+    .mm-inv-list { max-height: 240px; overflow-y: auto; border: 1px solid #e2e8f0;
+                   border-radius: 6px; background: #fff; max-width: 680px; }
+    .mm-inv-row { display: grid; grid-template-columns: 80px 1fr 110px 90px;
+                  gap: .5rem; padding: .38rem .7rem; cursor: pointer; font-size: .82rem;
+                  border-bottom: 1px solid #f0f2f5; align-items: center; }
+    .mm-inv-row:last-child { border-bottom: none; }
+    .mm-inv-row:hover { background: #ebf8ff; }
+    .mm-nr { font-weight: 600; color: #2b6cb0; }
+    .mm-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .mm-amt { text-align: right; font-weight: 600; font-variant-numeric: tabular-nums; font-size: .8rem; }
+    .mm-due { color: #718096; font-size: .78rem; }
+    .mm-empty { padding: .8rem .7rem; color: #a0aec0; font-size: .82rem; font-style: italic; }
+    .mm-more { padding: .35rem .7rem; color: #718096; font-size: .78rem; font-style: italic; }
+
+    /* ── Badges ── */
+    .b { display: inline-block; padding: .1rem .42rem; border-radius: 4px;
+         font-size: .71rem; font-weight: 700; white-space: nowrap; letter-spacing: .2px; }
+    .b-matched   { background: #f0fff4; color: #276749; }
+    .b-proposed  { background: #fefcbf; color: #744210; }
+    .b-unmatched { background: #f7fafc; color: #718096; border: 1px solid #e2e8f0; }
+    .b-exact     { background: #f0fff4; color: #276749; }
+    .b-number    { background: #ebf8ff; color: #2b6cb0; }
+    .b-ai        { background: #f3e8ff; color: #6b21a8; }
+    .b-manual    { background: #f7fafc; color: #4a5568; border: 1px solid #e2e8f0; }
+    .b-confirmed { background: #f0fff4; color: #276749; }
+
+    /* ── Action buttons ── */
+    .btn-sm { font-size: .74rem; font-weight: 600; padding: .18rem .52rem; border-radius: 5px;
+              cursor: pointer; border: 1px solid transparent; margin-right: .25rem; white-space: nowrap; }
+    .btn-confirm { background: #f0fff4; color: #276749; border-color: #9ae6b4; }
+    .btn-confirm:hover { background: #c6f6d5; }
+    .btn-reject  { background: #fff5f5; color: #c53030; border-color: #feb2b2; }
+    .btn-reject:hover  { background: #fed7d7; }
+    .btn-link    { background: none; color: #2b6cb0; border: none; font-size: .78rem;
+                   font-weight: 600; cursor: pointer; padding: .18rem .1rem; text-decoration: underline; }
+    .btn-link:hover { color: #2c5282; }
+
+    /* ── Notices ── */
+    .notice { background: #ebf8ff; border: 1px solid #bee3f8; color: #2c5282; border-radius: 8px;
+              padding: .6rem .9rem; margin-bottom: .6rem; font-size: .83rem; }
+    .err-box { background: #fff5f5; border: 1px solid #fc8181; color: #c53030; border-radius: 8px;
+               padding: .6rem .9rem; margin-bottom: .6rem; font-size: .83rem; }
+    td.empty-cell { text-align: center; color: #a0aec0; padding: 2rem !important; font-size: .9rem; }
+
+    /* ── Clear data modal ── */
+    .clear-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45);
+                     display: flex; align-items: center; justify-content: center; z-index: 9999; }
+    .clear-overlay.hidden { display: none; }
+    .clear-modal { background: #fff; border-radius: 12px; padding: 1.5rem 1.75rem; max-width: 460px;
+                   width: 90%; box-shadow: 0 8px 32px rgba(0,0,0,.22); }
+    .clear-modal h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 1rem; color: #1a202c; }
+    .clear-body { margin-bottom: 1rem; }
+    .clear-stat { font-size: .88rem; color: #4a5568; margin-bottom: .3rem; }
+    .clear-warn { font-size: .85rem; color: #c53030; font-weight: 600; margin-top: .5rem;
+                  background: #fff5f5; border: 1px solid #fc8181; border-radius: 6px;
+                  padding: .4rem .6rem; margin-bottom: .3rem; }
+    .clear-footer-warn { font-size: .8rem; color: #718096; margin-bottom: 1rem; font-style: italic; }
+    .clear-actions { display: flex; gap: .6rem; }
+    .btn-danger-solid { background: #c53030; color: #fff; border-color: #c53030; }
+    .btn-danger-solid:hover { background: #9b2c2c; }
+    .btn-danger-solid:disabled { background: #feb2b2; border-color: #feb2b2; cursor: not-allowed; }
+    .btn-muted-dark { background: #e2e8f0; color: #4a5568; border-color: #cbd5e0; }
+    .btn-muted-dark:hover { background: #cbd5e0; }
+
+    /* ── Print ── */
+    @media print {
+      @page { margin: 1.5cm; }
+      body { background: #fff; font-size: 10pt; }
+      .toolbar, .filter-wrap, .btn-sm, .btn-tb, .btn-link, .mm-row { display: none !important; }
+      .tbl-wrap { box-shadow: none; border: 1px solid #d0d5dd; }
+      table { font-size: 9pt; }
+      thead th { background: #f7fafc !important; -webkit-print-color-adjust: exact; }
+      .detail-row.hidden { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Toolbar ── -->
+<div class="toolbar">
+  <span class="toolbar-title">Bankafstemning</span>
+  <select class="tb-select" id="company-sel" onchange="onCompanyChange()">
+    <option value="">— Vælg virksomhed —</option>
+  </select>
+  <div class="toolbar-sep"></div>
+  <div class="drop-zone" id="drop-zone">
+    <input type="file" id="file-input" accept=".csv,.xlsx" style="display:none" onchange="onFileChange(this)">
+    <span id="drop-label">📂 Vælg eller slip CSV/XLSX</span>
+  </div>
+  <select class="tb-select" id="import-type" style="min-width:160px">
+    <option value="bank">Bankudtog</option>
+    <option value="economic">e-conomic fakturaer</option>
+  </select>
+  <button class="btn-tb btn-import" onclick="doImport()">Importer</button>
+  <div class="toolbar-sep"></div>
+  <button class="btn-tb btn-match" onclick="doMatch()">Kør afstemning</button>
+  <button class="btn-tb btn-confirm-all" onclick="doConfirmAll()" id="btn-confirm-all" style="display:none">Bekræft alle passende</button>
+  <div class="toolbar-sep"></div>
+  <button class="btn-tb btn-pipeline" onclick="doDeriveCustomers()" title="Udled unikke kunder fra debitornavne på importerede fakturaer">Udled kunder</button>
+  <button class="btn-tb btn-pipeline" onclick="doCreateProjects()" title="Opret afsluttede projekter for alle bankbekræftede fakturaer med linket kunde">Opret historiske projekter</button>
+  <div class="toolbar-sep"></div>
+  <button class="btn-tb btn-muted" onclick="reload()">Opdater</button>
+  <button class="btn-tb btn-muted" onclick="window.print()">🖨 Print</button>
+  <div class="toolbar-sep"></div>
+  <button class="btn-tb btn-danger" onclick="showClearDialog('bank')">Slet bankdata</button>
+  <button class="btn-tb btn-danger" onclick="showClearDialog('invoices')">Slet fakturaer</button>
+</div>
+
+<!-- ── Stats bar ── -->
+<div class="stats-bar">
+  <a class="back-link" href="/ui">← Dashboard</a>
+  <span id="stats-text">Vælg en virksomhed for at indlæse data</span>
+</div>
+
+<!-- ── Messages ── -->
+<div class="section" id="msg-area"></div>
+
+<!-- ── Filter tabs ── -->
+<div class="filter-wrap">
+  <button class="tab-btn active" data-filter="all" onclick="setFilter('all', this)">
+    Alle <span class="tab-cnt" id="cnt-all">0</span>
+  </button>
+  <button class="tab-btn" data-filter="proposed" onclick="setFilter('proposed', this)">
+    Foreslået <span class="tab-cnt" id="cnt-proposed">0</span>
+  </button>
+  <button class="tab-btn" data-filter="unmatched" onclick="setFilter('unmatched', this)">
+    Uafstemt <span class="tab-cnt" id="cnt-unmatched">0</span>
+  </button>
+  <button class="tab-btn" data-filter="matched" onclick="setFilter('matched', this)">
+    Afstemt <span class="tab-cnt" id="cnt-matched">0</span>
+  </button>
+</div>
+
+<!-- ── Bank transactions table ── -->
+<div class="section">
+  <div class="sh">
+    <h2>Banktransaktioner</h2>
+    <span class="sh-cnt" id="bank-count">0</span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:28px"></th>
+          <th>Dato</th>
+          <th>Beskrivelse</th>
+          <th style="text-align:right">Beløb</th>
+          <th>Status</th>
+          <th style="text-align:center">Fakturaer</th>
+          <th>Handlinger</th>
+        </tr>
+      </thead>
+      <tbody id="bank-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Clear data modal ── -->
+<div class="clear-overlay hidden" id="clear-overlay">
+  <div class="clear-modal">
+    <h3 id="clear-title">Slet data</h3>
+    <div id="clear-body" class="clear-body"></div>
+    <p class="clear-footer-warn">Denne handling kan ikke fortrydes. Datafilen kan genimporteres bagefter.</p>
+    <div class="clear-actions">
+      <button id="clear-confirm-btn" class="btn-tb btn-danger-solid" onclick="executeClear()">Bekræft sletning</button>
+      <button class="btn-tb btn-muted-dark" onclick="hideClearDialog()">Annuller</button>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let _bankView       = null;
+let _unmatchedInvs  = null;  // lazy-loaded cache
+let _activeFilter   = "all";
+let _expandedRows   = new Set();
+let _mmPanelTxId    = null;
+let _selectedFile   = null;
+
+// ── Formatters ────────────────────────────────────────────────────────────────
+function fdate(d) {
+  if (!d) return "—";
+  const s = String(d).slice(0, 10);
+  const [y, m, day] = s.split("-");
+  return `${day}/${m}/${y}`;
+}
+function fmtOre(ore) {
+  if (ore == null) return "—";
+  const abs = Math.abs(ore);
+  const formatted = (abs / 100).toLocaleString("da-DK", {minimumFractionDigits: 2, maximumFractionDigits: 2});
+  return (ore < 0 ? "-" : "") + formatted + " kr";
+}
+
+// ── Badge helpers ─────────────────────────────────────────────────────────────
+function makeBankBadge(status) {
+  const span = document.createElement("span");
+  span.className = "b";
+  if (status === "matched")   { span.classList.add("b-matched");   span.textContent = "Afstemt"; }
+  else if (status === "proposed") { span.classList.add("b-proposed"); span.textContent = "Foreslået"; }
+  else                        { span.classList.add("b-unmatched"); span.textContent = "Uafstemt"; }
+  return span;
+}
+function makeTypeBadge(matchType) {
+  const span = document.createElement("span");
+  span.className = "b";
+  const map = {
+    auto_exact:  ["b-exact",  "Eksakt"],
+    auto_number: ["b-number", "Fakturanr"],
+    auto_ai:     ["b-ai",     "AI"],
+    manual:      ["b-manual", "Manuel"],
+  };
+  const [cls, label] = map[matchType] || ["b-manual", matchType];
+  span.classList.add(cls);
+  span.textContent = label;
+  return span;
+}
+
+// ── Messaging ─────────────────────────────────────────────────────────────────
+function showMsg(text, isErr) {
+  const area = document.getElementById("msg-area");
+  const div = document.createElement("div");
+  div.className = isErr ? "err-box" : "notice";
+  div.textContent = text;
+  area.textContent = "";
+  area.appendChild(div);
+  setTimeout(() => { if (div.parentNode) div.remove(); }, 7000);
+}
+
+// ── API helper ────────────────────────────────────────────────────────────────
+async function apiFetch(path, opts) {
+  const r = await fetch(path, opts || {});
+  if (!r.ok) {
+    const body = await r.json().catch(() => ({}));
+    const d = body.detail;
+    if (Array.isArray(d)) throw new Error(d.map(e => typeof e === "string" ? e : JSON.stringify(e)).join("; "));
+    throw new Error(String(d || r.status));
+  }
+  return r.json();
+}
+
+// ── Companies ─────────────────────────────────────────────────────────────────
+async function loadCompanies() {
+  try {
+    const cos = await apiFetch("/companies/");
+    const sel = document.getElementById("company-sel");
+    const urlCid = new URLSearchParams(location.search).get("company_id") || "";
+    cos.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c.id;
+      opt.textContent = c.name;
+      opt.selected = c.id === urlCid;
+      sel.appendChild(opt);
+    });
+    if (getCompanyId()) loadAndRender();
+  } catch (err) {
+    showMsg("Kunne ikke indlæse virksomheder: " + err.message, true);
+  }
+}
+
+function getCompanyId() {
+  return document.getElementById("company-sel").value || "";
+}
+
+function onCompanyChange() {
+  _bankView = null;
+  _unmatchedInvs = null;
+  _expandedRows.clear();
+  _mmPanelTxId = null;
+  const cid = getCompanyId();
+  if (cid) {
+    history.replaceState(null, "", "?company_id=" + encodeURIComponent(cid));
+    loadAndRender();
+  } else {
+    document.getElementById("stats-text").textContent = "Vælg en virksomhed for at indlæse data";
+    document.getElementById("bank-tbody").textContent = "";
+    updateTabCounts({ total: 0, matched: 0, proposed: 0, unmatched: 0 });
+  }
+}
+
+// ── Load & render ─────────────────────────────────────────────────────────────
+async function loadAndRender() {
+  const cid = getCompanyId();
+  if (!cid) return;
+  document.getElementById("stats-text").textContent = "Indlæser…";
+  try {
+    const data = await apiFetch("/reconciliation/bank-view?company_id=" + encodeURIComponent(cid));
+    _bankView = data;
+    _unmatchedInvs = null;  // invalidate invoice cache
+    renderView(data);
+  } catch (err) {
+    document.getElementById("stats-text").textContent = "Fejl ved indlæsning";
+    showMsg("Fejl: " + err.message, true);
+  }
+}
+
+function reload() { loadAndRender(); }
+
+function renderView(data) {
+  const stats = data.stats || {};
+  const rows  = data.rows  || [];
+
+  document.getElementById("stats-text").textContent =
+    `${stats.total || 0} poster · ${stats.matched || 0} afstemt · ` +
+    `${stats.proposed || 0} foreslået · ${stats.unmatched || 0} uafstemt`;
+
+  updateTabCounts(stats);
+  renderTable(rows);
+}
+
+function updateTabCounts(stats) {
+  const total = (stats.matched || 0) + (stats.proposed || 0) + (stats.unmatched || 0);
+  document.getElementById("cnt-all").textContent       = total;
+  document.getElementById("cnt-proposed").textContent  = stats.proposed  || 0;
+  document.getElementById("cnt-unmatched").textContent = stats.unmatched || 0;
+  document.getElementById("cnt-matched").textContent   = stats.matched   || 0;
+  document.getElementById("btn-confirm-all").style.display = (stats.proposed || 0) > 0 ? "" : "none";
+}
+
+function setFilter(filter, btn) {
+  _activeFilter = filter;
+  document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  if (_bankView) renderTable(_bankView.rows || []);
+}
+
+function renderTable(rows) {
+  const tbody = document.getElementById("bank-tbody");
+  tbody.textContent = "";
+
+  const filtered = rows.filter(row => {
+    if (_activeFilter === "all") return true;
+    return row.bank_status === _activeFilter;
+  });
+
+  document.getElementById("bank-count").textContent = filtered.length;
+
+  if (!filtered.length) {
+    const tr = document.createElement("tr");
+    const td = document.createElement("td");
+    td.colSpan = 7;
+    td.className = "empty-cell";
+    td.textContent = "Ingen poster at vise";
+    tr.appendChild(td);
+    tbody.appendChild(tr);
+    return;
+  }
+
+  filtered.forEach(row => appendBankRow(tbody, row));
+}
+
+function appendBankRow(tbody, row) {
+  const tx      = row.transaction;
+  const matches = row.matches || [];
+  const isExp   = _expandedRows.has(tx.id);
+  const isMM    = _mmPanelTxId === tx.id;
+
+  // ── Main tx row ──
+  const tr = document.createElement("tr");
+  tr.className = "tx-row" + (isExp ? " expanded" : "");
+  tr.dataset.txId = tx.id;
+  tr.addEventListener("click", e => {
+    if (e.target.closest("button") || e.target.closest(".btn-link")) return;
+    toggleExpand(tx.id);
+  });
+
+  // Expand icon
+  const tdExp = document.createElement("td");
+  tdExp.className = "expand-cell";
+  tdExp.textContent = isExp ? "▼" : "▶";
+  tr.appendChild(tdExp);
+
+  // Date
+  const tdDate = document.createElement("td");
+  tdDate.textContent = fdate(tx.transaction_date);
+  tr.appendChild(tdDate);
+
+  // Description (truncated, full on hover)
+  const tdDesc = document.createElement("td");
+  tdDesc.className = "desc-cell";
+  const full = tx.description || "";
+  tdDesc.textContent = full.length > 58 ? full.slice(0, 58) + "…" : full;
+  if (full.length > 58) tdDesc.title = full;
+  tr.appendChild(tdDesc);
+
+  // Amount
+  const tdAmt = document.createElement("td");
+  tdAmt.className = "amt " + (tx.amount_ore >= 0 ? "pos" : "neg");
+  tdAmt.textContent = fmtOre(tx.amount_ore);
+  tr.appendChild(tdAmt);
+
+  // Status badge
+  const tdStatus = document.createElement("td");
+  tdStatus.appendChild(makeBankBadge(row.bank_status));
+  tr.appendChild(tdStatus);
+
+  // Match count
+  const tdCnt = document.createElement("td");
+  tdCnt.className = "center-cell";
+  if (matches.length) {
+    const cnt = document.createElement("span");
+    cnt.className = "match-count";
+    cnt.textContent = matches.length;
+    tdCnt.appendChild(cnt);
+  } else {
+    tdCnt.textContent = "—";
+  }
+  tr.appendChild(tdCnt);
+
+  // Actions
+  const tdAct = document.createElement("td");
+  if (row.bank_status !== "matched") {
+    const btn = document.createElement("button");
+    btn.className = "btn-link";
+    btn.textContent = isMM ? "Luk kobling" : "Kobl manuelt";
+    btn.addEventListener("click", e => { e.stopPropagation(); toggleMM(tx.id); });
+    tdAct.appendChild(btn);
+  }
+  tr.appendChild(tdAct);
+  tbody.appendChild(tr);
+
+  // ── Detail row (expanded invoice matches) ──
+  const detRow = document.createElement("tr");
+  detRow.className = "detail-row" + (isExp ? "" : " hidden");
+  detRow.dataset.txId = tx.id;
+  const detTd = document.createElement("td");
+  detTd.colSpan = 7;
+  detTd.className = "detail-cell";
+  buildDetailContent(detTd, tx, matches);
+  detRow.appendChild(detTd);
+  tbody.appendChild(detRow);
+
+  // ── Manual match panel row ──
+  const mmRow = document.createElement("tr");
+  mmRow.className = "mm-row" + (isMM ? "" : " hidden");
+  mmRow.dataset.txId = tx.id;
+  const mmTd = document.createElement("td");
+  mmTd.colSpan = 7;
+  mmTd.className = "mm-cell";
+  buildManualPanel(mmTd, tx);
+  mmRow.appendChild(mmTd);
+  tbody.appendChild(mmRow);
+}
+
+// ── Detail content (invoice sub-table) ───────────────────────────────────────
+function buildDetailContent(container, tx, matches) {
+  // Full bank description (tekst + besked)
+  const descDiv = document.createElement("div");
+  descDiv.className = "detail-tx-desc";
+  const fullDesc = tx.description || "";
+  const pipeIdx = fullDesc.indexOf(" | ");
+  if (pipeIdx !== -1) {
+    const tekst = fullDesc.slice(0, pipeIdx);
+    const besked = fullDesc.slice(pipeIdx + 3);
+    const tSpan = document.createElement("span");
+    tSpan.innerHTML = "<strong>Tekst:</strong>";
+    descDiv.appendChild(tSpan);
+    descDiv.appendChild(document.createTextNode(" " + tekst + "  "));
+    const bSpan = document.createElement("span");
+    bSpan.innerHTML = "<strong>Besked:</strong>";
+    descDiv.appendChild(bSpan);
+    const bVal = document.createElement("span");
+    bVal.className = "detail-tx-besked";
+    bVal.textContent = " " + besked;
+    descDiv.appendChild(bVal);
+  } else {
+    const s = document.createElement("strong");
+    s.textContent = "Beskrivelse: ";
+    descDiv.appendChild(s);
+    descDiv.appendChild(document.createTextNode(fullDesc));
+  }
+  container.appendChild(descDiv);
+
+  if (!matches.length) {
+    const msg = document.createElement("div");
+    msg.className = "detail-empty";
+    msg.textContent = "Ingen foreslåede matches — klik \"Kobl manuelt\" for at tilføje en kobling.";
+    container.appendChild(msg);
+    return;
+  }
+
+  const tbl = document.createElement("table");
+  tbl.className = "sub-table";
+
+  const thead = document.createElement("thead");
+  const htr   = document.createElement("tr");
+  ["Type", "Fakturanr", "Debitor", "Brutto", "Forfaldsdato", "Handlinger"].forEach(h => {
+    const th = document.createElement("th");
+    th.textContent = h;
+    htr.appendChild(th);
+  });
+  thead.appendChild(htr);
+  tbl.appendChild(thead);
+
+  const tbody = document.createElement("tbody");
+  matches.forEach(pair => {
+    const m   = pair.match;
+    const inv = pair.invoice;
+    const tr  = document.createElement("tr");
+
+    const tdType = document.createElement("td");
+    tdType.appendChild(makeTypeBadge(m.match_type));
+    tr.appendChild(tdType);
+
+    const tdNr = document.createElement("td");
+    tdNr.textContent = inv.economic_invoice_number || "—";
+    tr.appendChild(tdNr);
+
+    const tdCust = document.createElement("td");
+    tdCust.textContent = inv.customer_name;
+    tr.appendChild(tdCust);
+
+    const tdAmt = document.createElement("td");
+    tdAmt.className = "amt";
+    tdAmt.textContent = fmtOre(inv.gross_amount_ore);
+    tr.appendChild(tdAmt);
+
+    const tdDue = document.createElement("td");
+    tdDue.textContent = fdate(inv.due_date);
+    tr.appendChild(tdDue);
+
+    const tdAct = document.createElement("td");
+    if (!m.confirmed) {
+      const btnC = document.createElement("button");
+      btnC.className = "btn-sm btn-confirm";
+      btnC.textContent = "Bekræft";
+      btnC.addEventListener("click", () => doConfirm(m.id));
+      tdAct.appendChild(btnC);
+
+      const btnR = document.createElement("button");
+      btnR.className = "btn-sm btn-reject";
+      btnR.textContent = "Afvis";
+      btnR.addEventListener("click", () => doReject(m.id));
+      tdAct.appendChild(btnR);
+    } else {
+      const ok = document.createElement("span");
+      ok.className = "b b-confirmed";
+      ok.textContent = "✓ Bekræftet";
+      tdAct.appendChild(ok);
+
+      const btnR = document.createElement("button");
+      btnR.className = "btn-sm btn-reject";
+      btnR.style.marginLeft = ".4rem";
+      btnR.textContent = "Fjern";
+      btnR.addEventListener("click", () => doReject(m.id));
+      tdAct.appendChild(btnR);
+    }
+    tr.appendChild(tdAct);
+    tbody.appendChild(tr);
+
+    // Near-amount warning note (from match.notes)
+    if (m.notes) {
+      const noteRow = document.createElement("tr");
+      const noteTd = document.createElement("td");
+      noteTd.colSpan = 6;
+      noteTd.className = "mm-match-note";
+      noteTd.textContent = "⚠ " + m.notes;
+      noteRow.appendChild(noteTd);
+      tbody.appendChild(noteRow);
+    }
+  });
+  tbl.appendChild(tbody);
+  container.appendChild(tbl);
+
+  // Sum check for multi-invoice splits
+  if (matches.length > 1) {
+    const sumOre = matches.reduce((s, p) => s + p.invoice.gross_amount_ore, 0);
+    const txOre  = tx.amount_ore;
+    const ok     = sumOre === txOre;
+    const div    = document.createElement("div");
+    div.className = "sum-check " + (ok ? "sum-ok" : "sum-mismatch");
+    div.textContent = "Fakturasum: " + fmtOre(sumOre) +
+      " — Banktransaktion: " + fmtOre(txOre) +
+      (ok ? " — Stemmer ✓" : " — Stemmer IKKE ✗");
+    container.appendChild(div);
+  }
+}
+
+// ── Manual match panel ────────────────────────────────────────────────────────
+function buildManualPanel(container, tx) {
+  const inner = document.createElement("div");
+  inner.className = "mm-inner";
+
+  const hdr = document.createElement("div");
+  hdr.className = "mm-header";
+  const descPreview = (tx.description || "").split(" | ")[0].slice(0, 55);
+  hdr.textContent = "Manuel kobling: " + descPreview;
+  inner.appendChild(hdr);
+
+  // Balance display
+  const txRow = _bankView?.rows.find(r => r.transaction.id === tx.id);
+  const existingMatches = txRow?.matches || [];
+  const existingTotal = existingMatches.reduce((s, p) => s + p.invoice.gross_amount_ore, 0);
+  const remaining = tx.amount_ore - existingTotal;
+
+  const balDiv = document.createElement("div");
+  balDiv.className = "mm-balance";
+  balDiv.textContent = "Banktransaktion: " + fmtOre(tx.amount_ore);
+  if (existingTotal > 0) {
+    balDiv.textContent += "  ·  Matchet: " + fmtOre(existingTotal);
+    const remSpan = document.createElement("span");
+    remSpan.className = remaining === 0 ? "rem-ok" : (remaining < 0 ? "rem-off" : "");
+    remSpan.textContent = "  ·  Restbeløb: " + fmtOre(remaining);
+    balDiv.appendChild(remSpan);
+  }
+  inner.appendChild(balDiv);
+
+  const searchEl = document.createElement("input");
+  searchEl.type        = "text";
+  searchEl.className   = "mm-search";
+  searchEl.placeholder = "Søg fakturanr., debitornavn eller beløb…";
+  searchEl.addEventListener("input", () => renderInvoiceList(listDiv, tx.id, searchEl.value, remaining));
+  inner.appendChild(searchEl);
+
+  const listDiv = document.createElement("div");
+  listDiv.className = "mm-inv-list";
+  inner.appendChild(listDiv);
+
+  container.appendChild(inner);
+
+  // Lazy-load unmatched invoices
+  fetchAndShowInvoices(listDiv, tx.id, searchEl, remaining);
+}
+
+async function fetchAndShowInvoices(listDiv, txId, searchEl, remaining) {
+  if (_unmatchedInvs) { renderInvoiceList(listDiv, txId, searchEl.value, remaining); return; }
+  const cid = getCompanyId();
+  const loadMsg = document.createElement("div");
+  loadMsg.className = "mm-empty";
+  loadMsg.textContent = "Indlæser fakturaer…";
+  listDiv.appendChild(loadMsg);
+  try {
+    const invs = await apiFetch(
+      "/economic-invoices/?company_id=" + encodeURIComponent(cid) +
+      "&status=unmatched&active_only=true"
+    );
+    _unmatchedInvs = invs;
+    renderInvoiceList(listDiv, txId, searchEl.value, remaining);
+  } catch (err) {
+    listDiv.textContent = "";
+    const errMsg = document.createElement("div");
+    errMsg.className = "mm-empty";
+    errMsg.textContent = "Fejl: " + err.message;
+    listDiv.appendChild(errMsg);
+  }
+}
+
+function renderInvoiceList(listDiv, txId, query, remaining) {
+  listDiv.textContent = "";
+  if (!_unmatchedInvs) return;
+
+  const q = (query || "").toLowerCase().trim();
+  // Only show invoices that fit within the remaining amount (prevent over-matching)
+  const maxOre = remaining != null ? remaining : Infinity;
+  const source = _unmatchedInvs.filter(inv => inv.gross_amount_ore <= maxOre);
+  const filtered = source.filter(inv => {
+    if (!q) return true;
+    const amtStr = String(Math.round(inv.gross_amount_ore / 100));
+    return (inv.economic_invoice_number || "").includes(q) ||
+           inv.customer_name.toLowerCase().includes(q) ||
+           amtStr.includes(q);
+  });
+
+  if (!filtered.length) {
+    const msg = document.createElement("div");
+    msg.className = "mm-empty";
+    msg.textContent = q ? "Ingen fakturaer matcher søgningen" : "Ingen uafstemte fakturaer inden for restbeløbet";
+    listDiv.appendChild(msg);
+    return;
+  }
+
+  filtered.slice(0, 60).forEach(inv => {
+    const isExact = remaining != null && inv.gross_amount_ore === remaining;
+    const row = document.createElement("div");
+    row.className = "mm-inv-row" + (isExact ? " mm-inv-exact" : "");
+    row.title = isExact ? "Dette beløb dækker restbeløbet præcist" : "";
+    row.addEventListener("click", () => doManualMatch(txId, inv.id));
+
+    const nr = document.createElement("span"); nr.className = "mm-nr";
+    nr.textContent = inv.economic_invoice_number || "—";
+    row.appendChild(nr);
+
+    const name = document.createElement("span"); name.className = "mm-name";
+    name.textContent = inv.customer_name;
+    row.appendChild(name);
+
+    const amt = document.createElement("span"); amt.className = "mm-amt";
+    amt.textContent = fmtOre(inv.gross_amount_ore);
+    row.appendChild(amt);
+
+    const due = document.createElement("span"); due.className = "mm-due";
+    due.textContent = fdate(inv.due_date);
+    row.appendChild(due);
+
+    listDiv.appendChild(row);
+  });
+
+  if (filtered.length > 60) {
+    const more = document.createElement("div");
+    more.className = "mm-more";
+    more.textContent = "+" + (filtered.length - 60) + " flere — præcisér søgning";
+    listDiv.appendChild(more);
+  }
+}
+
+// ── Toggle helpers ────────────────────────────────────────────────────────────
+function toggleExpand(txId) {
+  if (_expandedRows.has(txId)) _expandedRows.delete(txId);
+  else _expandedRows.add(txId);
+  if (_bankView) renderTable(_bankView.rows || []);
+}
+
+function toggleMM(txId) {
+  _mmPanelTxId = _mmPanelTxId === txId ? null : txId;
+  if (_bankView) renderTable(_bankView.rows || []);
+}
+
+// ── Actions ───────────────────────────────────────────────────────────────────
+async function doMatch() {
+  const cid = getCompanyId();
+  if (!cid) { showMsg("Vælg en virksomhed først", true); return; }
+  try {
+    const res = await apiFetch("/reconciliation/match?company_id=" + encodeURIComponent(cid), { method: "POST" });
+    const parts = [];
+    if (res.deterministic_count) parts.push(res.deterministic_count + " eksakt");
+    if (res.number_count)        parts.push(res.number_count + " fakturanr");
+    if (res.ai_suggested_count)  parts.push(res.ai_suggested_count + " AI-forslag");
+    showMsg("Afstemning kørt: " + (parts.length ? parts.join(", ") : "ingen nye matches"), false);
+    _expandedRows.clear();
+    _mmPanelTxId = null;
+    await loadAndRender();
+  } catch (err) {
+    showMsg("Afstemningsfejl: " + err.message, true);
+  }
+}
+
+async function doDeriveCustomers() {
+  const cid = getCompanyId();
+  if (!cid) { showMsg("Vælg en virksomhed først", true); return; }
+  try {
+    const res = await apiFetch("/economic-invoices/derive-customers?company_id=" + encodeURIComponent(cid), { method: "POST" });
+    const parts = [];
+    if (res.created)        parts.push(res.created + " nye kunder oprettet");
+    if (res.linked)         parts.push(res.linked + " fakturaer tilknyttet");
+    if (res.already_linked) parts.push(res.already_linked + " allerede tilknyttet");
+    showMsg("Kunder udledt: " + (parts.join(" · ") || "ingen ændringer"), false);
+  } catch (err) {
+    showMsg("Fejl ved udledning af kunder: " + err.message, true);
+  }
+}
+
+async function doCreateProjects() {
+  const cid = getCompanyId();
+  if (!cid) { showMsg("Vælg en virksomhed først", true); return; }
+  try {
+    const res = await apiFetch("/economic-invoices/create-historical-projects?company_id=" + encodeURIComponent(cid), { method: "POST" });
+    let msg = res.created + " historiske projekter oprettet";
+    if (res.skipped && res.skipped.length) msg += " · " + res.skipped.length + " sprunget over";
+    showMsg(msg, false);
+  } catch (err) {
+    showMsg("Fejl ved oprettelse af projekter: " + err.message, true);
+  }
+}
+
+async function doConfirmAll() {
+  const cid = getCompanyId();
+  if (!cid) { showMsg("Vælg en virksomhed først", true); return; }
+  try {
+    const res = await apiFetch("/reconciliation/confirm-all?company_id=" + encodeURIComponent(cid), { method: "POST" });
+    const msg = res.confirmed_transactions > 0
+      ? `Bekræftet ${res.confirmed_matches} matches på ${res.confirmed_transactions} transaktioner` +
+        (res.skipped_transactions ? ` — ${res.skipped_transactions} sprunget over (beløb passer ikke)` : "")
+      : "Ingen transaktioner at bekræfte (beløb stemmer ikke på nogen foreslåede)";
+    showMsg(msg, false);
+    _expandedRows.clear();
+    _mmPanelTxId = null;
+    await loadAndRender();
+  } catch (err) {
+    showMsg("Fejl: " + err.message, true);
+  }
+}
+
+function onFileChange(input) { if (input.files[0]) setFile(input.files[0]); }
+function setFile(f) {
+  _selectedFile = f;
+  document.getElementById("drop-label").textContent = "📄 " + f.name;
+  document.getElementById("drop-zone").classList.add("has-file");
+}
+function clearFile() {
+  _selectedFile = null;
+  document.getElementById("file-input").value = "";
+  document.getElementById("drop-label").textContent = "📂 Vælg eller slip CSV/XLSX";
+  document.getElementById("drop-zone").classList.remove("has-file");
+}
+
+async function doImport() {
+  const cid = getCompanyId();
+  if (!cid)           { showMsg("Vælg en virksomhed først", true); return; }
+  if (!_selectedFile) { showMsg("Vælg en fil først (klik boksen eller slip en fil)", true); return; }
+  const type = document.getElementById("import-type").value;
+  const endpoint = type === "bank"
+    ? "/bank-transactions/import-upload?company_id=" + encodeURIComponent(cid)
+    : "/economic-invoices/import-upload?company_id="  + encodeURIComponent(cid);
+  const fd = new FormData();
+  fd.append("file", _selectedFile);
+  try {
+    const r = await fetch(endpoint, { method: "POST", body: fd });
+    if (!r.ok) {
+      const body = await r.json().catch(() => ({}));
+      const d = body.detail;
+      throw new Error(Array.isArray(d) ? d.map(e => typeof e === "string" ? e : JSON.stringify(e)).join("; ") : String(d || r.status));
+    }
+    const res = await r.json();
+    showMsg("Import gennemført: " + res.rows_imported + " rækker importeret", false);
+    clearFile();
+    _unmatchedInvs = null;
+    await loadAndRender();
+  } catch (err) {
+    showMsg("Importfejl: " + err.message, true);
+  }
+}
+
+async function doConfirm(matchId) {
+  try {
+    await apiFetch("/reconciliation/" + encodeURIComponent(matchId) + "/confirm", { method: "POST" });
+    showMsg("Match bekræftet", false);
+    await loadAndRender();
+  } catch (err) {
+    showMsg("Bekræftelsesfejl: " + err.message, true);
+  }
+}
+
+async function doReject(matchId) {
+  try {
+    await apiFetch("/reconciliation/" + encodeURIComponent(matchId) + "/reject", { method: "POST" });
+    showMsg("Match afvist", false);
+    _unmatchedInvs = null;
+    await loadAndRender();
+  } catch (err) {
+    showMsg("Afvisningsfejl: " + err.message, true);
+  }
+}
+
+async function doManualMatch(txId, invId) {
+  try {
+    await apiFetch("/reconciliation/manual-match", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ bank_transaction_id: txId, economic_invoice_id: invId }),
+    });
+    showMsg("Manuel kobling oprettet", false);
+    _mmPanelTxId = null;
+    _unmatchedInvs = null;
+    await loadAndRender();
+  } catch (err) {
+    showMsg("Koblingsfejl: " + err.message, true);
+  }
+}
+
+// ── Clear data dialog ─────────────────────────────────────────────────────────
+let _clearType = null;
+
+async function showClearDialog(type) {
+  const cid = getCompanyId();
+  if (!cid) { showMsg("Vælg en virksomhed først", true); return; }
+  _clearType = type;
+
+  const overlay = document.getElementById("clear-overlay");
+  const title   = document.getElementById("clear-title");
+  const body    = document.getElementById("clear-body");
+  const confirmBtn = document.getElementById("clear-confirm-btn");
+
+  title.textContent = type === "bank" ? "Slet alle banktransaktioner" : "Slet alle fakturaer";
+  body.textContent  = "Henter information…";
+  confirmBtn.disabled = true;
+  overlay.classList.remove("hidden");
+
+  try {
+    const endpoint = type === "bank"
+      ? "/bank-transactions/clear-preview?company_id=" + encodeURIComponent(cid)
+      : "/economic-invoices/clear-preview?company_id="  + encodeURIComponent(cid);
+    const prev = await apiFetch(endpoint);
+
+    body.textContent = "";
+
+    const lines = type === "bank"
+      ? [
+          "Banktransaktioner: " + prev.bank_transaction_count,
+          "Aktive afstemninger: " + prev.active_match_count,
+          "Bekræftede afstemninger: " + prev.confirmed_match_count,
+        ]
+      : [
+          "Fakturaer: " + prev.invoice_count,
+          "Aktive afstemninger: " + prev.active_match_count,
+          "Bekræftede afstemninger: " + prev.confirmed_match_count,
+          "Tilknyttede projekter: " + prev.linked_project_count,
+        ];
+
+    lines.forEach(l => {
+      const p = document.createElement("p");
+      p.className = "clear-stat";
+      p.textContent = l;
+      body.appendChild(p);
+    });
+
+    if (prev.warnings && prev.warnings.length) {
+      prev.warnings.forEach(w => {
+        const p = document.createElement("p");
+        p.className = "clear-warn";
+        p.textContent = "⚠ " + w;
+        body.appendChild(p);
+      });
+    }
+
+    const zeroCount = type === "bank" ? prev.bank_transaction_count : prev.invoice_count;
+    confirmBtn.disabled = zeroCount === 0;
+    if (zeroCount === 0) {
+      const p = document.createElement("p");
+      p.className = "clear-stat";
+      p.textContent = "Ingen data at slette.";
+      body.appendChild(p);
+    }
+  } catch (err) {
+    body.textContent = "Fejl ved forhåndsvisning: " + err.message;
+  }
+}
+
+function hideClearDialog() {
+  document.getElementById("clear-overlay").classList.add("hidden");
+  _clearType = null;
+}
+
+async function executeClear() {
+  const cid = getCompanyId();
+  if (!cid || !_clearType) return;
+  document.getElementById("clear-confirm-btn").disabled = true;
+  try {
+    const endpoint = _clearType === "bank"
+      ? "/bank-transactions/clear-all?company_id=" + encodeURIComponent(cid)
+      : "/economic-invoices/clear-all?company_id="  + encodeURIComponent(cid);
+    const res = await apiFetch(endpoint, { method: "POST" });
+    hideClearDialog();
+    const deleted = _clearType === "bank" ? res.deleted_bank_transactions : res.deleted_invoices;
+    showMsg("Slettet: " + deleted + " poster, " + res.deleted_matches + " afstemninger fjernet", false);
+    _unmatchedInvs = null;
+    _expandedRows.clear();
+    _mmPanelTxId = null;
+    await loadAndRender();
+  } catch (err) {
+    showMsg("Sletningsfejl: " + err.message, true);
+    hideClearDialog();
+  }
+}
+
+// ── Drop zone ─────────────────────────────────────────────────────────────────
+(function () {
+  const dz = document.getElementById("drop-zone");
+  dz.addEventListener("click", () => document.getElementById("file-input").click());
+  dz.addEventListener("dragover",  e => { e.preventDefault(); dz.classList.add("drag-over"); });
+  dz.addEventListener("dragleave", ()  => dz.classList.remove("drag-over"));
+  dz.addEventListener("drop", e => {
+    e.preventDefault();
+    dz.classList.remove("drag-over");
+    const f = e.dataTransfer.files[0];
+    if (f) setFile(f);
+  });
+})();
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+loadCompanies();
+</script>
+<script src="/static/nav.js"></script>
+</body>
+</html>

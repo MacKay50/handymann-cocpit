@@ -1,0 +1,3042 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PLL Malerfirma — Demo Dashboard</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; background: #f0f2f5; color: #1a202c; font-size: 14px; line-height: 1.5; }
+
+    /* ── Selector ─── */
+    #selector { min-height: 100vh; background: #f0f2f5; }
+    .sel-header { background: #1a1a2e; color: #fff; padding: 2rem 2.5rem 1.8rem; }
+    .sel-header h1 { font-size: 1.5rem; font-weight: 700; letter-spacing: -.3px; }
+    .sel-header p  { color: #a0aec0; font-size: .88rem; margin-top: .3rem; }
+    .sel-header-links { display: flex; gap: .5rem; margin-top: 1rem; }
+    .sel-body { padding: 2rem 2.5rem; max-width: 900px; }
+    .sel-loading { color: #a0aec0; font-size: .9rem; padding: 2rem 0; }
+    .co-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 1rem; margin-bottom: 2rem; }
+    .co-card { background: #fff; border-radius: 12px; padding: 1.4rem 1.5rem; box-shadow: 0 1px 6px rgba(0,0,0,.08); cursor: pointer; border: 2px solid transparent; transition: border-color .15s, box-shadow .15s; display: flex; flex-direction: column; gap: .3rem; }
+    .co-card:hover { border-color: #4299e1; box-shadow: 0 3px 12px rgba(66,153,225,.2); }
+    .co-card-name { font-size: 1rem; font-weight: 700; color: #1a1a2e; }
+    .co-card-cvr  { font-size: .78rem; color: #a0aec0; }
+    .co-card-addr { font-size: .83rem; color: #718096; margin-top: .15rem; }
+    .co-card-stats { display: flex; gap: .5rem; margin-top: .7rem; flex-wrap: wrap; }
+    .co-stat { background: #f0f2f5; border-radius: 5px; padding: .15rem .5rem; font-size: .75rem; color: #4a5568; font-weight: 500; }
+    .co-card-enter { margin-top: .9rem; background: #2b6cb0; color: #fff; border: none; padding: .45rem 1rem; border-radius: 6px; font-size: .83rem; font-weight: 600; cursor: pointer; align-self: flex-start; }
+    .co-card-enter:hover { background: #2c5282; }
+    .sel-divider { border: none; border-top: 1px solid #e2e8f0; margin: 1.5rem 0; }
+    .sel-manual h3 { font-size: .85rem; font-weight: 600; color: #718096; margin-bottom: .6rem; }
+    .sel-manual-row { display: flex; gap: .5rem; }
+    .sel-manual-row input { flex: 1; padding: .55rem .8rem; border: 1.5px solid #cbd5e0; border-radius: 7px; font-size: .83rem; font-family: monospace; outline: none; }
+    .sel-manual-row input:focus { border-color: #4299e1; }
+    .sel-manual-row button { background: #2b6cb0; color: #fff; border: none; padding: .55rem 1.1rem; border-radius: 7px; font-size: .83rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .sel-manual-row button:hover { background: #2c5282; }
+
+    /* ── App ─── */
+    #app { display: none; min-height: 100vh; }
+
+    /* ── Topbar ─── */
+    .topbar { background: #1a1a2e; color: #fff; padding: .9rem 2rem; display: flex; align-items: center; justify-content: space-between; gap: .5rem; flex-wrap: wrap; }
+    .topbar h1 { font-size: 1.05rem; font-weight: 700; }
+    .topbar span { font-size: .78rem; color: #a0aec0; margin-left: .4rem; }
+    .topbar-links { display: flex; gap: .5rem; flex-wrap: wrap; }
+    .tlink { background: rgba(255,255,255,.1); border: 1px solid rgba(255,255,255,.2); color: #e2e8f0; text-decoration: none; padding: .28rem .75rem; border-radius: 5px; font-size: .78rem; cursor: pointer; }
+    .tlink:hover { background: rgba(255,255,255,.2); }
+    .tlink-api { background: rgba(72,187,120,.2); border-color: rgba(72,187,120,.4); color: #9ae6b4; }
+    .tlink-api:hover { background: rgba(72,187,120,.35); }
+
+    /* ── Tabs ─── */
+    .tabs { background: #fff; border-bottom: 2px solid #e2e8f0; padding: 0 2rem; display: flex; overflow-x: auto; gap: 0; }
+    .tab { padding: .7rem 1.1rem; cursor: pointer; color: #718096; font-size: .85rem; font-weight: 500; border-bottom: 2px solid transparent; margin-bottom: -2px; white-space: nowrap; }
+    .tab:hover { color: #2b6cb0; }
+    .tab.active { color: #2b6cb0; border-bottom-color: #2b6cb0; }
+
+    /* ── Content ─── */
+    .page { padding: 1.4rem 2rem; max-width: 1100px; }
+
+    /* ── Stat cards ─── */
+    /* ── Kompakt KPI-strip (erstatter stat-grid) ─── */
+    .kpi-strip { display: flex; gap: .6rem; flex-wrap: wrap; margin-bottom: 1.2rem; }
+    .kpi { background: #fff; border-radius: 8px; padding: .55rem 1rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); border-left: 3px solid #e2e8f0; display: flex; align-items: center; gap: .7rem; cursor: pointer; min-width: 140px; }
+    .kpi:hover { box-shadow: 0 2px 8px rgba(0,0,0,.1); }
+    .kpi.blue  { border-left-color: #4299e1; } .kpi.green  { border-left-color: #48bb78; }
+    .kpi.orange{ border-left-color: #ed8936; } .kpi.red    { border-left-color: #fc8181; }
+    .kpi.purple{ border-left-color: #9f7aea; } .kpi.teal   { border-left-color: #38b2ac; }
+    .kpi-val { font-size: 1.35rem; font-weight: 700; color: #1a202c; line-height: 1; }
+    .kpi-lbl { font-size: .72rem; color: #718096; line-height: 1.3; }
+    .kpi-lbl span { display: block; }
+    /* ── Handlingsliste ─── */
+    .action-list { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.07); margin-bottom: 1.3rem; overflow: hidden; }
+    .action-list-header { padding: .7rem 1rem; background: #f7fafc; border-bottom: 1px solid #e2e8f0; font-size: .75rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #718096; }
+    .action-row { display: flex; align-items: center; padding: .65rem 1rem; border-bottom: 1px solid #f0f2f5; gap: .8rem; }
+    .action-row:last-child { border-bottom: none; }
+    .action-row:hover { background: #f7fafc; }
+    .action-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .action-dot.red    { background: #fc8181; }
+    .action-dot.orange { background: #ed8936; }
+    .action-dot.blue   { background: #4299e1; }
+    .action-dot.green  { background: #48bb78; }
+    .action-main { flex: 1; }
+    .action-title { font-size: .87rem; font-weight: 500; color: #2d3748; }
+    .action-sub   { font-size: .76rem; color: #a0aec0; margin-top: .1rem; }
+    .action-btn { padding: .28rem .75rem; border: none; border-radius: 5px; font-size: .76rem; font-weight: 600; cursor: pointer; white-space: nowrap; }
+    .action-btn.primary { background: #2b6cb0; color: #fff; }
+    .action-btn.primary:hover { background: #2c5282; }
+    .action-btn.secondary { background: #e2e8f0; color: #4a5568; }
+    .action-btn.secondary:hover { background: #cbd5e0; }
+    .action-empty { padding: 1rem; text-align: center; color: #a0aec0; font-size: .85rem; }
+    /* ── Bevar gamle stat-klasser for andre tabs ─── */
+    .stat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(170px, 1fr)); gap: .9rem; margin-bottom: 1.4rem; }
+    .stat { background: #fff; border-radius: 10px; padding: 1.1rem 1.3rem; box-shadow: 0 1px 4px rgba(0,0,0,.07); border-left: 4px solid #e2e8f0; cursor: default; }
+    .stat.blue   { border-left-color: #4299e1; } .stat.green { border-left-color: #48bb78; }
+    .stat.orange { border-left-color: #ed8936; } .stat.red   { border-left-color: #fc8181; }
+    .stat.purple { border-left-color: #9f7aea; } .stat.teal  { border-left-color: #38b2ac; }
+    .stat .lbl { font-size: .72rem; color: #718096; text-transform: uppercase; letter-spacing: .4px; }
+    .stat .val { font-size: 1.9rem; font-weight: 700; color: #1a202c; margin-top: .15rem; }
+    .stat .sub { font-size: .77rem; color: #a0aec0; margin-top: .05rem; }
+
+    /* ── Section headings ─── */
+    .sh { display: flex; align-items: center; justify-content: space-between; margin: 1.3rem 0 .65rem; }
+    .sh h2 { font-size: .95rem; font-weight: 600; color: #2d3748; }
+    .cnt { background: #e2e8f0; color: #4a5568; font-size: .72rem; padding: .1rem .45rem; border-radius: 10px; font-weight: 600; }
+
+    /* ── Tables ─── */
+    .tbl-wrap { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.07); overflow: hidden; margin-bottom: 1.3rem; }
+    table { width: 100%; border-collapse: collapse; }
+    thead th { background: #f7fafc; text-align: left; padding: .6rem .9rem; font-size: .72rem; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; color: #718096; border-bottom: 1px solid #e2e8f0; }
+    tbody td { padding: .6rem .9rem; border-bottom: 1px solid #f0f2f5; font-size: .87rem; }
+    tbody tr:last-child td { border-bottom: none; }
+    .clickable-row { cursor: pointer; }
+    .clickable-row:hover td { background: #ebf8ff; }
+
+    /* ── Badges ─── */
+    .b { display: inline-block; padding: .13rem .5rem; border-radius: 4px; font-size: .72rem; font-weight: 600; }
+    .b-draft     { background: #ebf8ff; color: #2b6cb0; }
+    .b-sent      { background: #fefcbf; color: #744210; }
+    .b-paid      { background: #f0fff4; color: #276749; }
+    .b-cancelled { background: #fff5f5; color: #c53030; }
+    .b-active    { background: #f0fff4; color: #276749; }
+    .b-completed { background: #faf5ff; color: #553c9a; }
+    .b-accepted  { background: #f0fff4; color: #276749; }
+    .b-unread    { background: #ebf8ff; color: #2b6cb0; }
+    .b-read      { background: #f7fafc; color: #718096; }
+    .b-archived  { background: #fff5f5; color: #a0aec0; }
+    .b-converted { background: #f0fff4; color: #276749; }
+    .b-pending   { background: #fffaf0; color: #744210; }
+    .b-done      { background: #f0fff4; color: #276749; }
+    .b-phone     { background: #e9d8fd; color: #553c9a; }
+    .b-email     { background: #bee3f8; color: #2c5282; }
+
+    /* ── Inbox cards ─── */
+    .inbox-list { display: flex; flex-direction: column; gap: .6rem; margin-bottom: 1.3rem; }
+    .icard { background: #fff; border-radius: 10px; padding: .9rem 1.1rem; box-shadow: 0 1px 4px rgba(0,0,0,.07); display: flex; gap: .9rem; cursor: pointer; border-left: 3px solid transparent; }
+    .icard:hover { background: #ebf8ff; }
+    .icard.unread { border-left-color: #4299e1; }
+    .icard-icon { font-size: 1.3rem; flex-shrink: 0; }
+    .icard-sender { font-weight: 600; font-size: .9rem; }
+    .icard-subject { color: #4a5568; font-size: .83rem; margin-top: .1rem; }
+    .icard-meta { color: #a0aec0; font-size: .73rem; margin-top: .25rem; }
+
+    /* ── Deadline rows (overview widget) ─── */
+    .dl-list { display: flex; flex-direction: column; gap: .45rem; margin-bottom: 1.3rem; }
+    .dl-row { background: #fff; border-radius: 8px; padding: .65rem .9rem; box-shadow: 0 1px 3px rgba(0,0,0,.06); display: flex; align-items: center; justify-content: space-between; gap: .8rem; border-left: 3px solid transparent; }
+    .dl-row.overdue  { border-left-color: #fc8181; }
+    .dl-row.upcoming { border-left-color: #ed8936; }
+    .dl-title { font-weight: 500; font-size: .87rem; }
+    .dl-cat { font-size: .75rem; color: #a0aec0; }
+    .dl-date { font-size: .78rem; color: #718096; white-space: nowrap; }
+
+    /* ── Kalender tab ─── */
+    .cal-month { margin-bottom: 2rem; }
+    .cal-month-header { display:flex; align-items:center; justify-content:space-between; padding:.4rem 0; border-bottom:2px solid #e2e8f0; margin-bottom:.5rem; }
+    .cal-month-current .cal-month-header { border-bottom-color:#3182ce; }
+    .cal-month-past .cal-month-name { color:#a0aec0; }
+    .cal-month-name { font-size:1rem; font-weight:700; color:#2d3748; display:flex; align-items:center; gap:.5rem; }
+    .cal-now-badge { font-size:.72rem; font-weight:700; color:#fff; background:#3182ce; padding:.15em .55em; border-radius:20px; }
+    .cal-month-actions { display:flex; gap:.35rem; }
+    .cal-add-btn { background:none; border:1px solid #cbd5e0; color:#4a5568; border-radius:5px; padding:.22rem .65rem; font-size:.75rem; cursor:pointer; transition:background .12s; }
+    .cal-add-btn:hover { background:#edf2f7; }
+    .cal-items { display:flex; flex-direction:column; gap:.35rem; }
+    .cal-item { background:#fff; border-radius:8px; padding:.58rem .9rem; display:flex; align-items:center; gap:.75rem; box-shadow:0 1px 3px rgba(0,0,0,.06); border-left:3px solid #cbd5e0; cursor:pointer; transition:background .12s; }
+    .cal-item:hover { background:#f7fafc; }
+    .cal-item.cal-done { opacity:.5; }
+    .cal-deadline.cal-overdue  { border-left-color:#fc8181; }
+    .cal-deadline.cal-upcoming { border-left-color:#ed8936; }
+    .cal-deadline.cal-done     { border-left-color:#9ae6b4; }
+    .cal-appointment.cal-overdue  { border-left-color:#f6ad55; }
+    .cal-appointment.cal-upcoming { border-left-color:#63b3ed; }
+    .cal-appointment.cal-done     { border-left-color:#9ae6b4; }
+    .cal-icon { font-size:.95rem; flex-shrink:0; width:1.2rem; text-align:center; }
+    .cal-item-body { flex:1; min-width:0; }
+    .cal-item-title { font-weight:500; font-size:.87rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .cal-item-sub { font-size:.74rem; color:#718096; margin-top:.1rem; }
+    .cal-item-right { display:flex; align-items:center; gap:.45rem; flex-shrink:0; }
+    .cal-item-date { font-size:.78rem; color:#718096; white-space:nowrap; }
+    .cal-act { background:none; border:1px solid #e2e8f0; border-radius:4px; width:1.7rem; height:1.7rem; font-size:.78rem; cursor:pointer; display:flex; align-items:center; justify-content:center; transition:background .12s; }
+    .cal-act-done  { color:#276749; border-color:#9ae6b4; }
+    .cal-act-done:hover  { background:#c6f6d5; }
+    .cal-act-reopen{ color:#744210; border-color:#fbd38d; }
+    .cal-act-reopen:hover{ background:#fefcbf; }
+    .cal-act-del   { color:#742a2a; border-color:#feb2b2; }
+    .cal-act-del:hover   { background:#fed7d7; }
+    /* week-pill inside denne-uge widget */
+    .uge-row { display:flex; align-items:center; gap:.75rem; padding:.5rem .7rem; border-radius:7px; background:#fff; box-shadow:0 1px 3px rgba(0,0,0,.06); border-left:3px solid #cbd5e0; margin-bottom:.3rem; }
+    .uge-row.uge-overdue   { border-left-color:#fc8181; }
+    .uge-row.uge-deadline  { border-left-color:#ed8936; }
+    .uge-row.uge-appt      { border-left-color:#63b3ed; }
+    .uge-date { font-size:.73rem; font-weight:700; color:#718096; white-space:nowrap; width:4.5rem; }
+    .uge-title { font-size:.84rem; font-weight:500; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    .uge-sub   { font-size:.73rem; color:#a0aec0; white-space:nowrap; }
+    /* Tilbudsflow */
+    .btn-prep { background:none; border:1px solid #bee3f8; color:#2b6cb0; border-radius:5px; padding:.22rem .7rem; font-size:.73rem; cursor:pointer; white-space:nowrap; flex-shrink:0; }
+    .btn-prep:hover { background:#ebf8ff; }
+    .missing-list { list-style:none; margin:.5rem 0; padding:0; }
+    .missing-list li { background:#fffbeb; border:1px solid #f6e05e; border-radius:5px; padding:.3rem .7rem; margin-bottom:.3rem; font-size:.82rem; color:#744210; display:flex; align-items:center; gap:.5rem; }
+    .missing-list li button { background:none; border:none; color:#a0aec0; cursor:pointer; padding:0 .2rem; font-size:.85rem; flex-shrink:0; }
+    .qp-lines-table { width:100%; border-collapse:collapse; font-size:.8rem; }
+    .qp-lines-table th { background:#f7fafc; padding:.35rem .5rem; text-align:left; font-weight:600; color:#718096; }
+    .qp-lines-table td { padding:.3rem .4rem; border-top:1px solid #edf2f7; }
+    .qp-lines-table input { width:100%; border:1px solid #e2e8f0; border-radius:4px; padding:.2rem .4rem; font-size:.8rem; }
+    .qp-lines-table .td-del { width:1.8rem; text-align:center; }
+    .qp-lines-table .del-line { background:none; border:none; color:#fc8181; cursor:pointer; font-size:1rem; }
+    .qp-result { background:#f0fff4; border:1px solid #9ae6b4; border-radius:8px; padding:1rem; margin-top:.5rem; }
+    .qp-result h4 { margin:0 0 .5rem; color:#276749; font-size:.9rem; }
+    .qp-result-links { display:flex; flex-direction:column; gap:.4rem; margin-top:.5rem; }
+    .qp-result-links a { color:#2b6cb0; font-size:.85rem; text-decoration:none; }
+    .qp-result-links a:hover { text-decoration:underline; }
+    .qp-status-badge { display:inline-block; font-size:.72rem; font-weight:700; padding:.15em .55em; border-radius:20px; }
+    .qp-status-draft    { background:#ebf8ff; color:#2b6cb0; }
+    .qp-status-reviewed { background:#fefcbf; color:#744210; }
+    .qp-status-converted { background:#f0fff4; color:#276749; }
+    .qp-status-archived { background:#f7fafc; color:#718096; }
+
+    /* ── Two-col ─── */
+    .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    @media (max-width: 720px) { .two-col { grid-template-columns: 1fr; } }
+
+    /* ── Empty / error ─── */
+    .empty { background: #fff; border-radius: 10px; padding: 1.8rem; text-align: center; color: #a0aec0; font-size: .88rem; box-shadow: 0 1px 4px rgba(0,0,0,.07); margin-bottom: 1.3rem; }
+    .err-box { background: #fff5f5; border: 1px solid #fc8181; color: #c53030; border-radius: 8px; padding: .75rem .9rem; margin-bottom: .9rem; font-size: .85rem; }
+
+    /* ── Number formatting ─── */
+    .amt { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .amt-g { color: #276749; } .amt-r { color: #c53030; }
+
+    /* ── DRAWER ─── */
+    #overlay { position: fixed; inset: 0; background: rgba(0,0,0,.35); z-index: 100; display: none; }
+    #overlay.open { display: block; }
+    #drawer { position: fixed; top: 0; right: 0; bottom: 0; width: 500px; max-width: 95vw; background: #fff; z-index: 101; box-shadow: -4px 0 24px rgba(0,0,0,.18); display: flex; flex-direction: column; transform: translateX(100%); transition: transform .25s ease; overflow: hidden; }
+    #drawer.open { transform: translateX(0); }
+    .dw-header { padding: 1.1rem 1.3rem; border-bottom: 1px solid #e2e8f0; display: flex; align-items: center; justify-content: space-between; flex-shrink: 0; background: #f7fafc; }
+    .dw-header h3 { font-size: 1rem; font-weight: 700; color: #1a1a2e; }
+    .dw-close { background: none; border: none; font-size: 1.4rem; color: #718096; cursor: pointer; line-height: 1; padding: 0 .2rem; }
+    .dw-close:hover { color: #1a202c; }
+    .dw-body { overflow-y: auto; flex: 1; padding: 1.2rem 1.3rem; }
+    .dw-loading { display: flex; align-items: center; justify-content: center; height: 200px; color: #a0aec0; font-size: .9rem; }
+
+    /* ── Drawer detail styles ─── */
+    .dw-meta { display: flex; flex-direction: column; gap: .35rem; margin-bottom: 1.1rem; }
+    .dw-row { display: flex; gap: .5rem; align-items: baseline; }
+    .dw-label { font-size: .75rem; color: #a0aec0; text-transform: uppercase; letter-spacing: .4px; min-width: 90px; }
+    .dw-val { font-size: .88rem; color: #2d3748; }
+    .dw-link { color: #2b6cb0; cursor: pointer; text-decoration: underline; font-size: .88rem; }
+    .dw-link:hover { color: #2c5282; }
+    .dw-section { margin-top: 1.1rem; }
+    .dw-section h4 { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: #718096; margin-bottom: .55rem; padding-bottom: .3rem; border-bottom: 1px solid #e2e8f0; }
+    .dw-table-wrap { border-radius: 8px; overflow: hidden; border: 1px solid #e2e8f0; margin-bottom: .7rem; }
+    .dw-table-wrap table thead th { background: #f7fafc; font-size: .7rem; padding: .45rem .7rem; }
+    .dw-table-wrap table tbody td { padding: .5rem .7rem; font-size: .84rem; border-bottom: 1px solid #f0f2f5; }
+    .dw-table-wrap table tbody tr:last-child td { border-bottom: none; }
+    .dw-table-wrap .clickable-row:hover td { background: #ebf8ff; }
+    .dw-totals { background: #f7fafc; border-radius: 8px; padding: .8rem 1rem; margin-top: .5rem; }
+    .dw-total-row { display: flex; justify-content: space-between; font-size: .85rem; padding: .15rem 0; }
+    .dw-total-row.final { font-weight: 700; font-size: .95rem; border-top: 1px solid #e2e8f0; margin-top: .3rem; padding-top: .4rem; }
+    .dw-body-text { font-size: .87rem; color: #2d3748; white-space: pre-wrap; background: #f7fafc; border-radius: 8px; padding: .9rem 1rem; line-height: 1.6; margin-top: .5rem; }
+    .dw-small-list { display: flex; flex-direction: column; gap: .35rem; }
+    .dw-list-row { background: #f7fafc; border-radius: 6px; padding: .55rem .8rem; display: flex; align-items: center; justify-content: space-between; cursor: pointer; }
+    .dw-list-row:hover { background: #ebf8ff; }
+    .dw-list-title { font-size: .87rem; font-weight: 500; }
+    .dw-list-sub { font-size: .77rem; color: #a0aec0; margin-top: .1rem; }
+    .dw-nav { display: flex; align-items: center; gap: .4rem; margin-bottom: .8rem; }
+    .dw-back { background: none; border: 1px solid #e2e8f0; color: #718096; padding: .25rem .6rem; border-radius: 5px; cursor: pointer; font-size: .78rem; }
+    .dw-back:hover { background: #f0f2f5; }
+    .dw-actions { display: flex; gap: .5rem; margin-bottom: 1rem; }
+    .btn-edit { background: #ebf8ff; color: #2b6cb0; border: 1px solid #bee3f8; padding: .3rem .9rem; border-radius: 6px; font-size: .82rem; cursor: pointer; font-weight: 600; }
+    .btn-edit:hover { background: #bee3f8; }
+
+    /* ── Forms ─── */
+    .form-body { display: flex; flex-direction: column; gap: .85rem; }
+    .fg { display: flex; flex-direction: column; gap: .3rem; }
+    .fg label { font-size: .75rem; font-weight: 600; color: #4a5568; text-transform: uppercase; letter-spacing: .4px; }
+    .fg input, .fg select, .fg textarea {
+      padding: .55rem .75rem; border: 1.5px solid #cbd5e0; border-radius: 7px;
+      font-size: .88rem; color: #2d3748; font-family: inherit; background: #fff; outline: none;
+    }
+    .fg input:focus, .fg select:focus, .fg textarea:focus { border-color: #4299e1; box-shadow: 0 0 0 3px rgba(66,153,225,.15); }
+    .fg input.err, .fg select.err, .fg textarea.err { border-color: #fc8181; }
+    .fg .ferr { font-size: .75rem; color: #c53030; margin-top: .1rem; display: none; }
+    .fg .ferr.show { display: block; }
+    .fg textarea { resize: vertical; min-height: 72px; }
+    .form-2col { display: grid; grid-template-columns: 1fr 1fr; gap: .85rem; }
+    .form-actions { display: flex; gap: .6rem; justify-content: flex-end; margin-top: .5rem; padding-top: .9rem; border-top: 1px solid #e2e8f0; }
+    .btn-cancel { background: #f7fafc; color: #4a5568; border: 1px solid #e2e8f0; padding: .55rem 1.2rem; border-radius: 7px; font-size: .88rem; cursor: pointer; }
+    .btn-cancel:hover { background: #e2e8f0; }
+    .btn-save { background: #2b6cb0; color: #fff; border: none; padding: .55rem 1.4rem; border-radius: 7px; font-size: .88rem; cursor: pointer; font-weight: 600; }
+    .btn-save:hover { background: #2c5282; }
+    .btn-save:disabled { opacity: .55; cursor: not-allowed; }
+
+    /* ── Erfaringsbank ─── */
+    .erfar-card { background:#fff; border-radius:10px; box-shadow:0 1px 4px rgba(0,0,0,.07); padding:1rem 1.2rem; margin-bottom:.7rem; display:flex; gap:1rem; align-items:flex-start; border-left:4px solid #e2e8f0; }
+    .erfar-card.approved { border-left-color:#48bb78; }
+    .erfar-card.needs_review { border-left-color:#ed8936; }
+    .erfar-card-meta { flex:1; }
+    .erfar-card-title { font-weight:600; color:#1a202c; font-size:.93rem; }
+    .erfar-card-sub { font-size:.8rem; color:#718096; margin-top:.2rem; }
+    .erfar-card-price { font-size:1.1rem; font-weight:700; color:#2b6cb0; min-width:7rem; text-align:right; }
+    .erfar-import-box { background:#f7fafc; border:1.5px dashed #cbd5e0; border-radius:10px; padding:1.2rem 1.4rem; margin-bottom:1.2rem; }
+    .erfar-import-row { display:flex; gap:.5rem; margin-top:.5rem; }
+    .erfar-import-row input { flex:1; padding:.55rem .75rem; border:1.5px solid #cbd5e0; border-radius:7px; font-size:.88rem; font-family:monospace; outline:none; }
+    .erfar-import-row input:focus { border-color:#4299e1; }
+    .erfar-filter-row { display:flex; gap:.5rem; flex-wrap:wrap; margin-bottom:.8rem; }
+    .erfar-filter-row select, .erfar-filter-row input { padding:.35rem .65rem; border:1.5px solid #cbd5e0; border-radius:6px; font-size:.82rem; outline:none; }
+
+    /* ── Toast ─── */
+    #toast { position: fixed; bottom: 1.5rem; left: 50%; transform: translateX(-50%) translateY(80px); background: #276749; color: #fff; padding: .65rem 1.4rem; border-radius: 8px; font-size: .88rem; font-weight: 600; z-index: 200; transition: transform .25s ease; box-shadow: 0 4px 16px rgba(0,0,0,.2); pointer-events: none; }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ── Print / PDF ─────────────────────────────────────────────────────── */
+    #print-header { display: none; }
+
+    @media print {
+      @page { margin: 1.5cm; }
+
+      * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+      body { background: #fff !important; font-size: 11pt; color: #000; }
+
+      /* hide chrome */
+      #selector, .topbar, .tabs, #overlay, #drawer, #toast,
+      .no-print, .btn-edit, .dw-actions, .cal-act,
+      .erfar-import-box, .erfar-filter-row,
+      .btn-prep, .missing-list { display: none !important; }
+
+      #app { display: block !important; }
+      .page { padding: 0 !important; max-width: 100% !important; }
+
+      /* print header */
+      #print-header { display: block !important; padding: 0 0 .8rem; margin-bottom: 1.2rem;
+                      border-bottom: 2px solid #1a1a2e; }
+      #print-header h2 { font-size: 14pt; font-weight: 700; color: #1a1a2e; }
+      #print-header p  { font-size: 10pt; color: #718096; margin-top: .2rem; }
+
+      /* tables */
+      .tbl-wrap { box-shadow: none !important; border: 1px solid #d0d5dd; }
+      thead th { background: #f7fafc !important; border-bottom: 1.5px solid #d0d5dd !important; }
+      tbody td { border-bottom: 1px solid #e8ecf0 !important; }
+      .clickable-row:hover td { background: transparent !important; }
+
+      /* stat cards */
+      .stat-grid { grid-template-columns: repeat(4, 1fr) !important; }
+      .stat { box-shadow: none !important; border: 1px solid #d0d5dd !important; page-break-inside: avoid; }
+
+      /* calendar items */
+      .cal-item, .dl-row, .uge-row { box-shadow: none !important; border: 1px solid #d0d5dd !important; }
+      .icard { box-shadow: none !important; border: 1px solid #d0d5dd !important; border-left-width: 3px !important; }
+
+      /* erfaringsbank */
+      .erfar-card { box-shadow: none !important; border: 1px solid #d0d5dd !important; border-left-width: 4px !important; }
+
+      /* avoid orphaned rows */
+      tr { page-break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── SELECTOR ── -->
+<div id="selector">
+  <div class="sel-header">
+    <h1>Håndværker Business System</h1>
+    <p>Vælg en virksomhed for at åbne dashboard og administration</p>
+    <div class="sel-header-links">
+      <a class="tlink" href="/help" target="_blank">Hjælp ?</a>
+      <a class="tlink tlink-api" href="/docs" target="_blank">API / Swagger →</a>
+      <a class="tlink" href="/redoc" target="_blank">ReDoc</a>
+    </div>
+  </div>
+  <div class="sel-body">
+    <div id="sel-companies" class="sel-loading">Indlæser virksomheder…</div>
+    <hr class="sel-divider">
+    <div class="sel-manual">
+      <h3>Eller indtast company_id manuelt</h3>
+      <div class="sel-manual-row">
+        <input id="cid-input" type="text" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx" />
+        <button onclick="bootFromInput()">Åbn dashboard</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── APP ── -->
+<div id="app">
+  <div class="topbar" style="border-bottom:1px solid #e2e8f0;padding:.5rem 2rem;display:flex;align-items:center;justify-content:space-between;">
+    <div>
+      <h1 id="co-name" style="font-size:1rem;font-weight:600;color:#2d3748;margin:0;"></h1>
+      <span id="co-cvr" style="font-size:.76rem;color:#a0aec0;"></span>
+    </div>
+    <div>
+      <button class="tlink no-print" onclick="window.print()" title="Print eller gem som PDF (Ctrl+P)" style="background:none;border:1px solid #e2e8f0;padding:.25rem .7rem;border-radius:5px;cursor:pointer;font-size:.78rem;color:#718096;">🖨 Print / PDF</button>
+    </div>
+  </div>
+
+  <div id="print-header">
+    <h2 id="print-co-name">—</h2>
+    <p id="print-tab-name">—</p>
+  </div>
+
+  <!-- Gammel fane-bjælke skjult — navigation håndteres nu af nav.js topbar+sidebar -->
+  <div class="tabs" style="display:none">
+    <div class="tab active" data-tab="overview">Overblik</div>
+    <div class="tab" data-tab="invoices">Fakturaer</div>
+    <div class="tab" data-tab="reminders">Rykkere</div>
+    <div class="tab" data-tab="quotes">Tilbud</div>
+    <div class="tab" data-tab="projects">Projekter</div>
+    <div class="tab" data-tab="customers">Kunder</div>
+    <div class="tab" data-tab="employees">Medarbejdere</div>
+    <div class="tab" data-tab="inbox">Indbakke</div>
+    <div class="tab" data-tab="deadlines">Kalender</div>
+    <div class="tab" data-tab="erfaringsbank">Erfaringsbank</div>
+  </div>
+
+  <div class="page">
+    <div id="tab-overview"></div>
+    <div id="tab-invoices"      style="display:none"></div>
+    <div id="tab-reminders"     style="display:none"></div>
+    <div id="tab-quotes"        style="display:none"></div>
+    <div id="tab-projects"      style="display:none"></div>
+    <div id="tab-customers"     style="display:none"></div>
+    <div id="tab-employees"     style="display:none"></div>
+    <div id="tab-inbox"         style="display:none"></div>
+    <div id="tab-deadlines"     style="display:none"></div>
+    <div id="tab-erfaringsbank" style="display:none"></div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<!-- ── DRAWER ── -->
+<div id="overlay" onclick="closeDrawer()"></div>
+<div id="drawer">
+  <div class="dw-header">
+    <h3 id="dw-title">—</h3>
+    <div style="display:flex;gap:.4rem;align-items:center">
+      <button class="dw-close" onclick="printDrawer()" title="Print / Gem som PDF" style="font-size:.95rem;padding:.15rem .5rem">🖨</button>
+      <button class="dw-close" onclick="closeDrawer()">✕</button>
+    </div>
+  </div>
+  <div class="dw-body" id="dw-body"><div class="dw-loading">Indlæser…</div></div>
+</div>
+
+<script>
+"use strict";
+
+// ── State ──────────────────────────────────────────────────────────────────
+const BASE = "http://127.0.0.1:8000";
+let CID = null;
+let S = { company:{}, dash:{}, invoices:[], quotes:[], projects:[], customers:[], inbox:[], deadlines:[], appointments:[], employees:[] };
+const TAB_LABELS = { overview:"Overblik", invoices:"Fakturaer", quotes:"Tilbud", projects:"Projekter", customers:"Kunder", employees:"Medarbejdere", inbox:"Indbakke", deadlines:"Kalender", erfaringsbank:"Erfaringsbank" };
+let CM = {}, PM = {}, EM = {};  // customer/project/employee id→name maps
+
+// ── Boot ───────────────────────────────────────────────────────────────────
+(async function init() {
+  const cid = new URLSearchParams(location.search).get("company_id");
+  document.addEventListener("keydown", e => { if (e.key === "Escape") closeDrawer(); });
+  document.querySelectorAll(".tab").forEach(t =>
+    t.addEventListener("click", () => showTab(t.dataset.tab)));
+  if (cid) {
+    bootWithId(cid);
+  } else {
+    // Ingen company_id i URL — tjek om session-cookie stadig er gyldig
+    try {
+      const res = await fetch("/session/current", { credentials: "include" });
+      if (res.ok) {
+        const data = await res.json();
+        bootWithId(data.company_id); // Genoptag session uden URL-param
+        return;
+      }
+    } catch (_e) {}
+    loadSelector();
+  }
+})();
+
+async function loadSelector() {
+  document.getElementById("selector").style.display = "block";
+  document.getElementById("app").style.display = "none";
+  const el = document.getElementById("sel-companies");
+  try {
+    const companies = await api("/companies/");
+    if (!companies.length) {
+      el.innerHTML = '<p style="color:#a0aec0;font-size:.88rem">Ingen virksomheder oprettet endnu. Kør seed-scriptet eller opret en via API.</p>';
+      return;
+    }
+    // Fetch dashboard stats for each company in parallel for the stat chips
+    const stats = await Promise.all(companies.map(c =>
+      api(`/dashboard?company_id=${c.id}`).catch(() => null)
+    ));
+    el.innerHTML = `<div class="co-grid">${companies.map((c, i) => {
+      const d = stats[i];
+      const chips = d ? [
+        d.projects_active  ? `${d.projects_active} aktive projekter` : null,
+        d.invoices_outstanding ? `${fmt(d.invoices_outstanding)} kr udest.` : null,
+        d.inbox_unread     ? `${d.inbox_unread} ulæste` : null,
+        d.quotes_awaiting  ? `${d.quotes_awaiting} tilbud afventer` : null,
+      ].filter(Boolean) : [];
+      return `<div class="co-card" onclick="bootWithId('${c.id}')">
+        <div class="co-card-name">${esc(c.name)}</div>
+        ${c.cvr_masked ? `<div class="co-card-cvr">CVR ${esc(c.cvr_masked)}</div>` : ""}
+        ${c.address    ? `<div class="co-card-addr">${esc(c.address)}</div>` : ""}
+        ${chips.length ? `<div class="co-card-stats">${chips.map(ch => `<span class="co-stat">${ch}</span>`).join("")}</div>` : ""}
+        <button class="co-card-enter">Åbn dashboard →</button>
+      </div>`;
+    }).join("")}</div>`;
+  } catch(e) {
+    el.innerHTML = `<div class="err-box">Kunne ikke hente virksomheder: ${esc(e.message)}</div>`;
+  }
+}
+
+async function bootWithId(cid) {
+  CID = cid;
+  const activeTab = new URLSearchParams(location.search).get("tab") || "overview";
+  history.replaceState(null, "", `?company_id=${encodeURIComponent(CID)}&tab=${activeTab}`);
+  document.getElementById("selector").style.display = "none";
+  document.getElementById("app").style.display = "block";
+  // Establish Phase 1 session cookie so all API calls are authenticated.
+  await fetch("/session/select-company", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    credentials: "include",
+    body: JSON.stringify({ company_id: cid }),
+  });
+  await loadAll();
+  showTab(activeTab);
+}
+function bootFromInput() {
+  const cid = document.getElementById("cid-input").value.trim();
+  if (cid) bootWithId(cid);
+}
+function resetView() {
+  CID = null;
+  history.replaceState(null, "", location.pathname);
+  document.getElementById("app").style.display = "none";
+  loadSelector();
+}
+
+// ── API ─────────────────────────────────────────────────────────────────────
+async function api(path) {
+  const r = await fetch(BASE + path);
+  if (!r.ok) throw new Error(`${r.status} — ${path}`);
+  return r.json();
+}
+
+// ── Load all ────────────────────────────────────────────────────────────────
+async function loadAll() {
+  try {
+    const [company, dash, invoices, quotes, projects, customers, inbox, deadlines, appointments, employees, actionItems, calSuggestions] = await Promise.all([
+      api(`/companies/${CID}`),
+      api(`/dashboard?company_id=${CID}`),
+      api(`/invoices/?company_id=${CID}`),
+      api(`/quotes/?company_id=${CID}`),
+      api(`/projects/?company_id=${CID}`),
+      api(`/customers/?company_id=${CID}`),
+      api(`/inbox/?company_id=${CID}`),
+      api(`/admin-deadlines/?company_id=${CID}&active_only=true`),
+      api(`/appointments/?company_id=${CID}&active_only=true`),
+      api(`/employees/?company_id=${CID}`),
+      api(`/action-items/?company_id=${CID}&active_only=true`).catch(() => []),
+      api(`/calendar-suggestions/?company_id=${CID}&active_only=true`).catch(() => []),
+    ]);
+    S = { company, dash, invoices, quotes, projects, customers, inbox, deadlines, appointments, employees, actionItems, calSuggestions };
+    CM = Object.fromEntries(customers.map(c => [c.id, c.name]));
+    PM = Object.fromEntries(projects.map(p => [p.id, p.title]));
+    EM = Object.fromEntries(employees.map(e => [e.id, e.name]));
+    // Preload classifications for all inbox messages
+    const mcs = await api(`/message-classifications/?company_id=${CID}&active_only=true`).catch(() => []);
+    S._classifications = Object.fromEntries(mcs.map(mc => [mc.inbox_message_id, mc]));
+
+    document.getElementById("co-name").textContent = company.name;
+    document.getElementById("co-cvr").textContent = company.cvr_masked ? `CVR ${company.cvr_masked}` : "";
+    document.getElementById("print-co-name").textContent = company.name;
+    document.getElementById("print-tab-name").textContent = TAB_LABELS["overview"];
+    document.title = `${company.name} — Dashboard`;
+
+    renderAll();
+  } catch(e) {
+    document.getElementById("tab-overview").innerHTML = `<div class="err-box">Fejl ved indlæsning: ${e.message}</div>`;
+  }
+}
+
+function renderAll() {
+  renderOverview();
+  renderInvoicesTab();
+  renderQuotesTab();
+  renderProjectsTab();
+  renderCustomersTab();
+  renderEmployeesTab();
+  renderInboxTab();
+  renderDeadlinesTab();
+}
+
+// ── Tab switching ────────────────────────────────────────────────────────────
+function showTab(name) {
+  ["overview","invoices","reminders","quotes","projects","customers","employees","inbox","deadlines","erfaringsbank"].forEach(t => {
+    const el = document.getElementById(`tab-${t}`);
+    if (el) el.style.display = t === name ? "" : "none";
+  });
+  document.querySelectorAll(".tab").forEach(el =>
+    el.classList.toggle("active", el.dataset.tab === name));
+  document.getElementById("print-tab-name").textContent = TAB_LABELS[name] || name;
+  window._currentTab = name; // Eksponeret til nav.js for kontekstuel [+ Ny]
+  if (typeof window._navRefresh === "function") window._navRefresh();
+  if (name === "erfaringsbank") renderErfaringsbankTab();
+  if (name === "reminders") renderRemindersTab();
+}
+
+// ── OVERVIEW ────────────────────────────────────────────────────────────────
+function renderOverview() {
+  const d = S.dash;
+  const today = new Date().toISOString().slice(0,10);
+  const in14  = new Date(Date.now() + 14*864e5).toISOString().slice(0,10);
+
+  // ── Kompakt KPI-strip ──────────────────────────────────────────────────────
+  const kpis = [
+    { val: d.projects_active,    lbl: "Aktive\nprojekter",   color:"green",  tab:"projects" },
+    { val: d.invoices_outstanding ? fmt(d.invoices_outstanding)+" kr" : "0 kr",
+                                   lbl: "Udestående\nfakturaer", color: d.invoices_outstanding ? "orange" : "green", tab:"invoices" },
+    { val: d.invoices_overdue_count || 0, lbl: "Forfaldne\nfakturaer", color: d.invoices_overdue_count ? "red" : "green", tab:"invoices" },
+    { val: d.quotes_awaiting || 0, lbl: "Tilbud\nafventer svar", color:"purple", tab:"quotes" },
+    { val: d.inbox_unread || 0,    lbl: "Ulæste\nbeskeder",    color: d.inbox_unread ? "blue" : "green", tab:"inbox" },
+  ];
+  const kpiHtml = `<div class="kpi-strip">${kpis.map(k => `
+    <div class="kpi ${k.color}" onclick="${k.tab ? `showTab('${k.tab}')` : ''}">
+      <div class="kpi-val">${k.val}</div>
+      <div class="kpi-lbl">${k.lbl.split("\n").map(l => `<span>${esc(l)}</span>`).join("")}</div>
+    </div>`).join("")}</div>`;
+
+  // ── Handlingsliste: prioriterede ting der kræver handling ─────────────────
+  const actions = [];
+
+  // Forfaldne fakturaer — rød, højest prioritet
+  S.invoices.filter(i => i.status === "sent" && i.due_date && i.due_date < today).forEach(i => {
+    actions.push({ priority: 1, color:"red",
+      title: `Forfalden faktura — ${esc(CM[i.customer_id] || "Kunde")}`,
+      sub: `#${i.invoice_number || i.id.slice(0,8)} · ${fmt(i.total)} kr · forfalden ${fdate(i.due_date)}`,
+      btnLabel: "Send rykker", btnClass:"primary",
+      onclick: `showTab('invoices')` });
+  });
+
+  // Ulæste beskeder
+  S.inbox.filter(m => m.status === "unread").slice(0,3).forEach(m => {
+    actions.push({ priority: 2, color:"blue",
+      title: `Ny besked — ${esc(m.sender_name || m.sender_email || "Ukendt")}`,
+      sub: esc(m.subject || "Ingen emne"),
+      btnLabel: "Læs", btnClass:"secondary",
+      onclick: `showTab('inbox')` });
+  });
+
+  // Tilbud der venter svar og er tæt på udløb (< 7 dage)
+  const in7 = new Date(Date.now() + 7*864e5).toISOString().slice(0,10);
+  S.quotes.filter(q => q.status === "sent" && q.valid_until && q.valid_until <= in7).forEach(q => {
+    actions.push({ priority: 3, color:"orange",
+      title: `Tilbud udløber snart — ${esc(PM[q.project_id] || "Projekt")}`,
+      sub: `Gyldigt til ${fdate(q.valid_until)} · ${fmt(q.total)} kr`,
+      btnLabel: "Se tilbud", btnClass:"secondary",
+      onclick: `showTab('quotes')` });
+  });
+
+  // Kommende aftaler i dag
+  S.appointments.filter(a => a.status === "scheduled" && a.start_datetime.slice(0,10) === today).forEach(a => {
+    actions.push({ priority: 4, color:"green",
+      title: `Aftale i dag — ${esc(a.title)}`,
+      sub: `kl. ${a.start_datetime.slice(11,16)} · ${esc([typeLabel(a.appointment_type), PM[a.project_id]].filter(Boolean).join(" · "))}`,
+      btnLabel: "Se kalender", btnClass:"secondary",
+      onclick: `showTab('deadlines')` });
+  });
+
+  // Åbne akut/høj-prioritets opgaver
+  (S.actionItems||[]).filter(i => (i.status==="open"||i.status==="in_progress") && (i.priority==="urgent"||i.priority==="high")).forEach(i => {
+    const PRIO = { urgent:"Akut", high:"Høj" };
+    actions.push({ priority: 5, color: i.priority==="urgent" ? "red" : "orange",
+      title: esc(i.title),
+      sub: `${PRIO[i.priority]} prioritet${i.due_at ? " · forfald " + fdate(i.due_at) : ""}`,
+      btnLabel: "Udført", btnClass:"secondary",
+      onclick: null, markDone: i.id });
+  });
+
+  const actionHtml = actions.length
+    ? actions.map(a => `<div class="action-row">
+        <div class="action-dot ${a.color}"></div>
+        <div class="action-main">
+          <div class="action-title">${a.title}</div>
+          <div class="action-sub">${a.sub}</div>
+        </div>
+        ${a.markDone
+          ? `<button class="action-btn secondary" data-mark-done="${a.markDone}">Udført</button>`
+          : `<button class="action-btn ${a.btnClass}" onclick="${a.onclick}">${a.btnLabel}</button>`}
+      </div>`).join("")
+    : `<div class="action-empty">✓ Alt er i orden — ingen opgaver kræver øjeblikkelig handling</div>`;
+
+  // ── Kommende 14 dage ──────────────────────────────────────────────────────
+  const ugeItems = [
+    ...S.deadlines.filter(dl => dl.status==="pending" && dl.due_date <= in14)
+      .map(dl => ({_kind:"deadline", _date:dl.due_date, _time:"", _overdue: dl.due_date < today,
+        title: dl.title, sub: catLabel(dl.category)})),
+    ...S.appointments.filter(a => a.status==="scheduled" && a.start_datetime.slice(0,10) <= in14)
+      .map(a => ({_kind:"appointment", _date:a.start_datetime.slice(0,10),
+        _time: a.start_datetime.slice(11,16), _overdue: a.start_datetime.slice(0,10) < today,
+        title: a.title, sub: [typeLabel(a.appointment_type), PM[a.project_id]].filter(Boolean).join(" · ")})),
+  ].sort((a,b) => (a._date+a._time).localeCompare(b._date+b._time));
+
+  const outstandingInv = S.invoices.filter(i => i.status === "sent" && !(i.due_date && i.due_date < today));
+  const unread = S.inbox.filter(m => m.status === "unread");
+
+  document.getElementById("tab-overview").innerHTML = `
+    ${kpiHtml}
+
+    <div class="sh"><h2>Kræver handling</h2>${actions.length ? `<span class="cnt">${actions.length}</span>` : ""}</div>
+    <div class="action-list">
+      <div class="action-list-header">Prioriteret — øverst er mest presserende</div>
+      ${actionHtml}
+    </div>
+
+    <div class="two-col">
+      <div>
+        <div class="sh" style="cursor:pointer" onclick="showTab('deadlines')">
+          <h2>Kommende 14 dage</h2><span class="cnt">${ugeItems.length}</span>
+          <span style="font-size:.75rem;color:#718096;margin-left:auto">Se kalender →</span>
+        </div>
+        ${ugeItems.length ? ugeItems.slice(0,6).map(i => `
+          <div class="uge-row ${i._overdue ? 'uge-overdue' : i._kind==='deadline' ? 'uge-deadline' : 'uge-appt'}">
+            <div class="uge-date">${i._overdue ? '<span style="color:#c53030">Forfalden</span>' : fdateShort(i._date)+(i._time?' '+i._time:'')}</div>
+            <div class="uge-title">${esc(i.title)}</div>
+            <div class="uge-sub">${esc(i.sub)}</div>
+          </div>`).join("") : '<div class="empty">Ingen kommende poster</div>'}
+      </div>
+      <div>
+        <div class="sh"><h2>Udestående fakturaer</h2><span class="cnt">${outstandingInv.length}</span></div>
+        ${outstandingInv.length ? invoiceTableHtml(outstandingInv.slice(0,5)) : '<div class="empty">Ingen udestående fakturaer</div>'}
+        ${unread.length ? `
+          <div class="sh" style="margin-top:1rem"><h2>Ulæste beskeder</h2><span class="cnt">${unread.length}</span></div>
+          <div class="inbox-list">${unread.slice(0,3).map(inboxCardHtml).join("")}</div>` : ""}
+      </div>
+    </div>`;
+
+  wireInboxCards(document.getElementById("tab-overview"));
+  wireInvoiceRows(document.getElementById("tab-overview"));
+  document.getElementById("tab-overview").querySelectorAll("[data-mark-done]").forEach(btn =>
+    btn.addEventListener("click", async () => {
+      await apiPost(`/action-items/${btn.dataset.markDone}/transition?target_status=done`, {});
+      await loadAll();
+    }));
+}
+
+function _actionItemsWidgetHtml() {
+  const openItems = (S.actionItems||[]).filter(i => i.status === "open" || i.status === "in_progress");
+  if (!openItems.length) return "";
+  const PRIO_CLR = { urgent:"#c53030", high:"#c05621", normal:"#2b6cb0", low:"#718096" };
+  const PRIO_LBL = { urgent:"Akut", high:"Høj", normal:"Normal", low:"Lav" };
+  return `<div class="sh" style="margin-top:1.4rem"><h2>Opgaver — åbne</h2><span class="cnt">${openItems.length}</span></div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Opgave</th><th>Prioritet</th><th>Status</th><th>Forfald</th><th></th></tr></thead>
+    <tbody>${openItems.map(i => `<tr>
+      <td>${esc(i.title)}</td>
+      <td><span style="color:${PRIO_CLR[i.priority]||"#2b6cb0"};font-weight:600">${PRIO_LBL[i.priority]||i.priority}</span></td>
+      <td><span class="b b-${i.status}">${i.status==="in_progress"?"I gang":i.status==="open"?"Åben":i.status}</span></td>
+      <td>${i.due_at ? fdate(i.due_at) : "—"}</td>
+      <td><button class="btn-save" style="font-size:.75rem;padding:.2rem .6rem" data-mark-done="${i.id}">Udført</button></td>
+    </tr>`).join("")}
+    </tbody></table></div>`;
+}
+function _wireActionItems(el) {
+  el.querySelectorAll("[data-mark-done]").forEach(btn =>
+    btn.addEventListener("click", async () => {
+      await apiPost(`/action-items/${btn.dataset.markDone}/transition?target_status=done`, {});
+      await loadAll();
+    }));
+}
+
+// ── INVOICES TAB ────────────────────────────────────────────────────────────
+function renderInvoicesTab() {
+  const el = document.getElementById("tab-invoices");
+  el.innerHTML = `<div class="sh" style="margin-top:0">
+    <div style="display:flex;align-items:center;gap:.7rem"><h2>Alle fakturaer</h2><span class="cnt">${S.invoices.length}</span></div>
+    <div style="display:flex;gap:.45rem">
+      <a class="btn-prep" href="/export?type=invoices&company_id=${CID}" target="_blank">📥 Eksport</a>
+      <button class="btn-save" style="font-size:.8rem;padding:.35rem .9rem" onclick="formInvoice(null)">+ Ny faktura</button>
+    </div>
+  </div>
+  ${S.invoices.length ? invoiceTableHtml(S.invoices) : '<div class="empty">Ingen fakturaer endnu</div>'}`;
+  wireInvoiceRows(el);
+}
+
+function invoiceTableHtml(invs) {
+  return `<div class="tbl-wrap"><table>
+    <thead><tr><th>Nummer</th><th>Titel</th><th>Status</th><th>Kunde</th><th>Udstedt</th><th>Forfald</th><th>Total inkl. moms</th></tr></thead>
+    <tbody>${invs.map(i => `
+      <tr class="clickable-row" data-type="invoice" data-id="${i.id}">
+        <td><strong>${i.invoice_number}</strong></td>
+        <td>${esc(i.title||"—")}</td>
+        <td><span class="b b-${i.status}">${slabel(i.status)}</span></td>
+        <td>${esc(CM[i.customer_id]||"—")}</td>
+        <td>${fdate(i.issue_date)}</td>
+        <td>${fdate(i.due_date)}</td>
+        <td class="amt ${i.status==="paid"?"amt-g":""}">${fmt(i.total)} kr</td>
+      </tr>`).join("")}
+    </tbody></table></div>`;
+}
+function wireInvoiceRows(el) {
+  el.querySelectorAll("[data-type=invoice]").forEach(r =>
+    r.addEventListener("click", () => openDetail("invoice", r.dataset.id)));
+}
+
+// ── QUOTES TAB ─────────────────────────────────────────────────────────────
+function renderQuotesTab() {
+  const el = document.getElementById("tab-quotes");
+  el.innerHTML = `<div class="sh" style="margin-top:0">
+    <div style="display:flex;align-items:center;gap:.7rem"><h2>Alle tilbud</h2><span class="cnt">${S.quotes.length}</span></div>
+    <div style="display:flex;gap:.45rem">
+      <a class="btn-prep" href="/export?type=quotes&company_id=${CID}" target="_blank">📥 Eksport</a>
+      <button class="btn-save" style="font-size:.8rem;padding:.35rem .9rem" onclick="formQuote(null)">+ Nyt tilbud</button>
+    </div>
+  </div>
+  ${S.quotes.length ? quoteTableHtml(S.quotes) : '<div class="empty">Ingen tilbud endnu</div>'}`;
+  wireQuoteRows(el);
+}
+
+function quoteTableHtml(qs) {
+  return `<div class="tbl-wrap"><table>
+    <thead><tr><th>Nummer</th><th>Titel</th><th>Status</th><th>Projekt</th><th>Gyldigt til</th><th>Total ekskl. moms</th></tr></thead>
+    <tbody>${qs.map(q => `
+      <tr class="clickable-row" data-type="quote" data-id="${q.id}">
+        <td><strong>${q.quote_number}</strong></td>
+        <td>${esc(q.title||"—")}</td>
+        <td><span class="b b-${q.status}">${slabel(q.status)}</span></td>
+        <td>${esc(PM[q.project_id]||"—")}</td>
+        <td>${fdate(q.valid_until)}</td>
+        <td class="amt">${fmt(q.subtotal)} kr</td>
+      </tr>`).join("")}
+    </tbody></table></div>`;
+}
+function wireQuoteRows(el) {
+  el.querySelectorAll("[data-type=quote]").forEach(r =>
+    r.addEventListener("click", () => openDetail("quote", r.dataset.id)));
+}
+
+// ── PROJECTS TAB ────────────────────────────────────────────────────────────
+function renderProjectsTab() {
+  const el = document.getElementById("tab-projects");
+  el.innerHTML = `<div class="sh" style="margin-top:0">
+    <div style="display:flex;align-items:center;gap:.7rem"><h2>Alle projekter</h2><span class="cnt">${S.projects.length}</span></div>
+    <div style="display:flex;gap:.45rem">
+      <a class="btn-prep" href="/export?type=projects&company_id=${CID}" target="_blank">📥 Eksport</a>
+      <button class="btn-save" style="font-size:.8rem;padding:.35rem .9rem" onclick="formProject(null)">+ Nyt projekt</button>
+    </div>
+  </div>
+  ${S.projects.length ? projectTableHtml(S.projects) : '<div class="empty">Ingen projekter endnu</div>'}`;
+  wireProjectRows(el);
+}
+
+function projectTableHtml(projs) {
+  return `<div class="tbl-wrap"><table>
+    <thead><tr><th>Titel</th><th>Kunde</th><th>Status</th><th>Start</th><th>Slut</th></tr></thead>
+    <tbody>${projs.map(p => `
+      <tr class="clickable-row" data-type="project" data-id="${p.id}">
+        <td><strong>${esc(p.title)}</strong></td>
+        <td>${esc(CM[p.customer_id]||"—")}</td>
+        <td><span class="b b-${p.status}">${slabel(p.status)}</span></td>
+        <td>${fdate(p.start_date)}</td>
+        <td>${fdate(p.end_date)}</td>
+      </tr>`).join("")}
+    </tbody></table></div>`;
+}
+function wireProjectRows(el) {
+  el.querySelectorAll("[data-type=project]").forEach(r =>
+    r.addEventListener("click", () => openDetail("project", r.dataset.id)));
+}
+
+// ── CUSTOMERS TAB ────────────────────────────────────────────────────────────
+function renderCustomersTab() {
+  const el = document.getElementById("tab-customers");
+  el.innerHTML = `<div class="sh" style="margin-top:0">
+    <div style="display:flex;align-items:center;gap:.7rem"><h2>Alle kunder</h2><span class="cnt">${S.customers.length}</span></div>
+    <div style="display:flex;gap:.45rem">
+      <a class="btn-prep" href="/export?type=customers&company_id=${CID}" target="_blank">📥 Eksport</a>
+      <button class="btn-save" style="font-size:.8rem;padding:.35rem .9rem" onclick="formCustomer(null)">+ Ny kunde</button>
+      <button class="btn-prep" style="background:#c53030;color:#fff;border-color:#c53030;font-size:.8rem;padding:.35rem .9rem" onclick="resetDirectory()">Nulstil kartotek</button>
+    </div>
+  </div>
+  ${S.customers.length ? customerTableHtml(S.customers) : '<div class="empty">Ingen kunder endnu</div>'}`;
+  wireCustomerRows(el);
+}
+
+function _pratingBadge(r) {
+  if (!r) return "";
+  const m = { good: ["#f0fff4","#276749","God betaler"], neutral: ["#fffff0","#b7791f","Neutral"], bad: ["#fff5f5","#c53030","Dårlig betaler"] };
+  const [bg, col, lbl] = m[r] || ["#f7fafc","#718096", r];
+  return `<span style="background:${bg};color:${col};font-size:.7rem;font-weight:700;padding:.1rem .38rem;border-radius:4px;white-space:nowrap">${lbl}</span>`;
+}
+
+function customerTableHtml(custs) {
+  return `<div class="tbl-wrap"><table>
+    <thead><tr><th>Navn</th><th>Adresse</th><th>Telefon</th><th>E-mail</th><th>Betalingsevne</th><th>Igen?</th><th>Projekter</th></tr></thead>
+    <tbody>${custs.map(c => {
+      const projCount = S.projects.filter(p => p.customer_id === c.id).length;
+      const workAgain = c.work_again === false ? '<span style="color:#c53030;font-size:.75rem;font-weight:700">Nej</span>' : '<span style="color:#276749;font-size:.75rem">Ja</span>';
+      return `<tr class="clickable-row" data-type="customer" data-id="${c.id}">
+        <td><strong>${esc(c.name)}</strong></td>
+        <td>${esc(c.address||"—")}</td>
+        <td>${esc(c.phone||"—")}</td>
+        <td>${esc(c.email||"—")}</td>
+        <td>${_pratingBadge(c.payment_rating)}</td>
+        <td>${workAgain}</td>
+        <td>${projCount}</td>
+      </tr>`;}).join("")}
+    </tbody></table></div>`;
+}
+function wireCustomerRows(el) {
+  el.querySelectorAll("[data-type=customer]").forEach(r =>
+    r.addEventListener("click", () => openDetail("customer", r.dataset.id)));
+}
+
+// ── REMINDERS TAB ─────────────────────────────────────────────────────────────
+async function renderRemindersTab() {
+  const el = document.getElementById("tab-reminders");
+  el.innerHTML = '<div class="empty">Indlæser forfaldne fakturaer…</div>';
+  try {
+    const [overdue, cfg] = await Promise.all([
+      api(`/invoice-reminders/overdue?company_id=${CID}`),
+      api(`/invoice-reminders/config`),
+    ]);
+    const smtpNote = cfg.smtp_configured
+      ? `<span style="background:#f0fff4;color:#276749;font-size:.75rem;font-weight:600;padding:.1rem .45rem;border-radius:4px">📧 SMTP klar — ${esc(cfg.smtp_host)}</span>`
+      : `<span style="background:#fffff0;color:#744210;font-size:.75rem;font-weight:600;padding:.1rem .45rem;border-radius:4px">⚠ SMTP ikke konfigureret — rykkere genereres som tekst</span>`;
+    const levelLabels = {1:"1. rykker",2:"2. rykker",3:"Inkassovarsel"};
+    const feeLabels = {1: cfg.fee_ore_1, 2: cfg.fee_ore_2, 3: cfg.fee_ore_3};
+    el.innerHTML = `
+      <div class="sh" style="margin-top:0">
+        <div style="display:flex;align-items:center;gap:.7rem"><h2>Forfaldne fakturaer — rykkeroversigt</h2><span class="cnt">${overdue.length}</span></div>
+        <div style="display:flex;gap:.45rem;align-items:center">${smtpNote}</div>
+      </div>
+      ${overdue.length ? `<div class="tbl-wrap"><table>
+        <thead><tr>
+          <th>Faktura</th><th>Kunde</th><th style="text-align:right">Beløb</th>
+          <th>Forfald</th><th>Dage forfalden</th><th>Rykkere sendt</th><th>Næste rykker</th>
+        </tr></thead>
+        <tbody>${overdue.map(r => {
+          const sentBadges = r.reminders_sent.map(l => `<span style="background:#fefcbf;color:#744210;font-size:.7rem;font-weight:700;padding:.08rem .35rem;border-radius:3px;margin-right:.2rem">${l}.</span>`).join("");
+          const nextBtn = r.next_reminder_level <= 3
+            ? `<button class="btn-prep" style="font-size:.75rem;padding:.2rem .6rem" onclick="sendReminderQuick('${esc(r.invoice_id)}',${r.next_reminder_level},${feeLabels[r.next_reminder_level]||0},'${esc(r.invoice_number)}')">
+                Send ${esc(levelLabels[r.next_reminder_level])}
+               </button>`
+            : `<span style="font-size:.75rem;color:#276749">Alle sendt</span>`;
+          return `<tr>
+            <td><span class="dw-link" onclick="openDetail('invoice','${esc(r.invoice_id)}')" style="cursor:pointer;color:#2b6cb0;font-weight:600">${esc(r.invoice_number)}</span></td>
+            <td>${esc(r.customer_name)}${r.customer_email ? `<div style="font-size:.72rem;color:#718096">${esc(r.customer_email)}</div>` : ""}</td>
+            <td style="text-align:right;font-weight:600">${fmt(r.total)} kr</td>
+            <td style="color:#c53030">${fdate(r.due_date)}</td>
+            <td style="color:#c53030;font-weight:600">${r.days_overdue} dage</td>
+            <td>${sentBadges || "<span style='color:#a0aec0;font-size:.78rem'>Ingen</span>"}</td>
+            <td>${nextBtn}</td>
+          </tr>`;
+        }).join("")}
+        </tbody></table></div>`
+      : '<div class="empty">Ingen forfaldne fakturaer 🎉</div>'}`;
+  } catch(e) {
+    el.innerHTML = `<div class="err-box">Fejl ved indlæsning: ${esc(e.message)}</div>`;
+  }
+}
+
+async function sendReminderQuick(invoiceId, level, feeOre, invNumber) {
+  const levelLabels = {1:"1. rykker",2:"2. rykker",3:"Inkassovarsel"};
+  if (!confirm(`Send ${levelLabels[level]} for faktura ${invNumber}?`)) return;
+  try {
+    const r = await apiPost(`/invoice-reminders/send`, { invoice_id: invoiceId, level, fee_ore: feeOre });
+    showToast(r.message);
+    if (r.method !== "email") showReminderText(r.reminder.subject, r.reminder.body_text);
+    renderRemindersTab();
+  } catch(e) { showToast("Rykker fejlede: " + e.message, true); }
+}
+
+async function resetDirectory() {
+  if (!confirm(`Nulstil hele kundekartoteket for denne virksomhed?\n\nAlle kunder sættes til inaktive. Projekter og fakturaer bevares.\n\nDenne handling kan ikke fortrydes.`)) return;
+  try {
+    const r = await apiDel(`/customers/reset-directory?company_id=${CID}`);
+    showToast(`${r.deactivated} kunder deaktiveret`);
+    await loadAll();
+  } catch(e) { showToast("Nulstilling fejlede: " + e.message, true); }
+}
+
+// ── INBOX TAB ────────────────────────────────────────────────────────────────
+async function renderInboxTab() {
+  const el = document.getElementById("tab-inbox");
+  let cfgStatus = { configured: false };
+  try { cfgStatus = await api("/inbox/email-config-status"); } catch(_) {}
+
+  const fetchBtn = cfgStatus.configured
+    ? `<button id="btn-fetch-email" class="btn" style="margin-left:auto">Hent ny post</button>`
+    : `<button id="btn-fetch-email" class="btn" style="margin-left:auto;opacity:.5" title="Email ikke konfigureret — udfyld .env-filen">Hent ny post ⚠</button>`;
+
+  el.innerHTML = `
+    <div class="sh" style="margin-top:0">
+      <h2>Indbakke</h2><span class="cnt">${S.inbox.length}</span>
+      <div style="display:flex;gap:.45rem;margin-left:auto">
+        <a class="btn-prep" href="/export?type=inbox&company_id=${CID}" target="_blank">📥 Eksport</a>
+        ${fetchBtn}
+      </div>
+    </div>
+    ${!cfgStatus.configured ? `<div style="background:#fffbeb;border:1px solid #f6e05e;border-radius:8px;padding:.7rem 1rem;margin-bottom:1rem;font-size:.85rem;color:#744210">
+      Email-polling er ikke konfigureret. Udfyld <code>EMAIL_IMAP_HOST</code>, <code>EMAIL_USER</code> og <code>EMAIL_PASSWORD</code> i <code>.env</code>-filen og genstart serveren.
+    </div>` : ""}
+    ${S.inbox.length ? `<div class="inbox-list">${S.inbox.map(inboxCardHtml).join("")}</div>`
+      : '<div class="empty">Indbakken er tom</div>'}`;
+
+  wireInboxCards(el);
+
+  document.getElementById("btn-fetch-email").addEventListener("click", async () => {
+    if (!cfgStatus.configured) { showToast("Email er ikke konfigureret — se .env-filen", true); return; }
+    const btn = document.getElementById("btn-fetch-email");
+    btn.disabled = true; btn.textContent = "Henter…";
+    try {
+      const res = await apiPost(`/inbox/fetch-email?company_id=${CID}`, {});
+      showToast(res.imported > 0 ? `${res.imported} ny${res.imported===1?"":"e"} besked${res.imported===1?"":"er"} hentet` : "Ingen nye beskeder");
+      if (res.imported > 0) { await loadAll(); }
+    } catch(e) {
+      showToast("Fejl: " + e.message, true);
+      btn.disabled = false; btn.textContent = "Hent ny post";
+    }
+  });
+}
+
+const CAT_CHIP_LABELS = {
+  new_quote_request:"💬 Tilbudsforespørgsel", project_update:"🏗 Projektopdatering",
+  schedule_change:"📅 Aftaleændring", invoice_payment:"💳 Faktura/Betaling",
+  complaint:"⚠ Klage", general_inquiry:"❓ Generel", spam:"🚫 Spam", other:"📩 Andet",
+};
+const CAT_CHIP_COLOR = {
+  new_quote_request:"#2b6cb0", project_update:"#276749", schedule_change:"#744210",
+  invoice_payment:"#553c9a", complaint:"#c53030", general_inquiry:"#4a5568",
+  spam:"#718096", other:"#4a5568",
+};
+function inboxCardHtml(m) {
+  const icon = m.source === "phone" ? "📞" : m.source === "email" ? "📧" : "💬";
+  const cl = S._classifications || {};
+  const mc = cl[m.id];
+  const chipHtml = mc
+    ? `<span style="font-size:.72rem;padding:.12rem .5rem;border-radius:8px;background:${CAT_CHIP_COLOR[mc.primary_category]||"#4a5568"}22;color:${CAT_CHIP_COLOR[mc.primary_category]||"#4a5568"};font-weight:600">${CAT_CHIP_LABELS[mc.primary_category]||mc.primary_category}</span>`
+    : `<button class="btn" style="font-size:.7rem;padding:.12rem .5rem;opacity:.7" data-classify-inbox="${m.id}" title="Klassificer besked">Klassificer</button>`;
+  return `<div class="icard ${m.status}" data-type="inbox" data-id="${m.id}">
+    <div class="icard-icon">${icon}</div>
+    <div style="flex:1">
+      <div class="icard-sender">${esc(m.sender_name||"Ukendt")} <span class="b b-${m.source}">${slabel(m.source)}</span></div>
+      <div class="icard-subject">${esc(m.subject||"")}</div>
+      <div class="icard-meta">${esc((m.body||"").slice(0,90))}… · ${fdate(m.received_at)}</div>
+      <div style="margin-top:.3rem">${chipHtml}</div>
+    </div>
+    <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;flex-shrink:0">
+      <span class="b b-${m.status}">${slabel(m.status)}</span>
+      <button class="btn-prep" data-prep-inbox="${m.id}" title="Forbered tilbud ud fra denne besked">Forbered tilbud</button>
+    </div>
+  </div>`;
+}
+function wireInboxCards(el) {
+  el.querySelectorAll("[data-type=inbox]").forEach(r =>
+    r.addEventListener("click", e => {
+      if (e.target.closest("[data-prep-inbox],[data-classify-inbox]")) return;
+      openDetail("inbox", r.dataset.id);
+    }));
+  el.querySelectorAll("[data-prep-inbox]").forEach(btn =>
+    btn.addEventListener("click", e => { e.stopPropagation(); formQuotePreparation(btn.dataset.prepInbox); }));
+  el.querySelectorAll("[data-classify-inbox]").forEach(btn =>
+    btn.addEventListener("click", async e => {
+      e.stopPropagation();
+      btn.textContent = "…"; btn.disabled = true;
+      try {
+        const mc = await apiPost(`/message-classifications/classify/${btn.dataset.classifyInbox}`, {});
+        S._classifications = S._classifications || {};
+        S._classifications[btn.dataset.classifyInbox] = mc;
+        renderInboxTab();
+      } catch(ex) { showToast("Fejl ved klassificering: "+ex.message, true); btn.disabled=false; btn.textContent="Klassificer"; }
+    }));
+}
+
+// ── KALENDER TAB ─────────────────────────────────────────────────────────────
+const CAT_LABELS = { vat_report:"Moms", salary_run:"Løn", annual_accounts:"Årsregnskab",
+  corporate_tax:"Selskabsskat", insurance:"Forsikring", other:"Andet" };
+const TYPE_LABELS = { site_visit:"Besigtigelse", meeting:"Møde", estimate:"Tilbudsrunde", other:"Andet" };
+function catLabel(c)  { return CAT_LABELS[c]  || c || ""; }
+function typeLabel(t) { return TYPE_LABELS[t] || t || ""; }
+
+function fdateShort(d) {
+  if (!d) return "—";
+  const [,m,day] = String(d).slice(0,10).split("-");
+  const months = ["","jan","feb","mar","apr","maj","jun","jul","aug","sep","okt","nov","dec"];
+  return `${parseInt(day)}. ${months[parseInt(m)]}`;
+}
+
+function renderDeadlinesTab() {
+  const el = document.getElementById("tab-deadlines");
+  const today = new Date().toISOString().slice(0,10);
+  const thisMonth = today.slice(0,7);
+
+  // Normalise deadlines + appointments to a common shape
+  const allItems = [
+    ...S.deadlines.map(d => ({
+      _kind:"deadline", _id:d.id,
+      _date: d.due_date,
+      _time: "",
+      _overdue: d.due_date < today && d.status === "pending",
+      _done:   d.status !== "pending",
+      _status: d.status,
+      title: d.title,
+      sub:   catLabel(d.category),
+    })),
+    ...S.appointments.map(a => ({
+      _kind:"appointment", _id:a.id,
+      _date: a.start_datetime.slice(0,10),
+      _time: a.start_datetime.slice(11,16),
+      _overdue: a.start_datetime.slice(0,10) < today && a.status === "scheduled",
+      _done:   a.status !== "scheduled",
+      _status: a.status,
+      title: a.title,
+      sub:   [typeLabel(a.appointment_type), PM[a.project_id]].filter(Boolean).join(" · "),
+      loc:   a.location || "",
+    })),
+  ].sort((a,b) => (a._date+a._time).localeCompare(b._date+b._time));
+
+  // Group by YYYY-MM
+  const byMonth = {};
+  allItems.forEach(i => {
+    const k = i._date.slice(0,7);
+    (byMonth[k] = byMonth[k]||[]).push(i);
+  });
+  const months = Object.keys(byMonth).sort();
+
+  const total = allItems.filter(i => !i._done).length;
+  let html = `
+    <div class="sh" style="margin-top:0">
+      <h2>Kalender</h2><span class="cnt">${total}</span>
+      <div style="margin-left:auto;display:flex;gap:.4rem">
+        <a class="btn-prep" href="/export?type=deadlines&company_id=${CID}" target="_blank">📥 Frister</a>
+        <a class="btn-prep" href="/export?type=appointments&company_id=${CID}" target="_blank">📥 Aftaler</a>
+        <button class="btn" onclick="formDeadline()">+ Ny frist</button>
+        <button class="btn" onclick="formAppointment()">+ Ny aftale</button>
+      </div>
+    </div>`;
+
+  if (!months.length) {
+    html += '<div class="empty">Ingen poster endnu — klik "+ Ny frist" eller "+ Ny aftale"</div>';
+  } else {
+    for (const m of months) {
+      const [yr, mo] = m.split("-");
+      const mName = new Date(yr, mo-1, 1).toLocaleDateString("da-DK", {month:"long"});
+      const isCurrent = m === thisMonth;
+      const isPast = m < thisMonth;
+      const items = byMonth[m];
+      html += `
+        <div class="cal-month ${isCurrent?"cal-month-current":""} ${isPast?"cal-month-past":""}">
+          <div class="cal-month-header">
+            <span class="cal-month-name">
+              ${mName} ${yr}
+              ${isCurrent ? '<span class="cal-now-badge">Denne måned</span>' : ""}
+            </span>
+            <div class="cal-month-actions">
+              <button class="cal-add-btn" onclick="formDeadline('${m}')">+ Frist</button>
+              <button class="cal-add-btn" onclick="formAppointment('${m}')">+ Aftale</button>
+            </div>
+          </div>
+          <div class="cal-items">
+            ${items.map(calItemHtml).join("")}
+          </div>
+        </div>`;
+    }
+  }
+  // Calendar suggestions (pending)
+  const pendingSugg = (S.calSuggestions||[]).filter(s => s.status === "pending");
+  if (pendingSugg.length) {
+    html = `<div style="background:#fffbeb;border:1px solid #f6e05e;border-radius:10px;padding:1rem 1.2rem;margin-bottom:1rem">
+      <div class="sh" style="margin:0 0 .6rem"><h2 style="color:#744210">📬 Forslag fra beskeder</h2><span class="cnt">${pendingSugg.length}</span></div>
+      ${pendingSugg.map(s => `<div style="display:flex;align-items:center;gap:.7rem;padding:.5rem 0;border-bottom:1px solid #fef08a">
+        <div style="flex:1">
+          <strong>${esc(s.title||"Aftale")}</strong>
+          <span style="font-size:.8rem;color:#92400e;margin-left:.4rem">${typeLabel(s.event_type)}</span><br>
+          <span style="font-size:.82rem;color:#713f12">${s.new_start_at ? fdate(s.new_start_at)+(s.new_start_at.length>10?" kl."+s.new_start_at.slice(11,16):"") : "Tidspunkt ukendt"}
+          ${s.location ? " · "+esc(s.location) : ""}</span>
+        </div>
+        <button class="btn-save" style="font-size:.78rem;padding:.25rem .7rem" onclick="approveSuggestion('${s.id}')">Godkend</button>
+        <button class="btn" style="font-size:.78rem;padding:.25rem .7rem;background:#fff;color:#c53030;border-color:#fc8181" onclick="rejectSuggestion('${s.id}')">Afvis</button>
+      </div>`).join("")}
+    </div>` + html;
+  }
+  el.innerHTML = html;
+}
+
+async function approveSuggestion(id) {
+  try {
+    await apiPost(`/calendar-suggestions/${id}/approve`, {});
+    await apiPost(`/calendar-suggestions/${id}/apply`, {});
+    await loadAll();
+    showToast("Aftale oprettet fra forslag");
+  } catch(e) { showToast("Fejl: "+e.message, true); }
+}
+async function rejectSuggestion(id) {
+  try {
+    await apiPost(`/calendar-suggestions/${id}/reject`, {});
+    await loadAll();
+    showToast("Forslag afvist");
+  } catch(e) { showToast("Fejl: "+e.message, true); }
+}
+
+function calItemHtml(item) {
+  const icon = item._kind === "deadline" ? "🚩" : "📅";
+  const stateClass = item._overdue ? "cal-overdue" : item._done ? "cal-done" : "cal-upcoming";
+  const timeStr = item._time && item._time !== "00:00" ? ` kl. ${item._time}` : "";
+  const dateStr = fdateShort(item._date) + timeStr;
+
+  let actBtn = "";
+  if (item._kind === "deadline") {
+    if (!item._done)
+      actBtn = `<button class="cal-act cal-act-done" onclick="calAction('dl-complete','${item._id}');event.stopPropagation()" title="Marker udført">✓</button>`;
+    else
+      actBtn = `<button class="cal-act cal-act-reopen" onclick="calAction('dl-reopen','${item._id}');event.stopPropagation()" title="Genåbn">↩</button>`;
+  } else {
+    if (item._status === "scheduled")
+      actBtn = `<button class="cal-act cal-act-done" onclick="calAction('ap-complete','${item._id}');event.stopPropagation()" title="Marker udført">✓</button>`;
+  }
+  const delBtn = `<button class="cal-act cal-act-del" onclick="calAction('${item._kind==='deadline'?'dl':'ap'}-delete','${item._id}');event.stopPropagation()" title="Slet">×</button>`;
+
+  return `<div class="cal-item cal-${item._kind} ${stateClass}" onclick="calEditDrawer('${item._kind}','${item._id}')">
+    <span class="cal-icon">${icon}</span>
+    <div class="cal-item-body">
+      <div class="cal-item-title">${esc(item.title)}</div>
+      ${item.sub ? `<div class="cal-item-sub">${esc(item.sub)}${item.loc ? " · 📍 "+esc(item.loc) : ""}</div>` : ""}
+    </div>
+    <div class="cal-item-right">
+      <div class="cal-item-date">${dateStr}</div>
+      ${actBtn}${delBtn}
+    </div>
+  </div>`;
+}
+
+async function calAction(action, id) {
+  try {
+    if (action === "dl-complete") await apiPost(`/admin-deadlines/${id}/complete`, {});
+    else if (action === "dl-reopen")  await apiPost(`/admin-deadlines/${id}/reopen`, {});
+    else if (action === "ap-complete") await apiPost(`/appointments/${id}/complete`, {});
+    else if (action === "dl-delete")  await fetch(`${BASE}/admin-deadlines/${id}`, {method:"DELETE"});
+    else if (action === "ap-delete")  await fetch(`${BASE}/appointments/${id}`, {method:"DELETE"});
+    await loadAll();
+  } catch(e) { showToast("Fejl: "+e.message, true); }
+}
+
+function calEditDrawer(kind, id) {
+  if (kind === "deadline") {
+    const d = S.deadlines.find(x => x.id === id);
+    if (!d) return;
+    openDrawer("Rediger frist", `
+      <div class="form-group"><label>Titel</label>
+        <input id="ced-title" class="form-control" value="${esc(d.title)}"></div>
+      <div class="form-group"><label>Kategori</label>
+        <select id="ced-cat" class="form-control">${deadlineCatOptions(d.category)}</select></div>
+      <div class="form-group"><label>Forfaldsdato</label>
+        <input id="ced-date" type="date" class="form-control" value="${d.due_date}"></div>
+      <div class="form-group"><label>Noter</label>
+        <textarea id="ced-notes" class="form-control" rows="3">${esc(d.notes||"")}</textarea></div>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn-save" onclick="saveDeadlineEdit('${id}')">Gem ændringer</button>
+        <button class="btn" onclick="calAction('dl-complete','${id}').then(closeDrawer)" style="background:#c6f6d5;color:#276749">✓ Udført</button>
+      </div>`);
+  } else {
+    const a = S.appointments.find(x => x.id === id);
+    if (!a) return;
+    const dt = a.start_datetime.slice(0,16);
+    openDrawer("Rediger aftale", `
+      <div class="form-group"><label>Titel</label>
+        <input id="cea-title" class="form-control" value="${esc(a.title)}"></div>
+      <div class="form-group"><label>Type</label>
+        <select id="cea-type" class="form-control">${apptTypeOptions(a.appointment_type)}</select></div>
+      <div class="form-row">
+        <div class="form-group"><label>Dato &amp; tid (start)</label>
+          <input id="cea-start" type="datetime-local" class="form-control" value="${dt}"></div>
+        <div class="form-group"><label>Sluttid</label>
+          <input id="cea-end" type="datetime-local" class="form-control" value="${a.end_datetime.slice(0,16)}"></div>
+      </div>
+      <div class="form-group"><label>Sted</label>
+        <input id="cea-loc" class="form-control" value="${esc(a.location||"")}"></div>
+      <div class="form-group"><label>Projekt</label>
+        <select id="cea-proj" class="form-control">${projectOptions(a.project_id)}</select></div>
+      <div class="form-group"><label>Medarbejder</label>
+        <select id="cea-emp" class="form-control">${employeeOptions(a.employee_id)}</select></div>
+      <div class="form-group"><label>Noter</label>
+        <textarea id="cea-notes" class="form-control" rows="3">${esc(a.notes||"")}</textarea></div>
+      <div style="display:flex;gap:.5rem">
+        <button class="btn-save" onclick="saveApptEdit('${id}')">Gem ændringer</button>
+        <button class="btn" onclick="calAction('ap-complete','${id}').then(closeDrawer)" style="background:#c6f6d5;color:#276749">✓ Udført</button>
+      </div>`);
+  }
+}
+
+async function saveDeadlineEdit(id) {
+  const body = {
+    title: document.getElementById("ced-title").value.trim(),
+    category: document.getElementById("ced-cat").value,
+    due_date: document.getElementById("ced-date").value,
+    notes: document.getElementById("ced-notes").value.trim() || null,
+  };
+  if (!body.title || !body.due_date) { showToast("Titel og dato er påkrævet", true); return; }
+  try {
+    await apiPatch(`/admin-deadlines/${id}`, body);
+    closeDrawer(); await loadAll(); showToast("Frist opdateret");
+  } catch(e) { showToast("Fejl: "+e.message, true); }
+}
+
+async function saveApptEdit(id) {
+  const body = {
+    title: document.getElementById("cea-title").value.trim(),
+    appointment_type: document.getElementById("cea-type").value,
+    start_datetime: document.getElementById("cea-start").value,
+    end_datetime: document.getElementById("cea-end").value,
+    location: document.getElementById("cea-loc").value.trim() || null,
+    employee_id: document.getElementById("cea-emp").value || null,
+    notes: document.getElementById("cea-notes").value.trim() || null,
+  };
+  if (!body.title || !body.start_datetime) { showToast("Titel og starttid er påkrævet", true); return; }
+  try {
+    await apiPatch(`/appointments/${id}`, body);
+    closeDrawer(); await loadAll(); showToast("Aftale opdateret");
+  } catch(e) { showToast("Fejl: "+e.message, true); }
+}
+
+// deadline options helpers
+function deadlineCatOptions(sel) {
+  return Object.entries(CAT_LABELS).map(([v,l]) =>
+    `<option value="${v}" ${v===sel?"selected":""}>${l}</option>`).join("");
+}
+function apptTypeOptions(sel) {
+  return Object.entries(TYPE_LABELS).map(([v,l]) =>
+    `<option value="${v}" ${v===sel?"selected":""}>${l}</option>`).join("");
+}
+function projectOptions(sel) {
+  return '<option value="">— Intet projekt —</option>' +
+    S.projects.map(p => `<option value="${p.id}" ${p.id===sel?"selected":""}>${esc(p.title)}</option>`).join("");
+}
+function employeeOptions(sel) {
+  return '<option value="">— Ingen —</option>' +
+    S.employees.map(e => `<option value="${e.id}" ${e.id===sel?"selected":""}>${esc(e.name)}</option>`).join("");
+}
+
+// ── OPRET-FORMULARER ─────────────────────────────────────────────────────────
+function formDeadline(monthHint) {
+  const dateDefault = monthHint ? monthHint + "-01" : new Date().toISOString().slice(0,10);
+  openDrawer("Ny administrativ frist", `
+    <div class="form-group"><label>Titel *</label>
+      <input id="fd-title" class="form-control" placeholder="f.eks. Momsindberetning Q2"></div>
+    <div class="form-group"><label>Kategori</label>
+      <select id="fd-cat" class="form-control">${deadlineCatOptions("other")}</select></div>
+    <div class="form-group"><label>Forfaldsdato *</label>
+      <input id="fd-date" type="date" class="form-control" value="${dateDefault}"></div>
+    <div class="form-group"><label>Noter</label>
+      <textarea id="fd-notes" class="form-control" rows="3" placeholder="Valgfrie noter…"></textarea></div>
+    <button class="btn-save" onclick="saveDeadline()">Gem frist</button>`);
+}
+
+async function saveDeadline() {
+  const body = {
+    company_id: CID,
+    title: document.getElementById("fd-title").value.trim(),
+    category: document.getElementById("fd-cat").value,
+    due_date: document.getElementById("fd-date").value,
+    notes: document.getElementById("fd-notes").value.trim() || null,
+  };
+  if (!body.title || !body.due_date) { showToast("Titel og dato er påkrævet", true); return; }
+  try {
+    await apiPost("/admin-deadlines/", body);
+    closeDrawer(); await loadAll(); showToast("Frist oprettet");
+  } catch(e) { showToast("Fejl: "+e.message, true); }
+}
+
+function formAppointment(monthHint) {
+  const today = new Date();
+  let dateStr = today.toISOString().slice(0,10);
+  if (monthHint) dateStr = monthHint + "-" + String(today.getDate()).padStart(2,"0");
+  const startDt = dateStr + "T08:00";
+  const endDt   = dateStr + "T09:00";
+  openDrawer("Ny aftale", `
+    <div class="form-group"><label>Titel *</label>
+      <input id="fa-title" class="form-control" placeholder="f.eks. Byggemøde Skovvej 12"></div>
+    <div class="form-group"><label>Type</label>
+      <select id="fa-type" class="form-control">${apptTypeOptions("meeting")}</select></div>
+    <div class="form-row">
+      <div class="form-group"><label>Start *</label>
+        <input id="fa-start" type="datetime-local" class="form-control" value="${startDt}"></div>
+      <div class="form-group"><label>Slut</label>
+        <input id="fa-end" type="datetime-local" class="form-control" value="${endDt}"></div>
+    </div>
+    <div class="form-group"><label>Sted</label>
+      <input id="fa-loc" class="form-control" placeholder="Adresse eller sted"></div>
+    <div class="form-group"><label>Projekt (valgfrit)</label>
+      <select id="fa-proj" class="form-control">${projectOptions("")}</select></div>
+    <div class="form-group"><label>Medarbejder (valgfrit)</label>
+      <select id="fa-emp" class="form-control">${employeeOptions("")}</select></div>
+    <div class="form-group"><label>Noter</label>
+      <textarea id="fa-notes" class="form-control" rows="3" placeholder="Valgfrie noter…"></textarea></div>
+    <button class="btn-save" onclick="saveAppointment()">Gem aftale</button>`);
+}
+
+async function saveAppointment() {
+  const startVal = document.getElementById("fa-start").value;
+  let endVal   = document.getElementById("fa-end").value;
+  if (!endVal || endVal <= startVal) endVal = startVal.slice(0,13) + ":00";
+  const body = {
+    company_id: CID,
+    title: document.getElementById("fa-title").value.trim(),
+    appointment_type: document.getElementById("fa-type").value,
+    start_datetime: startVal,
+    end_datetime: endVal,
+    location: document.getElementById("fa-loc").value.trim() || null,
+    project_id: document.getElementById("fa-proj").value || null,
+    employee_id: document.getElementById("fa-emp").value || null,
+    notes: document.getElementById("fa-notes").value.trim() || null,
+  };
+  if (!body.title || !body.start_datetime) { showToast("Titel og starttid er påkrævet", true); return; }
+  try {
+    await apiPost("/appointments/", body);
+    closeDrawer(); await loadAll(); showToast("Aftale oprettet");
+  } catch(e) { showToast("Fejl: "+e.message, true); }
+}
+
+// dlRowHtml kept for backward compat (no longer used in main flow)
+function dlRowHtml(d) {
+  const cls = d._t === "overdue" ? "overdue" : d._t === "done" ? "" : "upcoming";
+  return `<div class="dl-row ${cls}">
+    <div><div class="dl-title">${esc(d.title||d.description||"Frist")}</div><div class="dl-cat">${esc(d.category||"")}</div></div>
+    <div style="display:flex;align-items:center;gap:.5rem">
+      <span class="b b-${d.status||d._t}">${slabel(d.status||d._t)}</span>
+      <div class="dl-date">${fdate(d.due_date)}</div>
+    </div>
+  </div>`;
+}
+
+// ── DRAWER ──────────────────────────────────────────────────────────────────
+function openDrawer(title, html) {
+  document.getElementById("dw-title").textContent = title;
+  document.getElementById("dw-body").innerHTML = html;
+  document.getElementById("overlay").classList.add("open");
+  document.getElementById("drawer").classList.add("open");
+}
+function closeDrawer() {
+  document.getElementById("overlay").classList.remove("open");
+  document.getElementById("drawer").classList.remove("open");
+}
+
+function printDrawer() {
+  const title   = document.getElementById("dw-title").textContent;
+  const coName  = document.getElementById("co-name").textContent;
+  const bodyHtml = document.getElementById("dw-body").innerHTML;
+  const win = window.open("", "_blank", "width=860,height=1000");
+  win.document.write(`<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<title>${title.replace(/</g,"&lt;")} — ${coName.replace(/</g,"&lt;")}</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  @page { margin: 1.8cm; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+         font-size: 11pt; color: #1a202c; background: #fff; line-height: 1.5; }
+  .print-hdr { border-bottom: 2px solid #1a1a2e; padding-bottom: .7rem; margin-bottom: 1.3rem; }
+  .print-hdr .company { font-size: 9pt; color: #718096; text-transform: uppercase; letter-spacing: .5px; }
+  .print-hdr h1 { font-size: 14pt; font-weight: 700; color: #1a1a2e; margin-top: .2rem; }
+  /* dw-meta */
+  .dw-meta { display: flex; flex-direction: column; gap: .3rem; margin-bottom: 1rem; }
+  .dw-row { display: flex; gap: .5rem; align-items: baseline; }
+  .dw-label { font-size: 8pt; color: #718096; text-transform: uppercase; letter-spacing: .4px; min-width: 90px; }
+  .dw-val { font-size: 10pt; color: #2d3748; }
+  /* sections */
+  .dw-section { margin-top: 1rem; }
+  .dw-section h4 { font-size: 8pt; font-weight: 700; text-transform: uppercase; letter-spacing: .5px;
+                   color: #718096; margin-bottom: .45rem; padding-bottom: .25rem; border-bottom: 1px solid #e2e8f0; }
+  /* tables */
+  .dw-table-wrap { border: 1px solid #d0d5dd; border-radius: 4px; overflow: hidden; margin-bottom: .7rem; }
+  table { width: 100%; border-collapse: collapse; }
+  thead th { background: #f7fafc; text-align: left; padding: .4rem .65rem; font-size: 8pt;
+             font-weight: 600; text-transform: uppercase; letter-spacing: .3px; color: #718096;
+             border-bottom: 1.5px solid #d0d5dd; }
+  tbody td { padding: .45rem .65rem; border-bottom: 1px solid #e8ecf0; font-size: 10pt; }
+  tbody tr:last-child td { border-bottom: none; }
+  /* totals */
+  .dw-totals { background: #f7fafc; border-radius: 4px; padding: .7rem .9rem; margin-top: .4rem; border: 1px solid #e2e8f0; }
+  .dw-total-row { display: flex; justify-content: space-between; font-size: 10pt; padding: .1rem 0; color: #4a5568; }
+  .dw-total-row.final { font-weight: 700; font-size: 11pt; border-top: 1px solid #e2e8f0;
+                        margin-top: .25rem; padding-top: .35rem; color: #1a202c; }
+  /* body text */
+  .dw-body-text { font-size: 10pt; color: #2d3748; white-space: pre-wrap; background: #f7fafc;
+                  border-radius: 4px; padding: .7rem .9rem; line-height: 1.6; border: 1px solid #e2e8f0; }
+  /* badges */
+  .b { display: inline-block; padding: .1rem .45rem; border-radius: 3px; font-size: 8pt; font-weight: 600; }
+  .b-draft     { background: #ebf8ff; color: #2b6cb0; } .b-sent     { background: #fefcbf; color: #744210; }
+  .b-paid      { background: #f0fff4; color: #276749; } .b-active   { background: #f0fff4; color: #276749; }
+  .b-accepted  { background: #f0fff4; color: #276749; } .b-rejected { background: #fff5f5; color: #c53030; }
+  .b-cancelled { background: #fff5f5; color: #c53030; } .b-pending  { background: #fffaf0; color: #744210; }
+  .b-completed { background: #faf5ff; color: #553c9a; } .b-done     { background: #f0fff4; color: #276749; }
+  .b-unread    { background: #ebf8ff; color: #2b6cb0; } .b-read     { background: #f7fafc; color: #718096; }
+  .b-archived  { background: #fff5f5; color: #a0aec0; }
+  /* amounts */
+  .amt { font-weight: 600; } .amt-g { color: #276749; } .amt-r { color: #c53030; }
+  /* small list */
+  .dw-small-list { display: flex; flex-direction: column; gap: .3rem; }
+  .dw-list-row { background: #f7fafc; border-radius: 4px; padding: .45rem .7rem; border: 1px solid #e2e8f0; }
+  .dw-list-title { font-size: 10pt; font-weight: 500; }
+  .dw-list-sub { font-size: 8.5pt; color: #718096; }
+  /* hide interactive / screen-only chrome */
+  button, .dw-actions, .dw-nav, .dw-back, .btn-edit, .btn-prep,
+  .missing-list, .qp-result, .dw-loading, .accept-link-row,
+  [onclick], a[href] { display: none !important; }
+  /* but keep plain <a> text that has no href — shouldn't exist, just safe */
+  tr { page-break-inside: avoid; }
+</style>
+</head>
+<body>
+<div class="print-hdr">
+  <div class="company">${coName.replace(/</g,"&lt;")}</div>
+  <h1>${title.replace(/</g,"&lt;")}</h1>
+</div>
+${bodyHtml}
+<script>
+  // remove remaining buttons the CSS display:none can't catch (inline styles)
+  document.querySelectorAll("button,[onclick]").forEach(el => el.remove());
+  window.print();
+<\/script>
+</body>
+</html>`);
+  win.document.close();
+}
+function drawerLoading(title) {
+  document.getElementById("dw-title").textContent = title;
+  document.getElementById("dw-body").innerHTML = '<div class="dw-loading">Indlæser…</div>';
+  document.getElementById("overlay").classList.add("open");
+  document.getElementById("drawer").classList.add("open");
+}
+function drawerError(msg) {
+  document.getElementById("dw-body").innerHTML = `<div class="err-box">${esc(msg)}</div>`;
+}
+
+// ── OPEN DETAIL (dispatcher) ─────────────────────────────────────────────────
+async function openDetail(type, id) {
+  try {
+    if      (type === "invoice")  await detailInvoice(id);
+    else if (type === "quote")    await detailQuote(id);
+    else if (type === "project")  await detailProject(id);
+    else if (type === "customer") await detailCustomer(id);
+    else if (type === "employee") await detailEmployee(id);
+    else if (type === "inbox")    detailInbox(id);
+  } catch(e) {
+    drawerError("Fejl: " + e.message);
+  }
+}
+
+// ── DETAIL: INVOICE ──────────────────────────────────────────────────────────
+async function detailInvoice(id) {
+  drawerLoading("Faktura");
+  const [inv, reminders] = await Promise.all([
+    api(`/invoices/${id}`),
+    api(`/invoice-reminders/history?invoice_id=${id}`).catch(() => []),
+  ]);
+  const custName = CM[inv.customer_id] || "—";
+  const projTitle = PM[inv.project_id] || "—";
+
+  const linesHtml = `<div class="dw-table-wrap"><table>
+    <thead><tr><th>Beskrivelse</th><th>Enhed</th><th style="text-align:right">Antal</th><th style="text-align:right">Stk.pris</th><th style="text-align:right">Total</th></tr></thead>
+    <tbody>${(inv.lines||[]).map(l => `
+      <tr><td>${esc(l.description)}</td><td>${esc(l.unit||"")}</td>
+        <td style="text-align:right">${l.quantity}</td>
+        <td style="text-align:right">${fmt(l.unit_price)} kr</td>
+        <td style="text-align:right" class="amt">${fmt(l.line_total)} kr</td>
+      </tr>`).join("")}
+    </tbody></table></div>
+  <div class="dw-totals">
+    <div class="dw-total-row"><span>Subtotal ekskl. moms</span><span class="amt">${fmt(inv.subtotal)} kr</span></div>
+    <div class="dw-total-row"><span>Moms 25%</span><span class="amt">${fmt(inv.vat_amount)} kr</span></div>
+    <div class="dw-total-row final"><span>Total inkl. moms</span><span class="amt">${fmt(inv.total)} kr</span></div>
+  </div>`;
+
+  const sentLevels = reminders.map(r => r.level);
+  const nextLevel = sentLevels.length ? Math.max(...sentLevels) + 1 : 1;
+  const canSendReminder = inv.status === "sent" && nextLevel <= 3;
+  const levelLabels = {1: "1. rykker", 2: "2. rykker", 3: "Inkassovarsel"};
+  const methodLabels = {email: "📧 Sendt via email", manual: "📋 Genereret (manuel)", failed: "⚠ SMTP fejl"};
+
+  const reminderHistory = reminders.length ? `
+    <div class="dw-small-list" style="margin-bottom:.5rem">${reminders.map(r => `
+      <div class="dw-list-row">
+        <div>
+          <div class="dw-list-title">${esc(levelLabels[r.level]||"Rykker")} — ${methodLabels[r.method]||r.method}</div>
+          <div class="dw-list-sub">${fdtime(r.created_at)}${r.email_to ? " → " + esc(r.email_to) : ""}${r.fee_ore > 0 ? " | Gebyr: " + fmt(r.fee_ore/100) + " kr" : ""}</div>
+        </div>
+        <button class="btn-prep" style="font-size:.72rem;padding:.15rem .5rem" onclick="showReminderText(${JSON.stringify(r.subject)},${JSON.stringify(r.body_text)})">Vis tekst</button>
+      </div>`).join("")}
+    </div>` : '<p style="font-size:.85rem;color:#a0aec0">Ingen rykkere sendt endnu</p>';
+
+  const reminderBtn = canSendReminder
+    ? `<button class="btn-edit" style="background:#fffaf0;color:#744210;border-color:#f6ad55"
+         onclick="sendReminderFromDrawer('${inv.id}',${nextLevel})">
+         Send ${esc(levelLabels[nextLevel]||"rykker")}
+       </button>`
+    : inv.status !== "sent"
+      ? `<span style="font-size:.78rem;color:#a0aec0">Rykker kun for sendte fakturaer</span>`
+      : `<span style="font-size:.78rem;color:#276749">Alle 3 rykkere er sendt</span>`;
+
+  openDrawer(inv.invoice_number, `
+    <div class="dw-actions">
+      <button class="btn-edit" onclick="formInvoice('${inv.id}')">Rediger faktura</button>
+      <a class="btn-edit" href="/print?type=invoice&id=${inv.id}&company_id=${CID}" target="_blank" style="text-decoration:none">🖨 PDF-dokument</a>
+    </div>
+    <div class="dw-meta">
+      <div class="dw-row"><span class="dw-label">Status</span><span class="dw-val"><span class="b b-${inv.status}">${slabel(inv.status)}</span></span></div>
+      <div class="dw-row"><span class="dw-label">Titel</span><span class="dw-val">${esc(inv.title||"—")}</span></div>
+      <div class="dw-row"><span class="dw-label">Kunde</span><span class="dw-link" onclick="openDetail('customer','${inv.customer_id}')">${esc(custName)}</span></div>
+      <div class="dw-row"><span class="dw-label">Projekt</span><span class="dw-link" onclick="openDetail('project','${inv.project_id}')">${esc(projTitle)}</span></div>
+      <div class="dw-row"><span class="dw-label">Udstedt</span><span class="dw-val">${fdate(inv.issue_date)}</span></div>
+      <div class="dw-row"><span class="dw-label">Forfald</span><span class="dw-val">${fdate(inv.due_date)}</span></div>
+    </div>
+    <div class="dw-section">
+      <h4>Rykkere</h4>
+      ${reminderHistory}
+      <div style="margin-top:.4rem">${reminderBtn}</div>
+    </div>
+    <div class="dw-section"><h4>Linjer</h4>${linesHtml}</div>`);
+}
+
+async function sendReminderFromDrawer(invoiceId, level) {
+  const levelLabels = {1: "1. rykker", 2: "2. rykker", 3: "Inkassovarsel"};
+  if (!confirm(`Send ${levelLabels[level]||"rykker"} for denne faktura?`)) return;
+  try {
+    const r = await apiPost(`/invoice-reminders/send`, { invoice_id: invoiceId, level });
+    showToast(r.message);
+    // Reopen drawer to refresh reminder history
+    await detailInvoice(invoiceId);
+    if (r.method !== "email") showReminderText(r.reminder.subject, r.reminder.body_text);
+  } catch(e) { showToast("Rykker fejlede: " + e.message, true); }
+}
+
+function showReminderText(subject, body) {
+  const win = window.open("", "_blank", "width=640,height=520,scrollbars=yes");
+  win.document.write(`<!DOCTYPE html><html><head><meta charset="UTF-8">
+    <title>${subject.replace(/</g,"&lt;")}</title>
+    <style>body{font-family:monospace;font-size:13px;padding:1.5rem;background:#fff;color:#1a202c;line-height:1.6}
+    h2{font-size:1rem;margin-bottom:1rem;color:#2d3748}pre{white-space:pre-wrap;background:#f7fafc;padding:1rem;border-radius:6px;border:1px solid #e2e8f0}
+    .copy-btn{background:#2b6cb0;color:#fff;border:none;padding:.4rem 1rem;border-radius:5px;cursor:pointer;font-size:.85rem;margin-top:.8rem}
+    </style></head><body>
+    <h2>Emne: ${subject.replace(/</g,"&lt;")}</h2>
+    <pre id="body-text">${body.replace(/</g,"&lt;")}</pre>
+    <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('body-text').textContent).then(()=>this.textContent='Kopieret ✓')">Kopiér tekst</button>
+    </body></html>`);
+  win.document.close();
+}
+
+// ── DETAIL: QUOTE ────────────────────────────────────────────────────────────
+async function detailQuote(id) {
+  drawerLoading("Tilbud");
+  const q = S.quotes.find(x => x.id === id);
+  if (!q) throw new Error("Tilbud ikke fundet");
+
+  const projTitle = PM[q.project_id] || "—";
+  const linesHtml = (q.lines||[]).length ? `<div class="dw-table-wrap"><table>
+    <thead><tr><th>Beskrivelse</th><th>Enhed</th><th style="text-align:right">Antal</th><th style="text-align:right">Stk.pris</th><th style="text-align:right">Total</th></tr></thead>
+    <tbody>${q.lines.map(l => `
+      <tr><td>${esc(l.description)}</td><td>${esc(l.unit||"")}</td>
+        <td style="text-align:right">${l.quantity}</td>
+        <td style="text-align:right">${fmt(l.unit_price)} kr</td>
+        <td style="text-align:right" class="amt">${fmt(l.line_total)} kr</td>
+      </tr>`).join("")}
+    </tbody></table></div>
+    <div class="dw-totals">
+      <div class="dw-total-row"><span>Subtotal ekskl. moms</span><span class="amt">${fmt(q.subtotal)} kr</span></div>
+      <div class="dw-total-row"><span>Moms 25%</span><span class="amt">${fmt(q.vat_amount)} kr</span></div>
+      <div class="dw-total-row final"><span>Total inkl. moms</span><span class="amt">${fmt(q.total)} kr</span></div>
+    </div>` : '<div class="empty">Ingen linjer</div>';
+
+  const invLink = q.invoice_id
+    ? `<div class="dw-row"><span class="dw-label">Faktura</span><span class="dw-link" onclick="openDetail('invoice','${q.invoice_id}')">Se faktura →</span></div>`
+    : "";
+
+  const acceptLinkHtml = q.accept_token
+    ? `<div class="dw-row"><span class="dw-label">Kundlink</span>
+        <span class="dw-val" style="display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+          <a href="/accept?token=${q.accept_token}" target="_blank"
+             style="color:#2b6cb0;font-size:.82rem;word-break:break-all">/accept?token=${q.accept_token.slice(0,8)}…</a>
+          <button class="btn" style="font-size:.72rem;padding:.15rem .5rem;flex-shrink:0"
+            onclick="navigator.clipboard.writeText('${location.origin}/accept?token=${q.accept_token}');showToast('Link kopieret')">Kopiér</button>
+        </span></div>`
+    : "";
+
+  const acceptanceHtml = q.status === "accepted"
+    ? `<div style="background:#f0fff4;border:1.5px solid #68d391;border-radius:8px;padding:.7rem 1rem;margin-bottom:.8rem;font-size:.88rem;color:#276749">
+        ✅ <strong>Accepteret af kunden</strong> — ${fdate(q.accepted_at)}
+       </div>`
+    : q.status === "rejected"
+    ? `<div style="background:#fff5f5;border:1.5px solid #fc8181;border-radius:8px;padding:.7rem 1rem;margin-bottom:.8rem;font-size:.88rem;color:#c53030">
+        ❌ <strong>Afvist af kunden</strong> — ${fdate(q.rejected_at)}
+        ${q.rejection_reason ? `<div style="margin-top:.3rem;color:#9b2c2c">${esc(q.rejection_reason)}</div>` : ""}
+       </div>`
+    : "";
+
+  openDrawer(q.quote_number, `
+    <div class="dw-actions">
+      <button class="btn-edit" onclick="formQuote('${q.id}')">Rediger tilbud</button>
+      <a class="btn-edit" href="/print?type=quote&id=${q.id}&company_id=${CID}" target="_blank" style="text-decoration:none">🖨 PDF-dokument</a>
+    </div>
+    ${acceptanceHtml}
+    <div class="dw-meta">
+      <div class="dw-row"><span class="dw-label">Status</span><span class="dw-val"><span class="b b-${q.status}">${slabel(q.status)}</span></span></div>
+      <div class="dw-row"><span class="dw-label">Titel</span><span class="dw-val">${esc(q.title||"—")}</span></div>
+      <div class="dw-row"><span class="dw-label">Projekt</span><span class="dw-link" onclick="openDetail('project','${q.project_id}')">${esc(projTitle)}</span></div>
+      <div class="dw-row"><span class="dw-label">Gyldigt til</span><span class="dw-val">${fdate(q.valid_until)}</span></div>
+      ${invLink}
+      ${acceptLinkHtml}
+      ${q.notes ? `<div class="dw-row"><span class="dw-label">Notat</span><span class="dw-val">${esc(q.notes)}</span></div>` : ""}
+    </div>
+    <div class="dw-section"><h4>Linjer</h4>${linesHtml}</div>`);
+}
+
+// ── DETAIL: PROJECT ──────────────────────────────────────────────────────────
+async function detailProject(id) {
+  drawerLoading("Projekt");
+  const proj = S.projects.find(p => p.id === id) || await api(`/projects/${id}`);
+  const [timeEntries, expenses] = await Promise.all([
+    api(`/time-entries/?project_id=${id}`),
+    api(`/expenses/?project_id=${id}`),
+  ]);
+  const projQuotes = S.quotes.filter(q => q.project_id === id);
+  const projInvoices = S.invoices.filter(i => i.project_id === id);
+  const custName = CM[proj.customer_id] || "—";
+
+  const totalHours = timeEntries.reduce((s, t) => s + (t.hours||0), 0);
+  const totalExpenses = expenses.reduce((s, e) => s + (e.amount_excl_vat||0), 0);
+
+  const teHtml = timeEntries.length ? `<div class="dw-table-wrap"><table>
+    <thead><tr><th>Dato</th><th>Medarbejder</th><th style="text-align:right">Timer</th><th>Fakturerbar</th></tr></thead>
+    <tbody>${timeEntries.map(t => `
+      <tr><td>${fdate(t.date)}</td><td>${esc(EM[t.employee_id]||"—")}</td>
+        <td style="text-align:right">${t.hours}</td>
+        <td>${t.billable ? "Ja" : "Nej"}</td></tr>`).join("")}
+    </tbody></table></div>
+    <div style="font-size:.82rem;color:#718096;margin-top:.3rem">I alt: <strong>${totalHours} timer</strong></div>`
+    : '<p style="font-size:.85rem;color:#a0aec0">Ingen timer registreret</p>';
+
+  const exHtml = expenses.length ? `<div class="dw-table-wrap"><table>
+    <thead><tr><th>Dato</th><th>Beskrivelse</th><th>Kategori</th><th style="text-align:right">Beløb</th></tr></thead>
+    <tbody>${expenses.map(e => `
+      <tr><td>${fdate(e.date)}</td><td>${esc(e.description||"")}</td><td>${esc(e.category||"")}</td>
+        <td style="text-align:right" class="amt">${fmt(e.amount_excl_vat)} kr</td></tr>`).join("")}
+    </tbody></table></div>
+    <div style="font-size:.82rem;color:#718096;margin-top:.3rem">I alt: <strong>${fmt(totalExpenses)} kr</strong></div>`
+    : '<p style="font-size:.85rem;color:#a0aec0">Ingen udgifter registreret</p>';
+
+  const qLinks = projQuotes.length ? `<div class="dw-small-list">${projQuotes.map(q =>
+    `<div class="dw-list-row" onclick="openDetail('quote','${q.id}')">
+      <div><div class="dw-list-title">${esc(q.quote_number)} — ${esc(q.title||"")}</div></div>
+      <span class="b b-${q.status}">${slabel(q.status)}</span>
+    </div>`).join("")}</div>`
+    : '<p style="font-size:.85rem;color:#a0aec0">Ingen tilbud</p>';
+
+  const iLinks = projInvoices.length ? `<div class="dw-small-list">${projInvoices.map(i =>
+    `<div class="dw-list-row" onclick="openDetail('invoice','${i.id}')">
+      <div><div class="dw-list-title">${esc(i.invoice_number)}</div><div class="dw-list-sub">${fmt(i.total)} kr inkl. moms</div></div>
+      <span class="b b-${i.status}">${slabel(i.status)}</span>
+    </div>`).join("")}</div>`
+    : '<p style="font-size:.85rem;color:#a0aec0">Ingen fakturaer</p>';
+
+  openDrawer(proj.title, `
+    <div class="dw-actions"><button class="btn-edit" onclick="formProject('${proj.id}')">Rediger projekt</button></div>
+    <div class="dw-meta">
+      <div class="dw-row"><span class="dw-label">Status</span><span class="dw-val"><span class="b b-${proj.status}">${slabel(proj.status)}</span></span></div>
+      <div class="dw-row"><span class="dw-label">Kunde</span><span class="dw-link" onclick="openDetail('customer','${proj.customer_id}')">${esc(custName)}</span></div>
+      <div class="dw-row"><span class="dw-label">Start</span><span class="dw-val">${fdate(proj.start_date)}</span></div>
+      <div class="dw-row"><span class="dw-label">Slut</span><span class="dw-val">${fdate(proj.end_date)}</span></div>
+      ${proj.address ? `<div class="dw-row"><span class="dw-label">Adresse</span><span class="dw-val">${esc(proj.address)}</span></div>` : ""}
+      ${proj.notes ? `<div class="dw-row"><span class="dw-label">Notat</span><span class="dw-val">${esc(proj.notes)}</span></div>` : ""}
+    </div>
+    <div class="dw-section"><h4>Tilbud</h4>${qLinks}</div>
+    <div class="dw-section"><h4>Fakturaer</h4>${iLinks}</div>
+    <div class="dw-section"><h4>Registrerede timer</h4>${teHtml}</div>
+    <div class="dw-section"><h4>Udgifter</h4>${exHtml}</div>`);
+}
+
+// ── DETAIL: CUSTOMER ─────────────────────────────────────────────────────────
+async function detailCustomer(id) {
+  drawerLoading("Kunde");
+  const c = S.customers.find(x => x.id === id);
+  if (!c) throw new Error("Kunde ikke fundet");
+  const custProjects = S.projects.filter(p => p.customer_id === id);
+  const custInvoices = S.invoices.filter(i => i.customer_id === id);
+  const totalInvoiced = custInvoices.reduce((s, i) => s + (i.total||0), 0);
+  const totalPaid = custInvoices.filter(i => i.status === "paid").reduce((s, i) => s + (i.total||0), 0);
+
+  const projLinks = custProjects.length ? `<div class="dw-small-list">${custProjects.map(p =>
+    `<div class="dw-list-row" onclick="openDetail('project','${p.id}')">
+      <div><div class="dw-list-title">${esc(p.title)}</div></div>
+      <span class="b b-${p.status}">${slabel(p.status)}</span>
+    </div>`).join("")}</div>`
+    : '<p style="font-size:.85rem;color:#a0aec0">Ingen projekter</p>';
+
+  const invLinks = custInvoices.length ? `<div class="dw-small-list">${custInvoices.map(i =>
+    `<div class="dw-list-row" onclick="openDetail('invoice','${i.id}')">
+      <div><div class="dw-list-title">${esc(i.invoice_number)}</div><div class="dw-list-sub">${fmt(i.total)} kr inkl. moms</div></div>
+      <span class="b b-${i.status}">${slabel(i.status)}</span>
+    </div>`).join("")}</div>`
+    : '<p style="font-size:.85rem;color:#a0aec0">Ingen fakturaer</p>';
+
+  const ratingOpts = [
+    ["", "— Ikke vurderet —"],
+    ["good", "God betaler"],
+    ["neutral", "Neutral"],
+    ["bad", "Dårlig betaler"],
+  ].map(([v, lbl]) => `<option value="${v}"${(c.payment_rating||"") === v ? " selected" : ""}>${lbl}</option>`).join("");
+
+  const workAgainChecked = c.work_again !== false ? "checked" : "";
+
+  openDrawer(c.name, `
+    <div class="dw-actions">
+      <button class="btn-edit" onclick="formCustomer('${c.id}')">Rediger kunde</button>
+      <button class="btn-edit" style="background:#fff5f5;color:#c53030;border-color:#feb2b2" onclick="deactivateCustomer('${c.id}','${esc(c.name)}')">Deaktivér</button>
+      <button class="btn-edit" style="background:#c53030;color:#fff;border-color:#9b2c2c" onclick="deleteCustomerPermanent('${c.id}','${esc(c.name)}')">Slet permanent</button>
+    </div>
+    <div class="dw-meta">
+      ${c.cvr_masked ? `<div class="dw-row"><span class="dw-label">CVR</span><span class="dw-val">${esc(c.cvr_masked)}</span></div>` : ""}
+      <div class="dw-row"><span class="dw-label">Adresse</span><span class="dw-val">${esc(c.address||"—")}</span></div>
+      ${c.phone ? `<div class="dw-row"><span class="dw-label">Telefon</span><span class="dw-val">${esc(c.phone)}</span></div>` : ""}
+      ${c.email ? `<div class="dw-row"><span class="dw-label">E-mail</span><span class="dw-val">${esc(c.email)}</span></div>` : ""}
+      ${c.notes ? `<div class="dw-row"><span class="dw-label">Notat</span><span class="dw-val">${esc(c.notes)}</span></div>` : ""}
+    </div>
+    <div class="dw-totals" style="margin-bottom:1rem">
+      <div class="dw-total-row"><span>Samlet faktureret</span><span class="amt">${fmt(totalInvoiced)} kr inkl. moms</span></div>
+      <div class="dw-total-row"><span>Heraf betalt</span><span class="amt amt-g">${fmt(totalPaid)} kr</span></div>
+    </div>
+    <div class="dw-section">
+      <h4>Betalingsevne &amp; fremtidigt samarbejde</h4>
+      <div style="display:flex;flex-direction:column;gap:.55rem;max-width:420px;margin-bottom:.5rem">
+        <div style="display:flex;align-items:center;gap:.6rem">
+          <label style="font-size:.78rem;color:#718096;min-width:110px">Betalingsevne</label>
+          <select id="cpr-rating-${c.id}" style="flex:1;padding:.3rem .5rem;border:1.5px solid #e2e8f0;border-radius:5px;font-size:.82rem">${ratingOpts}</select>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:.6rem">
+          <label style="font-size:.78rem;color:#718096;min-width:110px;padding-top:.3rem">Kommentar</label>
+          <textarea id="cpr-comment-${c.id}" style="flex:1;padding:.3rem .5rem;border:1.5px solid #e2e8f0;border-radius:5px;font-size:.82rem;resize:vertical;height:60px">${esc(c.payment_comment||"")}</textarea>
+        </div>
+        <div style="display:flex;align-items:center;gap:.6rem">
+          <label style="font-size:.78rem;color:#718096;min-width:110px">Arbejde igen?</label>
+          <label style="display:flex;align-items:center;gap:.4rem;font-size:.82rem;cursor:pointer">
+            <input type="checkbox" id="cpr-again-${c.id}" ${workAgainChecked} style="width:15px;height:15px;cursor:pointer">
+            Ja, vi ønsker at lave mere arbejde for denne kunde
+          </label>
+        </div>
+        <div>
+          <button class="btn-save" style="font-size:.78rem;padding:.28rem .75rem" onclick="saveCustomerRating('${c.id}')">Gem vurdering</button>
+        </div>
+      </div>
+    </div>
+    <div class="dw-section"><h4>Projekter</h4>${projLinks}</div>
+    <div class="dw-section"><h4>Fakturaer</h4>${invLinks}</div>`);
+}
+
+async function saveCustomerRating(id) {
+  const rating  = document.getElementById(`cpr-rating-${id}`)?.value || null;
+  const comment = document.getElementById(`cpr-comment-${id}`)?.value?.trim() || null;
+  const again   = document.getElementById(`cpr-again-${id}`)?.checked ?? true;
+  try {
+    await apiPatch(`/customers/${id}`, { payment_rating: rating || null, payment_comment: comment, work_again: again });
+    showToast("Vurdering gemt");
+    await loadAll();
+  } catch(e) { showToast("Gem fejlede: " + e.message, true); }
+}
+
+async function deactivateCustomer(id, name) {
+  if (!confirm(`Deaktivér kunden "${name}"?\n\nKunden skjules fra listen men projekter bevares.`)) return;
+  try {
+    await apiDel(`/customers/${id}`);
+    showToast(`"${name}" deaktiveret`);
+    closeDrawer();
+    await loadAll();
+  } catch(e) { showToast("Deaktivering fejlede: " + e.message, true); }
+}
+
+async function deleteCustomerPermanent(id, name) {
+  if (!confirm(`SLET PERMANENT: "${name}"?\n\nKunden fjernes helt fra databasen. Dette kan ikke fortrydes.\n\nHvis kunden har projekter afvises sletningen.`)) return;
+  try {
+    await apiDel(`/customers/${id}/permanent`);
+    showToast(`"${name}" slettet permanent`);
+    closeDrawer();
+    await loadAll();
+  } catch(e) { showToast("Sletning fejlede: " + e.message, true); }
+}
+
+// ── DETAIL: INBOX ────────────────────────────────────────────────────────────
+function detailInbox(id) {
+  const m = S.inbox.find(x => x.id === id);
+  if (!m) { drawerError("Besked ikke fundet"); return; }
+  const icon = m.source === "phone" ? "📞" : m.source === "email" ? "📧" : "💬";
+  openDrawer(`${icon} ${m.sender_name||"Ukendt"}`, `
+    <div class="dw-actions">
+      <button class="btn-edit" onclick="formQuotePreparation('${m.id}')">Forbered tilbud</button>
+    </div>
+    <div class="dw-meta">
+      <div class="dw-row"><span class="dw-label">Kilde</span><span class="dw-val"><span class="b b-${m.source}">${slabel(m.source)}</span></span></div>
+      <div class="dw-row"><span class="dw-label">Status</span><span class="dw-val"><span class="b b-${m.status}">${slabel(m.status)}</span></span></div>
+      ${m.sender_phone ? `<div class="dw-row"><span class="dw-label">Telefon</span><span class="dw-val">${esc(m.sender_phone)}</span></div>` : ""}
+      ${m.sender_email ? `<div class="dw-row"><span class="dw-label">E-mail</span><span class="dw-val">${esc(m.sender_email)}</span></div>` : ""}
+      <div class="dw-row"><span class="dw-label">Modtaget</span><span class="dw-val">${fdate(m.received_at)}</span></div>
+      <div class="dw-row"><span class="dw-label">Emne</span><span class="dw-val">${esc(m.subject||"—")}</span></div>
+    </div>
+    <div class="dw-section">
+      <h4>Besked</h4>
+      <div class="dw-body-text">${esc(m.body||"")}</div>
+    </div>`);
+}
+
+// ── TILBUDSFLOW (QuotePreparation) ───────────────────────────────────────────
+
+async function formQuotePreparation(inboxId) {
+  drawerLoading("Tilbudsgrundlag");
+  let qp;
+  try {
+    qp = await apiPost(`/quote-preparations/from-inbox/${inboxId}`, {});
+  } catch(e) {
+    drawerError("Kunne ikke oprette tilbudsgrundlag: " + e.message);
+    return;
+  }
+  _renderQPDrawer(qp);
+}
+
+function _qpStatusLabel(s) {
+  const map = { draft:"Kladde", reviewed:"Gennemgået", converted:"Konverteret", archived:"Arkiveret" };
+  return map[s] || s;
+}
+
+function _qpLinesHtml(lines) {
+  if (!lines || !lines.length) return '<p style="font-size:.82rem;color:#a0aec0">Ingen linjer endnu</p>';
+  return `<table class="qp-lines-table" id="qp-lines-tbl">
+    <thead><tr><th style="width:40%">Beskrivelse</th><th style="width:10%">Enhed</th><th style="width:10%">Antal</th><th style="width:12%">Stk.pris</th><th style="width:22%">Bemærkning</th><th class="td-del"></th></tr></thead>
+    <tbody>${lines.map((l,i) => `
+      <tr data-line-idx="${i}">
+        <td><input type="text" data-field="description" value="${esc(l.description||"")}" /></td>
+        <td><input type="text" data-field="unit" value="${esc(l.unit||"stk")}" style="width:4rem" /></td>
+        <td><input type="number" data-field="quantity" value="${l.quantity||1}" min="0" style="width:4rem" /></td>
+        <td><input type="number" data-field="unit_price" value="${l.unit_price||0}" min="0" step="1" style="width:5rem" /></td>
+        <td><input type="text" data-field="notes" value="${esc(l.notes||"")}" /></td>
+        <td class="td-del"><button class="del-line" onclick="qpDelLine(${i})" title="Fjern linje">×</button></td>
+      </tr>`).join("")}
+    </tbody>
+  </table>
+  <button class="cal-add-btn" style="margin-top:.4rem" onclick="qpAddLine()">+ Tilføj linje</button>`;
+}
+
+function _qpMissingHtml(items) {
+  if (!items || !items.length) return '<p style="font-size:.82rem;color:#38a169">Ingen manglende oplysninger registreret</p>';
+  return `<ul class="missing-list" id="qp-missing-list">${items.map((item,i) =>
+    `<li>⚠ ${esc(item)} <button onclick="qpClearMissing(${i})" title="Marker som løst">✓</button></li>`
+  ).join("")}</ul>`;
+}
+
+function _renderQPDrawer(qp) {
+  const statusCls = `qp-status-${qp.status}`;
+  const canEdit = qp.status === "draft" || qp.status === "reviewed";
+  const canConvert = qp.status === "draft" || qp.status === "reviewed";
+
+  openDrawer("Tilbudsgrundlag", `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:1rem">
+      <span class="qp-status-badge ${statusCls}">${_qpStatusLabel(qp.status)}</span>
+      <span style="font-size:.75rem;color:#a0aec0">Oprettet ${fdate(qp.created_at)}</span>
+    </div>
+    ${qp.status === "converted" ? _qpResultHtml(qp) : ""}
+    ${canEdit ? `<div class="form-body" id="qp-form" data-qp-id="${qp.id}">
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem">
+        <div class="fg">
+          <label>Kundenavn *</label>
+          <input id="qp-name" type="text" value="${esc(qp.customer_name||"")}" placeholder="For- og efternavn" />
+        </div>
+        <div class="fg">
+          <label>Telefon</label>
+          <input id="qp-phone" type="text" value="${esc(qp.customer_phone||"")}" placeholder="xx xx xx xx" />
+        </div>
+      </div>
+      <div class="fg">
+        <label>E-mail</label>
+        <input id="qp-email" type="email" value="${esc(qp.customer_email||"")}" placeholder="navn@eksempel.dk" />
+      </div>
+      <div class="fg">
+        <label>Adresse</label>
+        <input id="qp-address" type="text" value="${esc(qp.address||"")}" placeholder="Vejnavn nr., postnr. by" />
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:.7rem">
+        <div class="fg">
+          <label>Opgavetype</label>
+          <input id="qp-tasktype" type="text" value="${esc(qp.task_type||"")}" placeholder="f.eks. maling, spartling" />
+        </div>
+        <div class="fg">
+          <label>Kort opsummering</label>
+          <input id="qp-summary" type="text" value="${esc(qp.short_summary||"")}" placeholder="Emne / titel" />
+        </div>
+      </div>
+      <div class="fg">
+        <label>Opgavebeskrivelse</label>
+        <textarea id="qp-desc" rows="4" placeholder="Uddybende beskrivelse af opgaven…">${esc(qp.detailed_description||"")}</textarea>
+      </div>
+      <div class="fg">
+        <label>Interne noter</label>
+        <textarea id="qp-notes" rows="2" placeholder="Interne bemærkninger (vises ikke til kunde)…">${esc(qp.internal_notes||"")}</textarea>
+      </div>
+      <div class="dw-section" style="margin-top:0">
+        <h4>Manglende oplysninger</h4>
+        <div id="qp-missing-wrap">${_qpMissingHtml(qp.missing_info)}</div>
+      </div>
+      <div class="dw-section" style="margin-top:0">
+        <h4>Foreslåede tilbudslinjer</h4>
+        <div id="qp-lines-wrap">${_qpLinesHtml(qp.suggested_lines)}</div>
+      </div>
+      <div class="form-actions" style="flex-wrap:wrap;gap:.5rem">
+        <button class="btn-cancel" onclick="closeDrawer()">Luk</button>
+        <button class="btn-edit" onclick="qpSave('${qp.id}')">Gem kladde</button>
+        ${qp.status === "draft" ? `<button class="btn-edit" style="border-color:#f6e05e;color:#744210" onclick="qpReview('${qp.id}')">Markér gennemgået</button>` : ""}
+        <button class="btn-edit" style="border-color:#9f7aea;color:#553c9a" onclick="qpFindSimilar('${qp.id}')">🔍 Lignende tilbud</button>
+        <button class="btn-save" onclick="qpConvert('${qp.id}')">Opret tilbudskladde →</button>
+      </div>
+    </div>` : `<div class="form-actions"><button class="btn-cancel" onclick="closeDrawer()">Luk</button></div>`}
+  `);
+}
+
+function _qpResultHtml(qp) {
+  const pid = qp.project_id;
+  const qid = qp.quote_id;
+  return `<div class="qp-result">
+    <h4>Tilbudskladde oprettet</h4>
+    <div class="qp-result-links">
+      ${pid ? `<a href="#" onclick="closeDrawer();openDetail('project','${pid}')">Gå til projekt →</a>` : ""}
+      ${qid ? `<a href="#" onclick="closeDrawer();openDetail('quote','${qid}')">Gå til tilbud →</a>` : ""}
+      ${qid ? `<a href="/quotes/${qid}/pdf" target="_blank">Download PDF →</a>` : ""}
+    </div>
+  </div>`;
+}
+
+function _readQPLines() {
+  const tbl = document.getElementById("qp-lines-tbl");
+  if (!tbl) return [];
+  return Array.from(tbl.querySelectorAll("tbody tr")).map(tr => ({
+    description: tr.querySelector("[data-field=description]").value.trim(),
+    unit: tr.querySelector("[data-field=unit]").value.trim() || "stk",
+    quantity: parseFloat(tr.querySelector("[data-field=quantity]").value) || 1,
+    unit_price: parseFloat(tr.querySelector("[data-field=unit_price]").value) || 0,
+    notes: tr.querySelector("[data-field=notes]").value.trim(),
+  }));
+}
+
+function _readQPMissing() {
+  const ul = document.getElementById("qp-missing-list");
+  if (!ul) return [];
+  return Array.from(ul.querySelectorAll("li")).map(li => li.textContent.replace(/✓$/, "").replace(/^⚠\s*/, "").trim());
+}
+
+function qpDelLine(idx) {
+  const tbl = document.getElementById("qp-lines-tbl");
+  if (!tbl) return;
+  const rows = tbl.querySelectorAll("tbody tr");
+  if (rows[idx]) rows[idx].remove();
+  Array.from(tbl.querySelectorAll("tbody tr")).forEach((r, i) => {
+    r.dataset.lineIdx = i;
+    r.querySelector(".del-line").setAttribute("onclick", `qpDelLine(${i})`);
+  });
+}
+
+function qpAddLine() {
+  const tbl = document.getElementById("qp-lines-tbl");
+  if (!tbl) return;
+  const idx = tbl.querySelectorAll("tbody tr").length;
+  const tr = document.createElement("tr");
+  tr.dataset.lineIdx = idx;
+  tr.innerHTML = `
+    <td><input type="text" data-field="description" value="" placeholder="Beskrivelse…" /></td>
+    <td><input type="text" data-field="unit" value="stk" style="width:4rem" /></td>
+    <td><input type="number" data-field="quantity" value="1" min="0" style="width:4rem" /></td>
+    <td><input type="number" data-field="unit_price" value="0" min="0" step="1" style="width:5rem" /></td>
+    <td><input type="text" data-field="notes" value="" /></td>
+    <td class="td-del"><button class="del-line" onclick="qpDelLine(${idx})" title="Fjern linje">×</button></td>`;
+  tbl.querySelector("tbody").appendChild(tr);
+}
+
+function qpClearMissing(idx) {
+  const ul = document.getElementById("qp-missing-list");
+  if (!ul) return;
+  const items = ul.querySelectorAll("li");
+  if (items[idx]) items[idx].remove();
+  if (!ul.querySelectorAll("li").length) {
+    ul.outerHTML = '<p style="font-size:.82rem;color:#38a169">Ingen manglende oplysninger registreret</p>';
+  }
+}
+
+async function qpSave(qpId) {
+  const btn = document.querySelector(`[onclick="qpSave('${qpId}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = "Gemmer…"; }
+  const payload = {
+    customer_name:        document.getElementById("qp-name")?.value.trim() || null,
+    customer_phone:       document.getElementById("qp-phone")?.value.trim() || null,
+    customer_email:       document.getElementById("qp-email")?.value.trim() || null,
+    address:              document.getElementById("qp-address")?.value.trim() || null,
+    task_type:            document.getElementById("qp-tasktype")?.value.trim() || null,
+    short_summary:        document.getElementById("qp-summary")?.value.trim() || null,
+    detailed_description: document.getElementById("qp-desc")?.value.trim() || null,
+    internal_notes:       document.getElementById("qp-notes")?.value.trim() || null,
+    suggested_lines:      _readQPLines(),
+    missing_info:         _readQPMissing(),
+  };
+  try {
+    await apiPatch(`/quote-preparations/${qpId}`, payload);
+    showToast("Kladde gemt");
+    if (btn) { btn.disabled = false; btn.textContent = "Gem kladde"; }
+  } catch(e) {
+    showToast("Fejl: " + e.message, true);
+    if (btn) { btn.disabled = false; btn.textContent = "Gem kladde"; }
+  }
+}
+
+async function qpReview(qpId) {
+  const btn = document.querySelector(`[onclick="qpReview('${qpId}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = "Gemmer…"; }
+  try {
+    await qpSave(qpId);
+    const qp = await apiPost(`/quote-preparations/${qpId}/review`, {});
+    showToast("Markeret som gennemgået");
+    _renderQPDrawer(qp);
+  } catch(e) {
+    showToast("Fejl: " + e.message, true);
+    if (btn) { btn.disabled = false; btn.textContent = "Markér gennemgået"; }
+  }
+}
+
+async function qpConvert(qpId) {
+  const btn = document.querySelector(`[onclick="qpConvert('${qpId}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = "Opretter…"; }
+  try {
+    await qpSave(qpId);
+    const result = await apiPost(`/quote-preparations/${qpId}/convert-to-flow`, {});
+    await loadAll();
+    const qp = await api(`/quote-preparations/${qpId}`);
+    showToast("Tilbudskladde oprettet");
+    _renderQPDrawer(qp);
+  } catch(e) {
+    showToast("Fejl: " + e.message, true);
+    if (btn) { btn.disabled = false; btn.textContent = "Opret tilbudskladde →"; }
+  }
+}
+
+async function qpFindSimilar(qpId) {
+  const qp = await api(`/quote-preparations/${qpId}`).catch(() => null);
+  const query = [qp?.task_type, qp?.short_summary].filter(Boolean).join(" ") || "";
+  if (!query) { showToast("Ingen søgekriterier — udfyld opgavetype eller opsummering", true); return; }
+  const existingSection = document.getElementById("qp-similar-section");
+  if (existingSection) existingSection.remove();
+  const btn = document.querySelector(`[onclick="qpFindSimilar('${qpId}')"]`);
+  if (btn) { btn.disabled = true; btn.textContent = "Søger…"; }
+  try {
+    const report = await apiPost(`/historical-comparisons/search?company_id=${CID}&query=${encodeURIComponent(query)}&quote_preparation_id=${qpId}`, {});
+    const section = document.createElement("div");
+    section.id = "qp-similar-section";
+    section.style.cssText = "margin-top:1rem;padding:1rem;background:#f0f4ff;border-radius:10px;border:1px solid #bee3f8";
+    section.innerHTML = `<h4 style="color:#2b6cb0;margin-bottom:.6rem">🔍 Lignende historiske tilbud (${report.matched_offers.length} fundet)</h4>
+      ${report.price_range_median ? `<div style="display:flex;gap:1rem;margin-bottom:.7rem;font-size:.85rem">
+        <span><strong>Median pris:</strong> ${fmt(report.price_range_median)} kr</span>
+        ${report.price_per_m2_median ? `<span><strong>Pris/m²:</strong> ${fmt(report.price_per_m2_median)} kr</span>` : ""}
+        <span style="color:#718096">${report.price_range_low ? fmt(report.price_range_low)+" – "+fmt(report.price_range_high)+" kr interval" : ""}</span>
+      </div>` : ""}
+      ${report.matched_offers.slice(0,5).map(o => `<div style="padding:.5rem 0;border-bottom:1px solid #bee3f8;display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <strong style="font-size:.88rem">${esc(o.title || o.source_file_path?.split("\\").pop() || "Tilbud")}</strong>
+          <span style="font-size:.78rem;color:#718096;margin-left:.4rem">${[o.job_type, o.year].filter(Boolean).join(" · ")}</span>
+        </div>
+        <strong style="color:#2b6cb0">${o.price_ex_vat ? fmt(o.price_ex_vat)+" kr" : "—"}</strong>
+      </div>`).join("")}
+      ${!report.matched_offers.length ? '<div class="empty">Ingen lignende tilbud i erfaringsbanken endnu</div>' : ""}`;
+    const actionsEl = document.querySelector(".form-actions[style*='flex-wrap']");
+    if (actionsEl) actionsEl.before(section);
+  } catch(e) { showToast("Fejl ved søgning: "+e.message, true); }
+  finally { if (btn) { btn.disabled = false; btn.textContent = "🔍 Lignende tilbud"; } }
+}
+
+// ── EMPLOYEES TAB ────────────────────────────────────────────────────────────
+function renderEmployeesTab() {
+  const el = document.getElementById("tab-employees");
+  el.innerHTML = `<div class="sh" style="margin-top:0">
+    <div style="display:flex;align-items:center;gap:.7rem"><h2>Alle medarbejdere</h2><span class="cnt">${S.employees.length}</span></div>
+    <div style="display:flex;gap:.45rem">
+      <a class="btn-prep" href="/export?type=employees&company_id=${CID}" target="_blank">📥 Eksport</a>
+      <button class="btn-save" style="font-size:.8rem;padding:.35rem .9rem" onclick="formEmployee(null)">+ Ny medarbejder</button>
+    </div>
+  </div>
+  ${S.employees.length ? employeeTableHtml(S.employees) : '<div class="empty">Ingen medarbejdere endnu</div>'}`;
+  el.querySelectorAll("[data-type=employee]").forEach(r =>
+    r.addEventListener("click", () => openDetail("employee", r.dataset.id)));
+}
+
+function employeeTableHtml(emps) {
+  return `<div class="tbl-wrap"><table>
+    <thead><tr><th>Navn</th><th>Stilling</th><th style="text-align:right">Timepris</th><th>Ansat</th></tr></thead>
+    <tbody>${emps.map(e => `
+      <tr class="clickable-row" data-type="employee" data-id="${e.id}">
+        <td><strong>${esc(e.name)}</strong></td>
+        <td>${esc(e.role||"—")}</td>
+        <td style="text-align:right" class="amt">${fmt(e.default_hourly_rate)} kr/t</td>
+        <td>${fdate(e.hired_date)}</td>
+      </tr>`).join("")}
+    </tbody></table></div>`;
+}
+
+// ── DETAIL: EMPLOYEE ──────────────────────────────────────────────────────────
+async function detailEmployee(id) {
+  drawerLoading("Medarbejder");
+  const e = S.employees.find(x => x.id === id);
+  if (!e) throw new Error("Medarbejder ikke fundet");
+
+  const empEntries = await api(`/time-entries/?employee_id=${id}`);
+  const totalHours   = empEntries.reduce((s, t) => s + (t.hours||0), 0);
+  const billableHours = empEntries.filter(t => t.billable).reduce((s, t) => s + (t.hours||0), 0);
+
+  const recentEntries = [...empEntries].sort((a,b) => b.date.localeCompare(a.date)).slice(0,8);
+  const teHtml = recentEntries.length ? `<div class="dw-table-wrap"><table>
+    <thead><tr><th>Dato</th><th>Projekt</th><th style="text-align:right">Timer</th><th>Fakturerbar</th></tr></thead>
+    <tbody>${recentEntries.map(t => `
+      <tr class="clickable-row" data-type="project" data-id="${t.project_id}">
+        <td>${fdate(t.date)}</td>
+        <td>${esc(PM[t.project_id]||"—")}</td>
+        <td style="text-align:right">${t.hours}</td>
+        <td>${t.billable ? "Ja" : "Nej"}</td>
+      </tr>`).join("")}
+    </tbody></table></div>
+    <div style="font-size:.82rem;color:#718096;margin-top:.3rem">
+      I alt: <strong>${totalHours} timer</strong> · Fakturerbare: <strong>${billableHours} timer</strong>
+    </div>` : '<p style="font-size:.85rem;color:#a0aec0">Ingen timer registreret</p>';
+
+  openDrawer(e.name, `
+    <div class="dw-actions"><button class="btn-edit" onclick="formEmployee('${e.id}')">Rediger medarbejder</button></div>
+    <div class="dw-meta">
+      ${e.role ? `<div class="dw-row"><span class="dw-label">Stilling</span><span class="dw-val">${esc(e.role)}</span></div>` : ""}
+      <div class="dw-row"><span class="dw-label">Timepris</span><span class="dw-val amt">${fmt(e.default_hourly_rate)} kr/t</span></div>
+      <div class="dw-row"><span class="dw-label">Ansat</span><span class="dw-val">${fdate(e.hired_date)}</span></div>
+      ${e.notes ? `<div class="dw-row"><span class="dw-label">Notat</span><span class="dw-val">${esc(e.notes)}</span></div>` : ""}
+    </div>
+    <div class="dw-section"><h4>Seneste timer</h4>${teHtml}</div>`);
+
+  document.getElementById("dw-body").querySelectorAll("[data-type=project]").forEach(r =>
+    r.addEventListener("click", () => openDetail("project", r.dataset.id)));
+}
+
+// ── FORMS ────────────────────────────────────────────────────────────────────
+
+function formCustomer(idOrNull) {
+  const c = idOrNull ? S.customers.find(x => x.id === idOrNull) : null;
+  const title = c ? "Rediger kunde" : "Ny kunde";
+  openDrawer(title, `
+    <div class="form-body">
+      <div class="fg">
+        <label>Navn *</label>
+        <input id="f-name" type="text" value="${esc(c?.name||"")}" placeholder="Fulde navn eller firmanavn" />
+        <div class="ferr" id="f-name-err">Navn er påkrævet</div>
+      </div>
+      <div class="fg">
+        <label>CVR-nummer</label>
+        <input id="f-cvr" type="text" value="${esc(c?.cvr_masked||"")}" placeholder="8 cifre" maxlength="20" />
+      </div>
+      <div class="fg">
+        <label>Adresse</label>
+        <input id="f-address" type="text" value="${esc(c?.address||"")}" placeholder="Vejnavn, postnr. by" />
+      </div>
+      <div class="form-2col">
+        <div class="fg">
+          <label>Telefon</label>
+          <input id="f-phone" type="text" value="${esc(c?.phone||"")}" placeholder="xx xx xx xx" />
+        </div>
+        <div class="fg">
+          <label>E-mail</label>
+          <input id="f-email" type="email" value="${esc(c?.email||"")}" placeholder="navn@firma.dk" />
+        </div>
+      </div>
+      <div class="fg">
+        <label>Notat</label>
+        <textarea id="f-notes" placeholder="Interne bemærkninger…">${esc(c?.notes||"")}</textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn-cancel" onclick="closeDrawer()">Annuller</button>
+        <button class="btn-save" id="f-submit" onclick="submitCustomer('${idOrNull||""}')">${c ? "Gem ændringer" : "Opret kunde"}</button>
+      </div>
+    </div>`);
+}
+
+async function submitCustomer(id) {
+  const nameEl = document.getElementById("f-name");
+  const name = nameEl.value.trim();
+  if (!name) {
+    nameEl.classList.add("err");
+    document.getElementById("f-name-err").classList.add("show");
+    nameEl.focus();
+    return;
+  }
+  nameEl.classList.remove("err");
+  document.getElementById("f-name-err").classList.remove("show");
+
+  const payload = {
+    name,
+    cvr_number: document.getElementById("f-cvr").value.trim() || null,
+    address:    document.getElementById("f-address").value.trim() || null,
+    phone:      document.getElementById("f-phone").value.trim() || null,
+    email:      document.getElementById("f-email").value.trim() || null,
+    notes:      document.getElementById("f-notes").value.trim() || null,
+  };
+
+  const btn = document.getElementById("f-submit");
+  btn.disabled = true;
+  btn.textContent = "Gemmer…";
+  try {
+    if (id) {
+      await apiPatch(`/customers/${id}`, payload);
+      showToast("Kunde opdateret");
+    } else {
+      await apiPost("/customers/", { ...payload, company_id: CID });
+      showToast("Kunde oprettet");
+    }
+    closeDrawer();
+    await reloadData();
+    renderCustomersTab();
+    renderProjectsTab();
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = id ? "Gem ændringer" : "Opret kunde";
+    showToast("Fejl: " + e.message, true);
+  }
+}
+
+function formProject(idOrNull) {
+  const p = idOrNull ? S.projects.find(x => x.id === idOrNull) : null;
+  const title = p ? "Rediger projekt" : "Nyt projekt";
+  const custOptions = S.customers.map(c =>
+    `<option value="${c.id}" ${p?.customer_id === c.id ? "selected" : ""}>${esc(c.name)}</option>`
+  ).join("");
+  const statusOptions = ["draft","active","completed","cancelled"].map(s =>
+    `<option value="${s}" ${(p?.status||"draft") === s ? "selected" : ""}>${slabel(s)}</option>`
+  ).join("");
+
+  openDrawer(title, `
+    <div class="form-body">
+      <div class="fg">
+        <label>Titel *</label>
+        <input id="f-title" type="text" value="${esc(p?.title||"")}" placeholder="Projektnavn" />
+        <div class="ferr" id="f-title-err">Titel er påkrævet</div>
+      </div>
+      <div class="fg">
+        <label>Kunde *</label>
+        <select id="f-customer">
+          <option value="">— Vælg kunde —</option>
+          ${custOptions}
+        </select>
+        <div class="ferr" id="f-customer-err">Vælg en kunde</div>
+      </div>
+      <div class="fg">
+        <label>Status</label>
+        <select id="f-status">${statusOptions}</select>
+      </div>
+      <div class="form-2col">
+        <div class="fg">
+          <label>Startdato</label>
+          <input id="f-start" type="date" value="${p?.start_date||""}" />
+        </div>
+        <div class="fg">
+          <label>Slutdato</label>
+          <input id="f-end" type="date" value="${p?.end_date||""}" />
+        </div>
+      </div>
+      <div class="fg">
+        <label>Adresse / arbejdssted</label>
+        <input id="f-address" type="text" value="${esc(p?.address||"")}" placeholder="Hvor udføres arbejdet?" />
+      </div>
+      <div class="fg">
+        <label>Beskrivelse</label>
+        <textarea id="f-desc" placeholder="Kort beskrivelse af opgaven…">${esc(p?.description||"")}</textarea>
+      </div>
+      <div class="fg">
+        <label>Notat</label>
+        <textarea id="f-notes" placeholder="Interne bemærkninger…">${esc(p?.notes||"")}</textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn-cancel" onclick="closeDrawer()">Annuller</button>
+        <button class="btn-save" id="f-submit" onclick="submitProject('${idOrNull||""}')">${p ? "Gem ændringer" : "Opret projekt"}</button>
+      </div>
+    </div>`);
+}
+
+async function submitProject(id) {
+  const titleEl = document.getElementById("f-title");
+  const custEl  = document.getElementById("f-customer");
+  let valid = true;
+
+  if (!titleEl.value.trim()) {
+    titleEl.classList.add("err");
+    document.getElementById("f-title-err").classList.add("show");
+    valid = false;
+  } else {
+    titleEl.classList.remove("err");
+    document.getElementById("f-title-err").classList.remove("show");
+  }
+  if (!id && !custEl.value) {
+    custEl.classList.add("err");
+    document.getElementById("f-customer-err").classList.add("show");
+    valid = false;
+  } else {
+    custEl.classList.remove("err");
+    document.getElementById("f-customer-err").classList.remove("show");
+  }
+  if (!valid) return;
+
+  const payload = {
+    title:       titleEl.value.trim(),
+    status:      document.getElementById("f-status").value,
+    start_date:  document.getElementById("f-start").value || null,
+    end_date:    document.getElementById("f-end").value || null,
+    address:     document.getElementById("f-address").value.trim() || null,
+    description: document.getElementById("f-desc").value.trim() || null,
+    notes:       document.getElementById("f-notes").value.trim() || null,
+  };
+
+  const btn = document.getElementById("f-submit");
+  btn.disabled = true;
+  btn.textContent = "Gemmer…";
+  try {
+    if (id) {
+      await apiPatch(`/projects/${id}`, payload);
+      showToast("Projekt opdateret");
+    } else {
+      await apiPost("/projects/", { ...payload, customer_id: custEl.value });
+      showToast("Projekt oprettet");
+    }
+    closeDrawer();
+    await reloadData();
+    renderProjectsTab();
+    renderCustomersTab();
+  } catch(e) {
+    btn.disabled = false;
+    btn.textContent = id ? "Gem ændringer" : "Opret projekt";
+    showToast("Fejl: " + e.message, true);
+  }
+}
+
+function formEmployee(idOrNull) {
+  const e = idOrNull ? S.employees.find(x => x.id === idOrNull) : null;
+  openDrawer(e ? "Rediger medarbejder" : "Ny medarbejder", `
+    <div class="form-body">
+      <div class="fg">
+        <label>Navn *</label>
+        <input id="f-name" type="text" value="${esc(e?.name||"")}" placeholder="For- og efternavn" />
+        <div class="ferr" id="f-name-err">Navn er påkrævet</div>
+      </div>
+      <div class="fg">
+        <label>Stilling / rolle</label>
+        <input id="f-role" type="text" value="${esc(e?.role||"")}" placeholder="f.eks. Maler, Lærling" />
+      </div>
+      <div class="form-2col">
+        <div class="fg">
+          <label>Timepris (kr) *</label>
+          <input id="f-rate" type="number" min="1" step="0.01" value="${e?.default_hourly_rate||""}" placeholder="f.eks. 450" />
+          <div class="ferr" id="f-rate-err">Angiv timepris > 0</div>
+        </div>
+        <div class="fg">
+          <label>Ansættelsesdato</label>
+          <input id="f-hired" type="date" value="${e?.hired_date||""}" />
+        </div>
+      </div>
+      <div class="fg">
+        <label>Notat</label>
+        <textarea id="f-notes" placeholder="Interne bemærkninger…">${esc(e?.notes||"")}</textarea>
+      </div>
+      <div class="form-actions">
+        <button class="btn-cancel" onclick="closeDrawer()">Annuller</button>
+        <button class="btn-save" id="f-submit" onclick="submitEmployee('${idOrNull||""}')">${e ? "Gem ændringer" : "Opret medarbejder"}</button>
+      </div>
+    </div>`);
+}
+
+async function submitEmployee(id) {
+  const nameEl = document.getElementById("f-name");
+  const rateEl = document.getElementById("f-rate");
+  let valid = true;
+
+  if (!nameEl.value.trim()) {
+    nameEl.classList.add("err"); document.getElementById("f-name-err").classList.add("show"); valid = false;
+  } else {
+    nameEl.classList.remove("err"); document.getElementById("f-name-err").classList.remove("show");
+  }
+  const rate = parseFloat(rateEl.value);
+  if (!rate || rate <= 0) {
+    rateEl.classList.add("err"); document.getElementById("f-rate-err").classList.add("show"); valid = false;
+  } else {
+    rateEl.classList.remove("err"); document.getElementById("f-rate-err").classList.remove("show");
+  }
+  if (!valid) return;
+
+  const payload = {
+    name:                nameEl.value.trim(),
+    role:                document.getElementById("f-role").value.trim() || null,
+    default_hourly_rate: rate,
+    hired_date:          document.getElementById("f-hired").value || null,
+    notes:               document.getElementById("f-notes").value.trim() || null,
+  };
+
+  const btn = document.getElementById("f-submit");
+  btn.disabled = true; btn.textContent = "Gemmer…";
+  try {
+    if (id) {
+      await apiPatch(`/employees/${id}`, payload);
+      showToast("Medarbejder opdateret");
+    } else {
+      await apiPost("/employees/", { ...payload, company_id: CID });
+      showToast("Medarbejder oprettet");
+    }
+    closeDrawer();
+    const employees = await api(`/employees/?company_id=${CID}`);
+    S.employees = employees;
+    EM = Object.fromEntries(employees.map(e => [e.id, e.name]));
+    renderEmployeesTab();
+  } catch(e) {
+    btn.disabled = false; btn.textContent = id ? "Gem ændringer" : "Opret medarbejder";
+    showToast("Fejl: " + e.message, true);
+  }
+}
+
+// ── QUOTE FORM ────────────────────────────────────────────────────────────────
+let _qLines = [];
+
+function addQLine() {
+  _qLines.push({ description: "", unit: "time", quantity: "", unit_price: "" });
+  renderQLines();
+}
+function removeQLine(i) {
+  _qLines.splice(i, 1);
+  renderQLines();
+}
+function updateQLine(i, f, v) {
+  _qLines[i][f] = v;
+  const qty = parseFloat(_qLines[i].quantity) || 0;
+  const price = parseFloat(_qLines[i].unit_price) || 0;
+  const el = document.getElementById(`ql-total-${i}`);
+  if (el) el.textContent = fmt(qty * price) + " kr";
+  updateQSubtotal();
+}
+function updateQSubtotal() {
+  const sub = _qLines.reduce((s, l) => s + (parseFloat(l.quantity)||0) * (parseFloat(l.unit_price)||0), 0);
+  const el = document.getElementById("ql-subtotal");
+  if (el) el.textContent = fmt(sub) + " kr";
+  const vatEl = document.getElementById("ql-vat");
+  if (vatEl) vatEl.textContent = fmt(sub * 0.25) + " kr";
+  const totEl = document.getElementById("ql-total");
+  if (totEl) totEl.textContent = fmt(sub * 1.25) + " kr";
+}
+function renderQLines() {
+  const container = document.getElementById("ql-container");
+  if (!container) return;
+  if (!_qLines.length) {
+    container.innerHTML = `<p style="font-size:.85rem;color:#a0aec0;padding:.4rem 0">Ingen linjer — klik "+ Tilføj linje"</p>`;
+    updateQSubtotal();
+    return;
+  }
+  const units = ["m2","stk","time","lm","l","km"];
+  container.innerHTML = `<div class="dw-table-wrap"><table>
+    <thead><tr><th>Beskrivelse</th><th>Enhed</th><th style="text-align:right">Antal</th><th style="text-align:right">Stk.pris</th><th style="text-align:right">Total</th><th></th></tr></thead>
+    <tbody>${_qLines.map((l, i) => `
+      <tr>
+        <td><input type="text" value="${esc(l.description)}" placeholder="Beskrivelse…"
+          style="border:none;width:100%;min-width:120px;font-size:.83rem;padding:.15rem .3rem;outline:none;background:transparent"
+          oninput="updateQLine(${i},'description',this.value)"></td>
+        <td><select onchange="updateQLine(${i},'unit',this.value)"
+          style="border:none;font-size:.83rem;background:transparent;outline:none;cursor:pointer">
+          ${units.map(u => `<option value="${u}"${l.unit===u?" selected":""}>${u}</option>`).join("")}
+        </select></td>
+        <td><input type="number" value="${l.quantity}" placeholder="0" min="0.01" step="any"
+          style="border:none;width:60px;text-align:right;font-size:.83rem;padding:.15rem .3rem;outline:none;background:transparent"
+          oninput="updateQLine(${i},'quantity',this.value)"></td>
+        <td><input type="number" value="${l.unit_price}" placeholder="0" min="0" step="any"
+          style="border:none;width:75px;text-align:right;font-size:.83rem;padding:.15rem .3rem;outline:none;background:transparent"
+          oninput="updateQLine(${i},'unit_price',this.value)"></td>
+        <td style="text-align:right" id="ql-total-${i}" class="amt">${fmt((parseFloat(l.quantity)||0)*(parseFloat(l.unit_price)||0))} kr</td>
+        <td><button onclick="removeQLine(${i})" style="background:none;border:none;color:#cbd5e0;cursor:pointer;font-size:1rem;line-height:1;padding:.1rem .3rem" title="Fjern">✕</button></td>
+      </tr>`).join("")}
+    </tbody></table></div>`;
+  updateQSubtotal();
+}
+
+function formQuote(idOrNull) {
+  const q = idOrNull ? S.quotes.find(x => x.id === idOrNull) : null;
+  _qLines = q ? (q.lines||[]).map(l => ({ description: l.description, unit: l.unit, quantity: String(l.quantity), unit_price: String(l.unit_price) })) : [];
+
+  const projOpts = S.projects.map(p =>
+    `<option value="${p.id}"${q?.project_id === p.id ? " selected" : ""}>${esc(p.title)} — ${esc(CM[p.customer_id]||"")}</option>`
+  ).join("");
+
+  openDrawer(q ? `Rediger ${q.quote_number}` : "Nyt tilbud", `
+    <div class="form-body">
+      <div class="fg">
+        <label>Projekt *</label>
+        <select id="f-project" ${q ? "disabled" : ""}>
+          <option value="">— Vælg projekt —</option>
+          ${projOpts}
+        </select>
+        <div class="ferr" id="f-project-err">Vælg et projekt</div>
+      </div>
+      <div class="fg">
+        <label>Titel *</label>
+        <input id="f-title" type="text" value="${esc(q?.title||"")}" placeholder="f.eks. Tilbud – Malerarbejde stue" />
+        <div class="ferr" id="f-title-err">Titel er påkrævet</div>
+      </div>
+      <div class="form-2col">
+        <div class="fg">
+          <label>Gyldigt til</label>
+          <input id="f-valid" type="date" value="${q?.valid_until||""}" />
+        </div>
+      </div>
+      <div class="fg">
+        <label>Notat</label>
+        <textarea id="f-notes" placeholder="Intern note eller kundeinstruktioner…">${esc(q?.notes||"")}</textarea>
+      </div>
+      <div class="dw-section">
+        <h4 style="display:flex;align-items:center;justify-content:space-between">
+          Linjer
+          <button onclick="addQLine()" style="background:#ebf8ff;color:#2b6cb0;border:1px solid #bee3f8;padding:.2rem .7rem;border-radius:5px;font-size:.78rem;cursor:pointer;font-weight:600">+ Tilføj linje</button>
+        </h4>
+        <div id="ql-container" style="margin-top:.5rem"></div>
+        <div class="dw-totals" style="margin-top:.5rem">
+          <div class="dw-total-row"><span>Subtotal ekskl. moms</span><span id="ql-subtotal" class="amt">0 kr</span></div>
+          <div class="dw-total-row"><span>Moms 25%</span><span id="ql-vat" class="amt">0 kr</span></div>
+          <div class="dw-total-row final"><span>Total inkl. moms</span><span id="ql-total" class="amt">0 kr</span></div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn-cancel" onclick="closeDrawer()">Annuller</button>
+        <button class="btn-save" id="f-submit" onclick="submitQuote('${idOrNull||""}')">${q ? "Gem ændringer" : "Opret tilbud"}</button>
+      </div>
+    </div>`);
+
+  renderQLines();
+}
+
+async function submitQuote(id) {
+  const projEl  = document.getElementById("f-project");
+  const titleEl = document.getElementById("f-title");
+  let valid = true;
+
+  if (!id && !projEl.value) {
+    projEl.classList.add("err"); document.getElementById("f-project-err").classList.add("show"); valid = false;
+  } else if (projEl) { projEl.classList.remove("err"); document.getElementById("f-project-err").classList.remove("show"); }
+
+  if (!titleEl.value.trim()) {
+    titleEl.classList.add("err"); document.getElementById("f-title-err").classList.add("show"); valid = false;
+  } else { titleEl.classList.remove("err"); document.getElementById("f-title-err").classList.remove("show"); }
+
+  if (!valid) return;
+
+  const lines = _qLines
+    .filter(l => l.description.trim() && parseFloat(l.quantity) > 0)
+    .map(l => ({ description: l.description.trim(), unit: l.unit, quantity: parseFloat(l.quantity), unit_price: parseFloat(l.unit_price)||0 }));
+
+  const payload = {
+    title:       titleEl.value.trim(),
+    valid_until: document.getElementById("f-valid").value || null,
+    notes:       document.getElementById("f-notes").value.trim() || null,
+    lines,
+  };
+
+  const btn = document.getElementById("f-submit");
+  btn.disabled = true; btn.textContent = "Gemmer…";
+  try {
+    if (id) {
+      await apiPatch(`/quotes/${id}`, payload);
+      showToast("Tilbud opdateret");
+    } else {
+      await apiPost("/quotes/", { ...payload, project_id: projEl.value });
+      showToast("Tilbud oprettet");
+    }
+    closeDrawer();
+    const quotes = await api(`/quotes/?company_id=${CID}`);
+    S.quotes = quotes;
+    renderQuotesTab();
+  } catch(e) {
+    btn.disabled = false; btn.textContent = id ? "Gem ændringer" : "Opret tilbud";
+    showToast("Fejl: " + e.message, true);
+  }
+}
+
+// ── INVOICE FORM ──────────────────────────────────────────────────────────────
+function formInvoice(idOrNull) {
+  const inv = idOrNull ? S.invoices.find(x => x.id === idOrNull) : null;
+  const today  = new Date().toISOString().slice(0,10);
+  const due30  = new Date(Date.now() + 30*24*60*60*1000).toISOString().slice(0,10);
+
+  if (inv) {
+    // Edit existing invoice — title, dates, notes only
+    openDrawer(`Rediger ${inv.invoice_number}`, `
+      <div class="form-body">
+        <div class="fg">
+          <label>Titel</label>
+          <input id="f-title" type="text" value="${esc(inv.title||"")}" placeholder="Fakturaoverskrift" />
+        </div>
+        <div class="form-2col">
+          <div class="fg">
+            <label>Udstedelsesdato *</label>
+            <input id="f-issue" type="date" value="${inv.issue_date||today}" />
+            <div class="ferr" id="f-issue-err">Dato er påkrævet</div>
+          </div>
+          <div class="fg">
+            <label>Forfaldsdato *</label>
+            <input id="f-due" type="date" value="${inv.due_date||due30}" />
+            <div class="ferr" id="f-due-err">Dato er påkrævet</div>
+          </div>
+        </div>
+        <div class="fg">
+          <label>Notat</label>
+          <textarea id="f-notes" placeholder="Interne bemærkninger…">${esc(inv.notes||"")}</textarea>
+        </div>
+        <div class="form-actions">
+          <button class="btn-cancel" onclick="closeDrawer()">Annuller</button>
+          <button class="btn-save" id="f-submit" onclick="submitInvoice('${inv.id}')">Gem ændringer</button>
+        </div>
+      </div>`);
+  } else {
+    // New draft invoice from project
+    const projOpts = S.projects.map(p =>
+      `<option value="${p.id}">${esc(p.title)} — ${esc(CM[p.customer_id]||"")}</option>`
+    ).join("");
+    openDrawer("Ny faktura (kladde)", `
+      <p style="font-size:.83rem;color:#718096;margin-bottom:1rem">Samler automatisk alle uafakturerede timer og udgifter fra projektet.</p>
+      <div class="form-body">
+        <div class="fg">
+          <label>Projekt *</label>
+          <select id="f-project">
+            <option value="">— Vælg projekt —</option>
+            ${projOpts}
+          </select>
+          <div class="ferr" id="f-project-err">Vælg et projekt</div>
+        </div>
+        <div class="fg">
+          <label>Titel (valgfri)</label>
+          <input id="f-title" type="text" placeholder="Auto-genereres hvis tom" />
+        </div>
+        <div class="form-2col">
+          <div class="fg">
+            <label>Udstedelsesdato *</label>
+            <input id="f-issue" type="date" value="${today}" />
+            <div class="ferr" id="f-issue-err">Dato er påkrævet</div>
+          </div>
+          <div class="fg">
+            <label>Forfaldsdato *</label>
+            <input id="f-due" type="date" value="${due30}" />
+            <div class="ferr" id="f-due-err">Dato er påkrævet</div>
+          </div>
+        </div>
+        <div class="form-actions">
+          <button class="btn-cancel" onclick="closeDrawer()">Annuller</button>
+          <button class="btn-save" id="f-submit" onclick="submitInvoice('')">Opret faktura-kladde</button>
+        </div>
+      </div>`);
+  }
+}
+
+async function submitInvoice(id) {
+  let valid = true;
+  const issueEl = document.getElementById("f-issue");
+  const dueEl   = document.getElementById("f-due");
+
+  if (!issueEl.value) {
+    issueEl.classList.add("err"); document.getElementById("f-issue-err").classList.add("show"); valid = false;
+  } else { issueEl.classList.remove("err"); document.getElementById("f-issue-err").classList.remove("show"); }
+  if (!dueEl.value) {
+    dueEl.classList.add("err"); document.getElementById("f-due-err").classList.add("show"); valid = false;
+  } else { dueEl.classList.remove("err"); document.getElementById("f-due-err").classList.remove("show"); }
+
+  if (!id) {
+    const projEl = document.getElementById("f-project");
+    if (!projEl.value) {
+      projEl.classList.add("err"); document.getElementById("f-project-err").classList.add("show"); valid = false;
+    } else { projEl.classList.remove("err"); document.getElementById("f-project-err").classList.remove("show"); }
+  }
+  if (!valid) return;
+
+  const btn = document.getElementById("f-submit");
+  btn.disabled = true; btn.textContent = "Gemmer…";
+  try {
+    if (id) {
+      const payload = {
+        title:      document.getElementById("f-title").value.trim() || null,
+        issue_date: issueEl.value,
+        due_date:   dueEl.value,
+        notes:      document.getElementById("f-notes").value.trim() || null,
+      };
+      await apiPatch(`/invoices/${id}`, payload);
+      showToast("Faktura opdateret");
+    } else {
+      const titleVal = document.getElementById("f-title").value.trim();
+      await apiPost("/invoices/draft-from-project", {
+        project_id: document.getElementById("f-project").value,
+        issue_date: issueEl.value,
+        due_date:   dueEl.value,
+        title:      titleVal || null,
+      });
+      showToast("Faktura-kladde oprettet");
+    }
+    closeDrawer();
+    const invoices = await api(`/invoices/?company_id=${CID}`);
+    S.invoices = invoices;
+    renderInvoicesTab();
+    renderOverview();
+  } catch(e) {
+    btn.disabled = false; btn.textContent = id ? "Gem ændringer" : "Opret faktura-kladde";
+    showToast("Fejl: " + e.message, true);
+  }
+}
+
+// ── API write helpers ─────────────────────────────────────────────────────────
+async function apiPost(path, body) {
+  const r = await fetch(BASE + path, { method: "POST", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
+  if (!r.ok) { const t = await r.text(); throw new Error(`${r.status} — ${t.slice(0,120)}`); }
+  return r.json();
+}
+async function apiPatch(path, body) {
+  const r = await fetch(BASE + path, { method: "PATCH", headers: {"Content-Type":"application/json"}, body: JSON.stringify(body) });
+  if (!r.ok) { const t = await r.text(); throw new Error(`${r.status} — ${t.slice(0,120)}`); }
+  return r.json();
+}
+async function apiDel(path) {
+  const r = await fetch(BASE + path, { method: "DELETE" });
+  if (!r.ok) { const t = await r.text(); throw new Error(`${r.status} — ${t.slice(0,120)}`); }
+  if (r.status === 204) return {};
+  return r.json();
+}
+
+// ── Reload + toast ────────────────────────────────────────────────────────────
+async function reloadData() {
+  const [customers, projects] = await Promise.all([
+    api(`/customers/?company_id=${CID}`),
+    api(`/projects/?company_id=${CID}`),
+  ]);
+  S.customers = customers;
+  S.projects  = projects;
+  CM = Object.fromEntries(customers.map(c => [c.id, c.name]));
+  PM = Object.fromEntries(projects.map(p => [p.id, p.title]));
+}
+
+let _toastTimer = null;
+function showToast(msg, isError = false) {
+  const el = document.getElementById("toast");
+  el.textContent = msg;
+  el.style.background = isError ? "#c53030" : "#276749";
+  el.classList.add("show");
+  clearTimeout(_toastTimer);
+  _toastTimer = setTimeout(() => el.classList.remove("show"), 2800);
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+function fmt(n) {
+  if (n == null) return "0";
+  return Number(n).toLocaleString("da-DK", {maximumFractionDigits: 0});
+}
+function fdate(d) {
+  if (!d) return "—";
+  const s = String(d).slice(0,10);
+  const [y,m,day] = s.split("-");
+  return `${day}/${m}/${y}`;
+}
+function fdtime(d) {
+  if (!d) return "—";
+  const dt = new Date(d);
+  return dt.toLocaleString("da-DK", {day:"2-digit",month:"2-digit",year:"numeric",hour:"2-digit",minute:"2-digit"});
+}
+const LABELS = {
+  draft:"Kladde", sent:"Sendt", paid:"Betalt", cancelled:"Annulleret",
+  active:"Aktiv", completed:"Afsluttet", archived:"Arkiveret",
+  accepted:"Accepteret", converted:"Konverteret",
+  unread:"Ulæst", read:"Læst", pending:"Afventer", done:"Udført",
+  phone:"Telefon", email:"E-mail", overdue:"Forfalden",
+  scheduled:"Planlagt", skipped:"Sprunget over",
+  site_visit:"Besigtigelse", meeting:"Møde", estimate:"Tilbudsrunde",
+  vat_report:"Moms", salary_run:"Løn", annual_accounts:"Årsregnskab",
+  corporate_tax:"Selskabsskat", insurance:"Forsikring",
+};
+function slabel(s) { return LABELS[s] || s || "—"; }
+function esc(s) {
+  return String(s||"")
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;")
+    .replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ── ERFARINGSBANK TAB ────────────────────────────────────────────────────────
+async function renderErfaringsbankTab() {
+  const el = document.getElementById("tab-erfaringsbank");
+  el.innerHTML = `<div class="sh" style="margin-top:0">
+    <div style="display:flex;align-items:center;gap:.7rem"><h2>Erfaringsbank</h2><div id="erfar-count" class="cnt">…</div></div>
+    <a class="btn-prep" href="/export?type=erfaringsbank&company_id=${CID}" target="_blank">📥 Eksport</a>
+  </div>
+    <div class="erfar-import-box">
+      <strong style="font-size:.88rem">Importer historisk tilbud (lokal fil)</strong>
+      <div class="erfar-import-row">
+        <input id="erfar-path" placeholder="Sti til fil, fx C:\\Tilbud\\tilbud2024.pdf" />
+        <button class="btn-save" style="white-space:nowrap" onclick="erfarImport()">Importer fil</button>
+      </div>
+      <div id="erfar-import-msg" style="font-size:.82rem;margin-top:.4rem;color:#718096"></div>
+    </div>
+    <div class="erfar-filter-row">
+      <select id="erfar-filter-status" onchange="erfarLoad()">
+        <option value="">Alle statusser</option>
+        <option value="needs_review">Afventer godkendelse</option>
+        <option value="approved">Godkendt</option>
+      </select>
+      <select id="erfar-filter-job" onchange="erfarLoad()">
+        <option value="">Alle jobtyper</option>
+        <option value="maling">Maling</option>
+        <option value="spartling">Spartling</option>
+        <option value="tapet">Tapet</option>
+        <option value="facade">Facade</option>
+        <option value="gulv">Gulv</option>
+        <option value="fliser">Fliser</option>
+      </select>
+      <input id="erfar-filter-year-min" placeholder="År fra" style="width:80px" onchange="erfarLoad()" />
+      <input id="erfar-filter-year-max" placeholder="År til" style="width:80px" onchange="erfarLoad()" />
+    </div>
+    <div id="erfar-list">Indlæser…</div>`;
+  erfarLoad();
+}
+
+async function erfarLoad() {
+  const status = document.getElementById("erfar-filter-status")?.value || "";
+  const jobType = document.getElementById("erfar-filter-job")?.value || "";
+  const yearMin = document.getElementById("erfar-filter-year-min")?.value || "";
+  const yearMax = document.getElementById("erfar-filter-year-max")?.value || "";
+  let url = `/historical-offers/?active_only=true`;
+  if (status) url += `&extraction_status=${status}`;
+  if (jobType) url += `&job_type=${jobType}`;
+  if (yearMin) url += `&year_min=${yearMin}`;
+  if (yearMax) url += `&year_max=${yearMax}`;
+  try {
+    const offers = await api(url);
+    const listEl = document.getElementById("erfar-list");
+    const cntEl  = document.getElementById("erfar-count");
+    if (cntEl) cntEl.textContent = offers.length;
+    if (!listEl) return;
+    if (!offers.length) { listEl.innerHTML = '<div class="empty">Ingen tilbud endnu — importer din første fil ovenfor</div>'; return; }
+    listEl.innerHTML = offers.map(o => `
+      <div class="erfar-card ${o.extraction_status}">
+        <div class="erfar-card-meta">
+          <div class="erfar-card-title">${esc(o.title || o.source_file_path.split("\\").pop().split("/").pop())}
+            <span class="b b-${o.extraction_status}" style="margin-left:.5rem;font-size:.72rem">${o.extraction_status==="approved"?"✓ Godkendt":"Afventer"}</span>
+          </div>
+          <div class="erfar-card-sub">
+            ${[o.job_type, o.building_type, o.year ? o.year+"" : null, o.area_m2 ? o.area_m2+" m²" : null].filter(Boolean).join(" · ")}
+          </div>
+          ${o.extraction_status === "needs_review" ? `<div style="margin-top:.4rem;display:flex;gap:.4rem">
+            <button class="btn-save" style="font-size:.75rem;padding:.2rem .65rem" onclick="erfarApprove('${o.id}')">Godkend</button>
+            <button class="btn" style="font-size:.75rem;padding:.2rem .65rem" onclick="erfarEdit('${o.id}')">Rediger felter</button>
+          </div>` : `<div style="margin-top:.4rem">
+            <button class="btn" style="font-size:.75rem;padding:.2rem .65rem" onclick="erfarEdit('${o.id}')">Rediger</button>
+          </div>`}
+        </div>
+        <div class="erfar-card-price">
+          ${o.price_ex_vat ? fmt(o.price_ex_vat)+" kr" : "—"}
+          ${o.price_per_m2 ? `<div style="font-size:.78rem;color:#718096;font-weight:400">${fmt(o.price_per_m2)} kr/m²</div>` : ""}
+        </div>
+      </div>`).join("");
+  } catch(e) {
+    const el = document.getElementById("erfar-list");
+    if (el) el.innerHTML = `<div class="err-box">Fejl: ${esc(e.message)}</div>`;
+  }
+}
+
+async function erfarImport() {
+  const path = document.getElementById("erfar-path")?.value.trim();
+  const msgEl = document.getElementById("erfar-import-msg");
+  if (!path) { msgEl.textContent = "Angiv en filsti"; return; }
+  msgEl.textContent = "Importerer…"; msgEl.style.color = "#718096";
+  try {
+    const job = await apiPost(`/historical-offers/import?company_id=${CID}&file_path=${encodeURIComponent(path)}`, {});
+    msgEl.textContent = `✓ Import fuldført — status: ${job.status}`;
+    msgEl.style.color = "#276749";
+    document.getElementById("erfar-path").value = "";
+    erfarLoad();
+  } catch(e) {
+    msgEl.textContent = "Fejl: " + e.message;
+    msgEl.style.color = "#c53030";
+  }
+}
+
+async function erfarApprove(id) {
+  try {
+    await apiPost(`/historical-offers/${id}/approve`, {});
+    showToast("Tilbud godkendt til erfaringsbank");
+    erfarLoad();
+  } catch(e) { showToast("Fejl: "+e.message, true); }
+}
+
+function erfarEdit(id) {
+  // Open a minimal edit drawer
+  openDrawer("Rediger historisk tilbud", `<div id="erfar-edit-form-${id}">Indlæser…</div>`);
+  api(`/historical-offers/${id}`).then(o => {
+    document.getElementById(`erfar-edit-form-${id}`).innerHTML = `
+      <div class="fg"><label>Titel</label><input id="ee-title" value="${esc(o.title||"")}" /></div>
+      <div class="form-2col">
+        <div class="fg"><label>Jobtype</label><input id="ee-job" value="${esc(o.job_type||"")}" /></div>
+        <div class="fg"><label>Bygningstype</label><input id="ee-bld" value="${esc(o.building_type||"")}" /></div>
+      </div>
+      <div class="form-2col">
+        <div class="fg"><label>År</label><input id="ee-year" type="number" value="${o.year||""}" /></div>
+        <div class="fg"><label>Areal m²</label><input id="ee-area" type="number" value="${o.area_m2||""}" /></div>
+      </div>
+      <div class="form-2col">
+        <div class="fg"><label>Pris ex. moms (kr)</label><input id="ee-price-ex" type="number" value="${o.price_ex_vat||""}" /></div>
+        <div class="fg"><label>Pris inkl. moms (kr)</label><input id="ee-price-inc" type="number" value="${o.price_inc_vat||""}" /></div>
+      </div>
+      <div class="fg"><label>Opsummering</label><textarea id="ee-summary">${esc(o.summary||"")}</textarea></div>
+      <div class="form-actions">
+        <button class="btn-cancel" onclick="closeDrawer()">Annuller</button>
+        <button class="btn-save" onclick="erfarSave('${id}')">Gem</button>
+      </div>`;
+  });
+}
+
+async function erfarSave(id) {
+  const payload = {};
+  const title = document.getElementById("ee-title")?.value.trim();
+  const job   = document.getElementById("ee-job")?.value.trim();
+  const bld   = document.getElementById("ee-bld")?.value.trim();
+  const year  = document.getElementById("ee-year")?.value;
+  const area  = document.getElementById("ee-area")?.value;
+  const pex   = document.getElementById("ee-price-ex")?.value;
+  const pinc  = document.getElementById("ee-price-inc")?.value;
+  const sum   = document.getElementById("ee-summary")?.value.trim();
+  if (title)  payload.title = title;
+  if (job)    payload.job_type = job;
+  if (bld)    payload.building_type = bld;
+  if (year)   payload.year = parseInt(year);
+  if (area)   payload.area_m2 = parseFloat(area);
+  if (pex)    payload.price_ex_vat = parseFloat(pex);
+  if (pinc)   payload.price_inc_vat = parseFloat(pinc);
+  if (sum)    payload.summary = sum;
+  try {
+    await apiPatch(`/historical-offers/${id}`, payload);
+    closeDrawer();
+    showToast("Tilbud opdateret");
+    erfarLoad();
+  } catch(e) { showToast("Fejl: "+e.message, true); }
+}
+</script>
+<script src="/static/nav.js"></script>
+</body>
+</html>

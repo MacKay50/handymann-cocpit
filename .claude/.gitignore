@@ -1,0 +1,13 @@
+# Claude Code session/cache files
+sessions/
+cache/
+*.log
+
+# Local-only settings (per-machine overrides). Tracked file is
+# settings.json; settings.local.json is for machine-specific
+# permission overrides the user wants outside version control.
+settings.local.json
+
+# Optional hooks directory — uncomment if you don't want hooks
+# tracked. By default we track them so the harness is reproducible.
+# hooks/

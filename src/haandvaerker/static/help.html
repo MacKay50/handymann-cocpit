@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Hjælp — Håndværker Business System</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: #f0f2f5; color: #1a202c; line-height: 1.65; }
+
+  /* ── Layout ── */
+  .page { display: flex; min-height: 100vh; }
+  nav { width: 240px; min-width: 240px; background: #1a1a2e; color: #e2e8f0; position: sticky; top: 0; height: 100vh; overflow-y: auto; padding: 1.5rem 0; display: flex; flex-direction: column; }
+  nav h2 { font-size: .75rem; text-transform: uppercase; letter-spacing: .08em; color: #718096; padding: .4rem 1.4rem .2rem; margin-top: 1rem; }
+  nav h2:first-child { margin-top: 0; }
+  nav a { display: block; padding: .45rem 1.4rem; font-size: .88rem; color: #cbd5e0; text-decoration: none; border-left: 3px solid transparent; transition: background .15s, color .15s; }
+  nav a:hover, nav a.active { background: rgba(255,255,255,.07); color: #fff; border-left-color: #63b3ed; }
+  nav .nav-logo { padding: 0 1.4rem 1.2rem; border-bottom: 1px solid rgba(255,255,255,.08); margin-bottom: .5rem; }
+  nav .nav-logo span { font-size: 1rem; font-weight: 700; }
+  nav .nav-logo sub { font-size: .72rem; color: #718096; display: block; margin-top: .1rem; }
+  nav .back-link { margin-top: auto; padding: 1rem 1.4rem 0; border-top: 1px solid rgba(255,255,255,.08); }
+  nav .back-link a { color: #a0aec0; font-size: .82rem; }
+
+  main { flex: 1; padding: 2.5rem 3rem; max-width: 860px; }
+
+  /* ── Typography ── */
+  h1 { font-size: 1.75rem; font-weight: 700; margin-bottom: .3rem; color: #1a202c; }
+  .lead { color: #4a5568; font-size: 1rem; margin-bottom: 2rem; }
+  h2.section { font-size: 1.2rem; font-weight: 700; margin: 2.5rem 0 .8rem; padding-bottom: .4rem; border-bottom: 2px solid #e2e8f0; color: #2d3748; }
+  h3 { font-size: .97rem; font-weight: 600; margin: 1.4rem 0 .4rem; color: #2d3748; }
+  p { margin-bottom: .7rem; }
+  ul, ol { padding-left: 1.3rem; margin-bottom: .7rem; }
+  li { margin-bottom: .25rem; }
+  code { background: #edf2f7; border: 1px solid #e2e8f0; border-radius: 4px; padding: .1em .4em; font-family: "Consolas", "Fira Mono", monospace; font-size: .85em; color: #c53030; }
+  pre { background: #1a202c; color: #e2e8f0; border-radius: 8px; padding: 1rem 1.2rem; overflow-x: auto; margin: .7rem 0 1rem; font-family: "Consolas", "Fira Mono", monospace; font-size: .84rem; line-height: 1.6; }
+  pre code { background: none; border: none; color: inherit; font-size: inherit; padding: 0; }
+
+  /* ── Cards ── */
+  .card { background: #fff; border-radius: 10px; padding: 1.2rem 1.4rem; box-shadow: 0 1px 4px rgba(0,0,0,.07); margin-bottom: 1rem; }
+  .card-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: .8rem; margin-bottom: 1rem; }
+  .mod-card { background: #fff; border-radius: 10px; padding: 1rem 1.2rem; box-shadow: 0 1px 4px rgba(0,0,0,.07); border-left: 4px solid #63b3ed; }
+  .mod-card h4 { font-size: .93rem; font-weight: 700; margin-bottom: .3rem; }
+  .mod-card p { font-size: .83rem; color: #4a5568; margin: 0; }
+
+  /* ── Badges ── */
+  .badge { display: inline-block; padding: .15em .55em; border-radius: 4px; font-size: .75rem; font-weight: 600; }
+  .badge-blue  { background: #bee3f8; color: #2c5282; }
+  .badge-green { background: #c6f6d5; color: #22543d; }
+  .badge-red   { background: #fed7d7; color: #742a2a; }
+  .badge-yellow { background: #fefcbf; color: #744210; }
+
+  /* ── Steps ── */
+  .steps { counter-reset: step; list-style: none; padding: 0; margin-bottom: 1rem; }
+  .steps li { counter-increment: step; padding: .55rem 0 .55rem 2.6rem; position: relative; border-left: 2px solid #e2e8f0; margin-left: .9rem; padding-left: 2.2rem; }
+  .steps li:last-child { border-left-color: transparent; }
+  .steps li::before { content: counter(step); position: absolute; left: -.95rem; top: .5rem; width: 1.8rem; height: 1.8rem; background: #63b3ed; color: #fff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: .75rem; font-weight: 700; }
+
+  /* ── Callouts ── */
+  .callout { border-radius: 8px; padding: .8rem 1rem; margin: .7rem 0 1rem; font-size: .9rem; }
+  .callout-blue   { background: #ebf8ff; border-left: 4px solid #63b3ed; }
+  .callout-yellow { background: #fffff0; border-left: 4px solid #ecc94b; }
+  .callout-green  { background: #f0fff4; border-left: 4px solid #68d391; }
+  .callout b { font-weight: 700; }
+
+  /* ── Anchor offset ── */
+  [id] { scroll-margin-top: 1.5rem; }
+</style>
+</head>
+<body>
+<div class="page">
+
+<!-- ── NAVIGATION ── -->
+<nav>
+  <div class="nav-logo">
+    <span>Håndværker</span>
+    <sub>Business System — Hjælp</sub>
+  </div>
+
+  <h2>Kom i gang</h2>
+  <a href="#installation">Installation</a>
+  <a href="#opstart">Start &amp; nulstil</a>
+  <a href="#navigation">Navigation i UI</a>
+
+  <h2>Moduler</h2>
+  <a href="#kunder">Kunder</a>
+  <a href="#projekter">Projekter</a>
+  <a href="#tilbud">Tilbud</a>
+  <a href="#fakturaer">Fakturaer</a>
+  <a href="#medarbejdere">Medarbejdere</a>
+  <a href="#indbakke">Indbakke</a>
+  <a href="#tilbudsflow">Tilbudsflow</a>
+  <a href="#kalender">Kalender</a>
+  <a href="#erfaringsbank">Erfaringsbank</a>
+  <a href="#bankafstemning">Bankafstemning</a>
+  <a href="#economic-pipeline">e-conomic kundekartotek</a>
+  <a href="#betalingsradar">Betalingsradar</a>
+  <a href="#print-eksport">Print &amp; Eksport</a>
+
+  <h2>Konfiguration</h2>
+  <a href="#email-imap">Email / IMAP</a>
+  <a href="#env-fil">.env-filen</a>
+
+  <h2>Teknisk</h2>
+  <a href="#api">API &amp; Swagger</a>
+  <a href="#database">Database</a>
+  <a href="#seed">Demo-data</a>
+
+  <div class="back-link">
+    <a href="/ui">← Tilbage til dashboard</a>
+  </div>
+</nav>
+
+<!-- ── CONTENT ── -->
+<main>
+  <h1>Hjælp &amp; dokumentation</h1>
+  <p class="lead">Alt hvad du behøver for at konfigurere, starte og bruge Håndværker Business System.</p>
+
+  <!-- ════════════════ KOM I GANG ════════════════ -->
+  <h2 class="section" id="installation">Installation</h2>
+  <div class="card">
+    <h3>Forudsætninger</h3>
+    <ul>
+      <li>Windows 10 / 11</li>
+      <li>Python 3.9 installeret i <code>C:\Program Files\Python39\</code></li>
+      <li>Pakker installeret én gang med:<br>
+        <code>pip install -e "C:\Sti\til\haandvaerker-demo"</code></li>
+    </ul>
+    <h3>Første gang</h3>
+    <ol class="steps">
+      <li>Dobbeltklik på <code>reset_demo.bat</code> i projektmappen</li>
+      <li>Vent til terminalen viser "Server klar"</li>
+      <li>Browseren åbner automatisk på <code>http://127.0.0.1:8000/ui</code></li>
+      <li>Vælg en virksomhed fra listen og begynd at arbejde</li>
+    </ol>
+  </div>
+
+  <h2 class="section" id="opstart">Start &amp; nulstil</h2>
+  <div class="card-grid">
+    <div class="mod-card" style="border-color:#68d391">
+      <h4>start.bat</h4>
+      <p>Starter serveren og åbner browseren. Bevarer eksisterende data i databasen.</p>
+    </div>
+    <div class="mod-card" style="border-color:#fc8181">
+      <h4>reset_demo.bat</h4>
+      <p>Sletter databasen, genstarter serveren og indlæser demo-data fra <code>seed_demo.py</code>. Brug ved fejl eller for frisk start.</p>
+    </div>
+    <div class="mod-card" style="border-color:#f6ad55">
+      <h4>seed_demo.bat</h4>
+      <p>Kører kun seed-scriptet uden at slette databasen. Tilføjer demo-data ovenpå eksisterende poster.</p>
+    </div>
+  </div>
+  <div class="callout callout-yellow">
+    <b>Vigtigt:</b> Serveren kører i terminalvinduet "Haandvaerker Server". Stop den med <b>Ctrl+C</b> i det vindue — luk ikke bare vinduet.
+  </div>
+
+  <h2 class="section" id="navigation">Navigation i UI</h2>
+  <div class="card">
+    <p>UI'et er en enkeltsidet applikation (SPA). Al navigation sker uden sideskift.</p>
+    <ul>
+      <li><b>Firmavalg:</b> Åbner automatisk ved opstart. Klik på et firmakort for at åbne dashboardet.</li>
+      <li><b>Faner (tabs):</b> Øverst på dashboardet — Overblik, Fakturaer, Tilbud, Projekter, Kunder, Medarbejdere, Indbakke, Kalender.</li>
+      <li><b>Detailskuffe:</b> Klik på en række eller et kort for at åbne detaljerne i en skuffe fra højre side. Klik uden for skuffen for at lukke.</li>
+      <li><b>Krydnavigation:</b> I detaljeskuffen kan du klikke på linkede elementer (f.eks. kundenavn på et projekt) for at springe direkte til den post.</li>
+      <li><b>← Alle firmaer:</b> Topbar-knap — returnerer til firmavalg-siden.</li>
+    </ul>
+  </div>
+
+  <!-- ════════════════ MODULER ════════════════ -->
+  <h2 class="section" id="kunder">Kunder</h2>
+  <div class="card">
+    <p>Kunderegistret indeholder alle private og erhvervskunder tilknyttet virksomheden.</p>
+    <h3>Opret ny kunde</h3>
+    <ol class="steps">
+      <li>Gå til fanen <b>Kunder</b></li>
+      <li>Klik <b>+ Ny kunde</b></li>
+      <li>Udfyld navn (obligatorisk), email, telefon og adresse</li>
+      <li>Klik <b>Gem kunde</b></li>
+    </ol>
+    <h3>Rediger kunde</h3>
+    <p>Klik på en kunde i listen → <b>Rediger</b>-knap i detaljeskuffen → gem ændringer.</p>
+    <h3>Hvad er tilknyttet en kunde?</h3>
+    <p>Under kundens detaljeside kan du se alle tilknyttede projekter og fakturaer med beløb og status.</p>
+  </div>
+
+  <h2 class="section" id="projekter">Projekter</h2>
+  <div class="card">
+    <p>Et projekt er det centrale arbejdsobjekt — her samles timer, udlæg, tilbud og fakturaer.</p>
+    <h3>Opret projekt</h3>
+    <ol class="steps">
+      <li>Fanen <b>Projekter</b> → <b>+ Nyt projekt</b></li>
+      <li>Vælg tilknyttet kunde og udfyld titel</li>
+      <li>Angiv status: <span class="badge badge-yellow">kladde</span>, <span class="badge badge-blue">aktiv</span>, <span class="badge badge-green">færdig</span></li>
+      <li>Tilføj evt. start- og slutdato samt beskrivelse</li>
+    </ol>
+    <h3>Projektdetaljer</h3>
+    <p>Klik på et projekt for at se: samlede timer, udlæg, tilknyttede tilbud og fakturaer samt tidslinje for aktivitet.</p>
+  </div>
+
+  <h2 class="section" id="tilbud">Tilbud</h2>
+  <div class="card">
+    <p>Opret og send tilbud med linjeposter direkte fra systemet.</p>
+    <h3>Opret tilbud</h3>
+    <ol class="steps">
+      <li>Fanen <b>Tilbud</b> → <b>+ Nyt tilbud</b></li>
+      <li>Vælg projekt og udfyld overskrift</li>
+      <li>Tilføj linjeposter med beskrivelse, antal, enhed og enhedspris — totalen beregnes automatisk</li>
+      <li>Gem som kladde eller sæt status til "Sendt"</li>
+    </ol>
+    <h3>Statusser</h3>
+    <ul>
+      <li><span class="badge badge-yellow">kladde</span> — under udarbejdelse</li>
+      <li><span class="badge badge-blue">sendt</span> — afventer kundens svar</li>
+      <li><span class="badge badge-green">accepteret</span> — godkendt af kunde</li>
+      <li><span class="badge badge-red">afvist</span> — afslaget af kunde</li>
+    </ul>
+  </div>
+
+  <h2 class="section" id="fakturaer">Fakturaer</h2>
+  <div class="card">
+    <p>Opret fakturaer manuelt eller generer dem fra et projekt.</p>
+    <h3>Opret faktura</h3>
+    <ol class="steps">
+      <li>Fanen <b>Fakturaer</b> → <b>+ Ny faktura</b></li>
+      <li>Vælg projekt — systemet foreslår et fakturanummer</li>
+      <li>Angiv betalingsfrist og evt. noter</li>
+      <li>Tilføj linjeposter og gem</li>
+    </ol>
+    <h3>Statusser</h3>
+    <ul>
+      <li><span class="badge badge-yellow">kladde</span> — ikke sendt endnu</li>
+      <li><span class="badge badge-blue">sendt</span> — afventer betaling</li>
+      <li><span class="badge badge-green">betalt</span> — betalingen er modtaget</li>
+      <li><span class="badge badge-red">overskredet</span> — forfaldsdato passeret</li>
+    </ul>
+    <h3>Moms</h3>
+    <p>Systemet beregner automatisk 25% moms på alle linjeposter. Totalen vises med og uden moms.</p>
+  </div>
+
+  <h2 class="section" id="medarbejdere">Medarbejdere</h2>
+  <div class="card">
+    <p>Registrer medarbejdere og tilknyt dem til projekter via tidsregistrering.</p>
+    <h3>Opret medarbejder</h3>
+    <ol class="steps">
+      <li>Fanen <b>Medarbejdere</b> → <b>+ Ny medarbejder</b></li>
+      <li>Udfyld navn, titel og email</li>
+      <li>Angiv timeløn (bruges til projektkalkulationer)</li>
+    </ol>
+    <p>Under medarbejderens detaljeside vises de seneste tidsregistreringer og projekter de er tilknyttet.</p>
+  </div>
+
+  <h2 class="section" id="indbakke">Indbakke</h2>
+  <div class="card">
+    <p>Samler alle indgående henvendelser — email, telefon, website og personligt fremmøde.</p>
+    <h3>Manuel besked</h3>
+    <p>Opret en besked manuelt via API eller ved at konvertere en eksisterende henvendelse.</p>
+    <h3>Email-polling (automatisk)</h3>
+    <p>Knappen <b>Hent ny post</b> i Indbakke-fanen henter ulæste emails fra din IMAP-postkasse.
+       Kræver opsætning — se <a href="#email-imap">Email / IMAP</a> nedenfor.</p>
+    <h3>Statusser</h3>
+    <ul>
+      <li><span class="badge badge-red">ulæst</span> — ny besked, ikke åbnet</li>
+      <li><span class="badge badge-blue">læst</span> — åbnet</li>
+      <li><span class="badge" style="background:#e9d8fd;color:#44337a">konverteret</span> — omdannet til en sag/henvendelse</li>
+      <li><span class="badge" style="background:#e2e8f0;color:#4a5568">arkiveret</span> — lagt til side</li>
+    </ul>
+  </div>
+
+  <h2 class="section" id="tilbudsflow">Tilbudsflow (Indbakke → Tilbud)</h2>
+  <div class="card">
+    <p>Tilbudsflowet er en semi-automatisk arbejdsgang der guider dig fra en indgående besked til en klar tilbudskladde — uden at bytte noget uden din godkendelse.</p>
+    <h3>Sådan starter du</h3>
+    <ol class="steps">
+      <li>Åbn fanen <b>Indbakke</b></li>
+      <li>Find beskeden du vil forberede et tilbud til</li>
+      <li>Klik <b>Forbered tilbud</b> på kortet — eller åbn beskedens detaljeskuffe og klik <b>Forbered tilbud</b></li>
+      <li>Systemet analyserer beskedindholdet og foreslår kontaktinfo, opgavetype og tilbudslinjer</li>
+    </ol>
+    <h3>Tilbudsgrundlaget</h3>
+    <p>Skuffen "Tilbudsgrundlag" viser hvad systemet har udtrukket og foreslået. Du kan redigere alt inden du går videre:</p>
+    <table class="help-table">
+      <thead><tr><th>Felt</th><th>Beskrivelse</th></tr></thead>
+      <tbody>
+        <tr><td>Kundenavn *</td><td>Afsenderens navn fra beskeden (kræves ved konvertering)</td></tr>
+        <tr><td>Telefon / E-mail</td><td>Udtrukket fra beskeden eller afsenderfeltet</td></tr>
+        <tr><td>Adresse</td><td>Automatisk registreret adresse-mønster fra beskedteksten</td></tr>
+        <tr><td>Opgavetype</td><td>Detekteret nøgleord: maling, spartling, facade, træværk mv.</td></tr>
+        <tr><td>Beskrivelse</td><td>Beskedteksten som udgangspunkt — redigér til intern sagsbeskrivelse</td></tr>
+        <tr><td>Interne noter</td><td>Interne bemærkninger — vises ikke til kunden</td></tr>
+        <tr><td>Manglende oplysninger</td><td>Automatisk tjekliste over hvad der mangler (adresse, m2, fotos mv.)<br>Klik ✓ for at markere som løst</td></tr>
+        <tr><td>Foreslåede linjer</td><td>Konservative standard-tilbudslinjer baseret på opgavetypen<br>Alle priser er 0 kr — kræver manuel vurdering inden afsendelse</td></tr>
+      </tbody>
+    </table>
+    <h3>Handlinger i skuffen</h3>
+    <table class="help-table">
+      <thead><tr><th>Knap</th><th>Hvad sker der</th></tr></thead>
+      <tbody>
+        <tr><td><b>Gem kladde</b></td><td>Gemmer dine ændringer uden at ændre status — du kan fortsætte senere</td></tr>
+        <tr><td><b>Markér gennemgået</b></td><td>Gemmer og markerer grundlaget som gennemgået (status: gennemgået)</td></tr>
+        <tr><td><b>Opret tilbudskladde →</b></td><td>Gemmer, opretter automatisk: ny Kunde, Henvendelse, Projekt og Tilbudskladde med linjerne — og viser links til dem</td></tr>
+      </tbody>
+    </table>
+    <h3>Hvad oprettes ved konvertering</h3>
+    <ol class="steps">
+      <li><b>Kunde</b> oprettes med navn, telefon, email og adresse fra grundlaget</li>
+      <li><b>Henvendelse</b> oprettes som kvalificeret (klar til tilbudsgivning)</li>
+      <li><b>Projekt</b> oprettes som kladde med reference til henvendelsen</li>
+      <li><b>Tilbud</b> oprettes som kladde med de foreslåede linjer (alle til 0 kr)</li>
+      <li>Links til Projekt og Tilbud vises direkte i skuffen — inkl. PDF-download</li>
+    </ol>
+    <p style="background:#fffbeb;border:1px solid #f6e05e;border-radius:6px;padding:.6rem .9rem;margin-top:.8rem;font-size:.87rem">
+      <strong>Husk:</strong> Priserne på de foreslåede linjer er <b>0 kr</b> og markeret "kræver manuel vurdering".
+      Gå til tilbuddet og udfyld de rigtige priser inden du sender det til kunden.
+    </p>
+  </div>
+
+  <h2 class="section" id="kalender">Kalender</h2>
+  <div class="card">
+    <p>Kalender-fanen samler <strong>to typer poster</strong> i én kronologisk tidslinje grupperet pr. måned:</p>
+    <div class="card-grid" style="margin-top:.6rem">
+      <div class="mod-card" style="border-color:#ed8936">
+        <h4>🚩 Administrative frister</h4>
+        <p>Momsindberetning, lønkørsel, årsregnskab, selskabsskat, forsikringsfornyelse — faste deadlines der gentager sig.</p>
+      </div>
+      <div class="mod-card" style="border-color:#63b3ed">
+        <h4>📅 Aftaler</h4>
+        <p>Byggemøder, besigtigelser, tilbudsmøder, kundebesøg, personalemøder — alt med dato, tid og evt. tilknyttet projekt.</p>
+      </div>
+    </div>
+    <h3>Farve-koding</h3>
+    <ul>
+      <li><span style="display:inline-block;width:.7rem;height:.7rem;background:#fc8181;border-radius:2px;margin-right:.3rem"></span><strong>Rød kant</strong> — forfalden frist (passeret dato, ikke udført)</li>
+      <li><span style="display:inline-block;width:.7rem;height:.7rem;background:#ed8936;border-radius:2px;margin-right:.3rem"></span><strong>Orange kant</strong> — kommende administrativ frist</li>
+      <li><span style="display:inline-block;width:.7rem;height:.7rem;background:#63b3ed;border-radius:2px;margin-right:.3rem"></span><strong>Blå kant</strong> — kommende aftale</li>
+      <li><span style="display:inline-block;width:.7rem;height:.7rem;background:#9ae6b4;border-radius:2px;margin-right:.3rem"></span><strong>Grøn kant</strong> — udført / afsluttet</li>
+    </ul>
+    <p>Aktuel måned er fremhævet med blå understregning og et <span class="badge badge-blue">Denne måned</span>-badge.</p>
+  </div>
+
+  <h3>Tilføj en administrativ frist</h3>
+  <div class="card">
+    <ol class="steps">
+      <li>Fanen <b>Kalender</b> → knappen <b>+ Ny frist</b> øverst, eller <b>+ Frist</b> ved den relevante måned</li>
+      <li>Udfyld titel og vælg kategori:</li>
+    </ol>
+    <ul style="margin-top:.3rem">
+      <li><strong>Moms</strong> — momsindberetning og -afregning</li>
+      <li><strong>Løn</strong> — lønkørsel og lønsedler</li>
+      <li><strong>Årsregnskab</strong> — indsendelse til Erhvervsstyrelsen</li>
+      <li><strong>Selskabsskat</strong> — aconto-rater</li>
+      <li><strong>Forsikring</strong> — fornyelse og præmiebetaling</li>
+      <li><strong>Andet</strong> — øvrige administrative opgaver</li>
+    </ul>
+    <p style="margin-top:.6rem">Forfaldsdatoen forudfyldes med den valgte måneds 1. dag — juster til den korrekte dato.</p>
+    <div class="callout callout-green" style="margin-top:.6rem">
+      <b>Tip:</b> Brug <b>Generer årshjul</b> via API (<code>POST /admin-deadlines/generate-year</code>) for at oprette alle standardfrister for et helt år automatisk. Det gøres én gang og tilpasses derefter.
+    </div>
+  </div>
+
+  <h3>Tilføj en aftale</h3>
+  <div class="card">
+    <ol class="steps">
+      <li>Fanen <b>Kalender</b> → <b>+ Ny aftale</b> øverst, eller <b>+ Aftale</b> ved den relevante måned</li>
+      <li>Udfyld titel og vælg type:</li>
+    </ol>
+    <ul style="margin-top:.3rem">
+      <li><strong>Møde</strong> — intern eller ekstern (byggemøde, personalemøde, bankmøde...)</li>
+      <li><strong>Besigtigelse</strong> — besøg på adresse for vurdering af opgave</li>
+      <li><strong>Tilbudsrunde</strong> — møde med kunde for at prissætte og aftale arbejdet</li>
+      <li><strong>Andet</strong> — øvrige aftaler</li>
+    </ul>
+    <p style="margin-top:.6rem">Felter i formularen:</p>
+    <table style="width:100%;border-collapse:collapse;font-size:.86rem;margin-top:.3rem">
+      <thead><tr style="background:#edf2f7">
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Felt</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Påkrævet</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Beskrivelse</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Titel</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Ja</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Kortfattet beskrivelse af aftalen</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Type</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Ja</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Møde, Besigtigelse, Tilbudsrunde, Andet</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Start / Slut</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Ja</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Dato og klokkeslæt</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Sted</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Nej</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Adresse, lokale eller "Telefonmøde"</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Projekt</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Nej</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Tilknyt til et eksisterende projekt</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Medarbejder</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Nej</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Ansvarlig medarbejder</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Noter</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Nej</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Forberedelse, dagsorden, opfølgning</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Rediger og marker udført</h3>
+  <div class="card">
+    <ul>
+      <li><strong>Rediger:</strong> Klik på en post i kalenderen — en skuffe åbnes med alle felter klar til redigering.</li>
+      <li><strong>Marker udført:</strong> Klik <b>✓</b>-knappen direkte på rækken, eller brug <b>✓ Udført</b>-knappen i redigeringsskuffen. Posten nedtones og grønfarves.</li>
+      <li><strong>Genåbn:</strong> Klik <b>↩</b>-knappen på en udført frist for at sætte den tilbage til afventende.</li>
+      <li><strong>Slet:</strong> Klik <b>×</b>-knappen på rækken. Posten fjernes permanent.</li>
+    </ul>
+  </div>
+
+  <h3>Denne uge &amp; kommende — Overblik-widgetten</h3>
+  <div class="card">
+    <p>På <b>Overblik</b>-fanen vises en widget med alle frister og aftaler inden for de næste 14 dage — kombineret fra begge typer, sorteret kronologisk.</p>
+    <ul>
+      <li>Forfaldne poster vises med <span style="color:#c53030;font-weight:600">Forfalden</span> i rød tekst øverst</li>
+      <li>Klik på widgettens overskrift for at springe direkte til Kalender-fanen</li>
+    </ul>
+    <div class="callout callout-blue">
+      <b>Daglig arbejdsrutine:</b> Start dagen med et kig på Overblik-fanen. Widgetten giver dig et øjebliksbillede af hvad der sker i dag og den kommende uge — uden at du behøver at navigere rundt.
+    </div>
+  </div>
+
+  <!-- ════════════════ ERFARINGSBANK ════════════════ -->
+  <h2 class="section" id="erfaringsbank">Erfaringsbank</h2>
+  <div class="card">
+    <p>Erfaringsbanken er et historisk tilbudsarkiv. Du importerer gamle tilbud (PDF, Word-dokumenter, Excel-ark, tekstfiler) og systemet udtrækker automatisk nøgletal — pris, areal, timer, år og jobtype. Over tid bygger du en intern vidensbase du kan trække på når du prissætter nye opgaver.</p>
+    <div class="callout callout-blue">
+      <b>Ingen data forlader din maskine.</b> Al udtræk sker lokalt med regelbaserede algoritmer. Vektorlighed (find lignende tilbud) kræver en lokal AI-server — se <a href="#env-fil">.env-filen</a> — men er valgfrit og deaktiveret som standard.
+    </div>
+  </div>
+
+  <h3>Importer et tilbud</h3>
+  <div class="card">
+    <ol class="steps">
+      <li>Gå til fanen <b>Erfaringsbank</b></li>
+      <li>Skriv eller indsæt den <b>lokale filsti</b> til dokumentet i import-boksen, f.eks.:<br><code>C:\Tilbud\Facade Skovlunde 2024.pdf</code></li>
+      <li>Klik <b>Importer</b> — systemet opretter et importjob og forsøger at udtrække data</li>
+      <li>Tilbuddet vises i listen med status <span class="badge badge-yellow">Afventer godkendelse</span></li>
+    </ol>
+    <h3>Understøttede filformater</h3>
+    <div class="card-grid" style="margin-top:.4rem">
+      <div class="mod-card" style="border-color:#63b3ed">
+        <h4>PDF</h4>
+        <p>Udtrækker tekst via pdfplumber. Scannede PDF'er (billeder) kræver OCR — se nedenfor.</p>
+      </div>
+      <div class="mod-card" style="border-color:#68d391">
+        <h4>Word (DOCX)</h4>
+        <p>Læser afsnit og tabeller via python-docx. Fungerer bedst med strukturerede dokumenter.</p>
+      </div>
+      <div class="mod-card" style="border-color:#f6ad55">
+        <h4>Excel (XLSX / XLS)</h4>
+        <p>Udtrækker cellerne i det aktive ark via openpyxl. Samleceller og formler understøttes ikke.</p>
+      </div>
+      <div class="mod-card" style="border-color:#ed8936">
+        <h4>Tekstfil (TXT)</h4>
+        <p>Direkte udtræk. Nyttigt for eksporterede tekster eller manuelt oprettede tilbud.</p>
+      </div>
+    </div>
+    <div class="callout callout-yellow" style="margin-top:.6rem">
+      <b>Scannede dokumenter (billeder/OCR):</b> Kræver at <code>tesseract</code> og <code>Pillow</code> er installeret. Hvis ikke, degraderer systemet gracefully og udtrækker hvad den kan.
+    </div>
+  </div>
+
+  <h3>Hvad udtrækkes automatisk?</h3>
+  <div class="card">
+    <p>Systemet bruger regelbaseret parsing — ingen ekstern AI. Udtræknøjagtigheden afhænger af dokumentets struktur og konsistens.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:.86rem">
+      <thead><tr style="background:#edf2f7">
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Felt</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Metode</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Eksempel der matches</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Pris ekskl. moms</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Nøgleord + tal-mønstre</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">"ekskl. moms 125.000", "pris ex moms: 82500"</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Areal (m²)</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Regex på "m²", "kvm", "m2"</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">"350 m2", "ca. 200 kvm"</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Timer</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Nøgleord + tal</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">"40 timer", "arbejdstimer: 120"</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">År</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">4-cifret årstal nær toppen</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">"Tilbud 2024", filnavn med årstal</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Jobtype</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Nøgleordsdetektion</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">maling, spartling, facade, tagdækning, murværk, gulv...</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Bygningstype</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Nøgleordsdetektion</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">villa, lejlighed, erhverv, skole, andelsbolig...</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Tilbudsnummer</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Regex på tilbudsnummer-mønstre</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">"TIL-2024-042", "Tilbud nr. 123"</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:.6rem;font-size:.87rem;color:#4a5568">Felter systemet ikke kan finde forbliver tomme — du udfylder dem manuelt inden godkendelse. Pris/m² beregnes automatisk når begge værdier er til stede.</p>
+  </div>
+
+  <h3>Gennemgå og godkend</h3>
+  <div class="card">
+    <ol class="steps">
+      <li>Klik på et tilbudskort i Erfaringsbank-fanen</li>
+      <li>En skuffe åbnes med de udtrukne felter — gennemgå og ret hvad der er forkert</li>
+      <li>Klik <b>Gem ændringer</b> for at gemme uden at godkende</li>
+      <li>Klik <b>Godkend</b> for at flytte tilbuddet til status <span class="badge badge-green">Godkendt</span> — det indgår nu i sammenligningsgrundlaget</li>
+    </ol>
+    <h3>Statusser</h3>
+    <ul>
+      <li><span class="badge badge-yellow">Afventer</span> — importeret, ikke gennemgået endnu</li>
+      <li><span class="badge badge-blue">Gennemgået</span> — data er kontrolleret, afventer godkendelse</li>
+      <li><span class="badge badge-green">Godkendt</span> — indgår i erfaringsbanken og sammenligninger</li>
+      <li><span class="badge badge-red">Fejl</span> — importjobbet mislykkedes (filen kunne ikke læses)</li>
+    </ul>
+  </div>
+
+  <h3>Find lignende tilbud — prissætningstjek</h3>
+  <div class="card">
+    <p>Når du forbereder et nyt tilbud via <a href="#tilbudsflow">Tilbudsflowet</a>, kan du klikke <b>Find lignende tilbud</b> i Tilbudsgrundlag-skuffen. Systemet søger i de godkendte tilbud og viser top-5 mest lignende sager med:</p>
+    <ul>
+      <li>Titel og jobtype</li>
+      <li>Areal og år</li>
+      <li>Pris ekskl. moms + pris pr. m²</li>
+      <li>Laveste / median / højeste pris på matchene (prisinterval)</li>
+    </ul>
+    <div class="callout callout-yellow">
+      <b>Vektorlighed kræver lokal AI.</b> Uden <code>LOCAL_AI_ENDPOINT</code> i <code>.env</code> bruges simpel nøgleordsmatchning i stedet. Resultaterne er stadig nyttige, men vektorlighed giver bedre semantisk matchning på tværs af jobbeskrivelser. Se <a href="#env-fil">.env-filen</a>.
+    </div>
+    <div class="callout callout-blue" style="margin-top:.5rem">
+      <b>Hash-baseret dedup:</b> Importerer du den samme fil to gange, genbruges det eksisterende importjob — der oprettes ikke dubletter.
+    </div>
+  </div>
+
+  <!-- ════════════════ BANKAFSTEMNING ════════════════ -->
+  <h2 class="section" id="bankafstemning">Bankafstemning</h2>
+  <div class="card">
+    <p>Bankafstemningsmodulet giver et komplet overblik fra tilbud til bekræftet bankbetaling — uden at forlade systemet. Du importerer bankudtog og e-conomic fakturaer som CSV-filer. Systemet matcher dem automatisk i tre lag, og du gennemgår og bekræfter resultatet.</p>
+    <div class="card-grid" style="margin-top:.6rem">
+      <div class="mod-card" style="border-color:#63b3ed">
+        <h4>Bankudtog (CSV)</h4>
+        <p>Import af Danske Bank-format: bogføringsdato, tekst, beløb og saldo. Beløb konverteres automatisk til øre (heltal) for præcis sammenligning.</p>
+      </div>
+      <div class="mod-card" style="border-color:#68d391">
+        <h4>e-conomic fakturaer (CSV)</h4>
+        <p>Import af e-conomic faktura-eksport: fakturanummer, debitor, netto/moms/brutto, forfaldsdato og bogføringsdato.</p>
+      </div>
+    </div>
+    <div class="callout callout-green" style="margin-top:.6rem">
+      <b>100% offline.</b> Ingen data sendes til e-conomic, banken eller noget eksternt system. Import sker udelukkende via lokale CSV-filer.
+    </div>
+  </div>
+
+  <h3>Den fulde arbejdsgang — trin for trin</h3>
+  <div class="card">
+    <ol class="steps">
+      <li><b>Importer bankudtog</b> — vælg "Bankudtog" i dropdown'en, angiv filstien og klik <b>Importer</b></li>
+      <li><b>Importer e-conomic fakturaer</b> — skift til "e-conomic fakturaer" i dropdown'en, angiv sti og klik <b>Importer</b></li>
+      <li><b>Kør afstemning</b> — systemet kører alle tre matchinglag og viser tællingen</li>
+      <li><b>Bekræft alle passende</b> (valgfrit) — ét klik bekræfter alle foreslåede matches hvor beløbet balancerer</li>
+      <li><b>Gennemgå foreslåede</b> — AI-forslag og nær-matches kræver individuel stillingtagen</li>
+      <li><b>Manuel match</b> — tilknyt uparrede transaktioner til fakturaer direkte fra rækken</li>
+      <li><b>Udled kunder</b> — systemet opretter kundestubs fra debitornavne på bekræftede fakturaer</li>
+      <li><b>Opret historiske projekter</b> — lukker loopet: afsluttede projekter for alle bankbekræftede fakturaer</li>
+    </ol>
+    <p>Åbn afstemningssiden: <a href="/reconciliation"><b>/reconciliation</b></a> — eller klik på et afstemnings-KPI-kort på dashboardet.</p>
+  </div>
+
+  <h3>Importer bankudtog (Danske Bank CSV)</h3>
+  <div class="card">
+    <p>Eksportér dine kontobevægelser fra Danske Netbank som CSV og importer filen via afstemningssiden.</p>
+    <h3>Sådan eksporterer du fra Danske Netbank</h3>
+    <ol class="steps">
+      <li>Log ind på Netbank → Konto → Kontoudtog</li>
+      <li>Vælg perioden (typisk den aktuelle måned eller det antal måneder der svarer til dine åbne fakturaer)</li>
+      <li>Klik <b>Eksportér</b> → vælg <b>CSV</b> — gem filen lokalt, f.eks. <code>C:\Afstemning\bank_maj_2026.csv</code></li>
+    </ol>
+    <h3>Forventet CSV-format</h3>
+    <pre><code>Bogfoeringsdato;Tekst;Beloeb;Saldo
+01-04-2026;OVERF HANSEN BYGGERI | Faktura 10001;5.000,00;50.000,00
+28.05.2026;OVERF JENSEN SERVICE;3.000,00;47.000,00</code></pre>
+    <p style="font-size:.85rem;color:#4a5568;margin-top:.3rem">Datoseparator kan være <code>-</code> eller <code>.</code> — begge accepteres. Feltet <b>Tekst</b> kan indeholde <code> | </code> (lodret streg) som separator mellem bankens tekst og besked-feltet — begge dele vises i detaljevisningen.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:.86rem;margin-top:.6rem">
+      <thead><tr style="background:#edf2f7">
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Kolonne</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Format</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Bemærkning</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Bogfoeringsdato</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">DD-MM-YYYY <em>eller</em> DD.MM.YYYY</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Begge formater accepteres</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Tekst</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Fritekst</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Bankens beskrivelse — bruges til fakturanummer-matching og AI</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Beloeb</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">"1.234,56"</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Dansk tal-format. Kun positive beløb importeres som indbetalinger</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Saldo</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">"1.234,56"</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Importeres men bruges ikke i matching</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-blue" style="margin-top:.7rem">
+      <b>Dedup:</b> Systemet beregner en SHA-256-hash af hele filen. Importerer du den samme fil to gange, returneres 409 og ingen dubletter oprettes.
+    </div>
+    <div class="callout callout-yellow">
+      <b>Enkodning:</b> Filer fra Netbank er typisk i Windows CP-1252 (æøå). Systemet prøver UTF-8 først og falder automatisk tilbage til CP-1252.
+    </div>
+  </div>
+
+  <h3>Importer e-conomic fakturaer (CSV-eksport)</h3>
+  <div class="card">
+    <p>Eksportér dine åbne/udestående fakturaer fra e-conomic og importer filen.</p>
+    <h3>Forventet CSV-format (semikolon-separeret)</h3>
+    <pre><code>Fakturanummer;Debitor;Nettobeloeb;Momsbeloeb;Bruttobeloeb;Forfaldsdato;Bogfoeringsdato
+10001;Hansen Byggeri;8.000,00;2.000,00;10.000,00;15-04-2026;01-04-2026
+10002;Jensen Service;4.400,00;1.100,00;5.500,00;15-04-2026;01-04-2026</code></pre>
+    <table style="width:100%;border-collapse:collapse;font-size:.86rem;margin-top:.6rem">
+      <thead><tr style="background:#edf2f7">
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Kolonne</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Format</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Hvad det bruges til</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Fakturanummer</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Tekst</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Unik nøgle — bruges til dedup (409 ved genforsøg) og til fakturanummer-matching</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Debitor</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Tekst</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Kundenavn — vises i oversigten og bruges til kundeoprettelse</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Nettobeloeb</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">"1.234,56"</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Beløb ekskl. moms — vises i oversigten</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Momsbeloeb</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">"1.234,56"</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Momsbeløb — vises i oversigten</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Bruttobeloeb</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">"1.234,56"</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>Bruges til matching</b> — sammenlignes direkte med bankbeløbet</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Forfaldsdato</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">DD-MM-YYYY</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Bruges i datovinduet (±7 dage) ved beløbsmatch og til is_overdue-beregning</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Bogfoeringsdato</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">DD-MM-YYYY</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Fakturadatoen fra e-conomic — vises i oversigten</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>De tre matchinglag — hvad sker der når du klikker "Kør afstemning"?</h3>
+  <div class="card">
+    <p>Systemet kører tre lag i rækkefølge. Hvert lag arbejder kun på det der er tilbage efter det forrige:</p>
+    <table style="width:100%;border-collapse:collapse;font-size:.86rem;margin-top:.4rem">
+      <thead><tr style="background:#edf2f7">
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Lag</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Regel</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Bekræftelse</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Type</th>
+      </tr></thead>
+      <tbody>
+        <tr>
+          <td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>1. Eksakt beløb+dato</b></td>
+          <td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Bankbeløb = faktura bruttobeløb <em>og</em> dato inden for ±7 dage fra forfaldsdato</td>
+          <td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-green">Auto-bekræftet</span></td>
+          <td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><code>auto_exact</code></td>
+        </tr>
+        <tr style="background:#f7fafc">
+          <td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>2. Fakturanummer i beskrivelse</b></td>
+          <td style="padding:.3rem .6rem;border:1px solid #e2e8f0">4–6-cifret tal i bankbeskrivelsen matcher fakturanummer, og beløb stemmer (op til ±1,00 kr tolerance). Understøtter multi-faktura: summen af fundne fakturaer = bankbeløbet. Ingen datobegrænsning.</td>
+          <td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Eksakt: <span class="badge badge-green">Auto-bekræftet</span><br>Nær-match (≤1 kr): <span class="badge badge-yellow">Afventer</span></td>
+          <td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><code>auto_number</code></td>
+        </tr>
+        <tr>
+          <td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>3. AI-residual</b></td>
+          <td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Lokalt AI-lag (Ollama/LM Studio) foreslår matches for det der er tilbage. Understøtter multi-faktura og nær-beløb.</td>
+          <td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-yellow">Afventer altid</span></td>
+          <td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><code>auto_ai</code></td>
+        </tr>
+      </tbody>
+    </table>
+    <div class="callout callout-blue" style="margin-top:.7rem">
+      <b>Nær-beløb (±1,00 kr):</b> En kunde har betalt 1.000,09 kr i stedet for 1.000,00 kr. Fakturanummer-matcheren finder stadig match og markerer det med en advarsel: "Beløbsforskel 0,09 kr — kontrollér inden bekræftelse". Du vælger selv om du vil bekræfte.
+    </div>
+    <p>Svaret fra <code>POST /reconciliation/match</code> viser alle tre lag:</p>
+    <pre><code>{ "deterministic_count": 3, "number_count": 2, "ai_suggested_count": 1, "matches": [...] }</code></pre>
+  </div>
+
+  <h3>Banktransaktionsoversigten — bank-centreret visning</h3>
+  <div class="card">
+    <p>Oversigten er <b>bank-centreret</b> — én række pr. banktransaktion, nyeste øverst. Klik på en række for at se alle detaljer og tilknyttede fakturaer.</p>
+    <h3>Filterfaner øverst</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:.86rem;margin-top:.3rem">
+      <thead><tr style="background:#edf2f7">
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Fane</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Viser</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>Alle</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Alle importerede banktransaktioner</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>Foreslået</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Transaktioner med ubekræftede matches (fakturanummer eller AI-forslag) — kræver din stillingtagen</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>Uafstemt</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Transaktioner uden noget match — kræver manuel tilknytning</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>Afstemt</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Transaktioner med ét eller flere bekræftede matches</td></tr>
+      </tbody>
+    </table>
+    <h3>Detaljevisning (klik på rækken)</h3>
+    <ul>
+      <li><b>Tekst og Besked:</b> bankens beskrivelseslinje vises i sin helhed — herunder besked-feltet (markeret med blå kursiv) der ofte indeholder fakturanummer eller kundenavn</li>
+      <li><b>Tilknyttede fakturaer:</b> alle matches vises med fakturanummer, debitor, beløb og status — inkl. en beløbssummering der viser om transaktionen er fuldt dækket</li>
+      <li><b>Manuel tilknytning:</b> en søgbar liste over uafstemte fakturaer med restbeløb — kun fakturaer der kan passes inden for restbeløbet vises</li>
+      <li><b>Advarsel ved nær-match:</b> hvis en faktura er fundet via nær-beløb (≤1 kr forskel) vises en gul advarsel med den præcise difference</li>
+    </ul>
+  </div>
+
+  <h3>Bekræft alle passende (massebekræftelse)</h3>
+  <div class="card">
+    <p>Knappen <b>Bekræft alle passende</b> vises i toolbar'en (lilla) når der er foreslåede matches. Den bekræfter i ét klik alle transaktioner hvor summen af foreslåede fakturabeløb præcis svarer til transaktionsbeløbet.</p>
+    <ul>
+      <li>Transaktioner hvor beløbet ikke balancerer springes over — de forbliver i "Foreslået" til individuel gennemgang</li>
+      <li>Resultatet vises i statuslinjen: "Bekræftet X matches på Y transaktioner — Z sprunget over (beløb passer ikke)"</li>
+    </ul>
+    <div class="callout callout-blue">
+      <b>Typisk brug:</b> Kør afstemning → klik Bekræft alle passende → gennemgå kun det der er tilbage under "Foreslået". Det sparer tid når der er mange fakturaer med fakturanummer i bankbeskrivelsen.
+    </div>
+  </div>
+
+  <h3>Manuel afstemning</h3>
+  <div class="card">
+    <p>Når det automatiske system ikke finder et match — eller når du vil tilknytte ekstra fakturaer til en transaktion — bruger du manuel tilknytning direkte fra rækken.</p>
+    <ol class="steps">
+      <li>Find transaktionen i oversigten (brug "Uafstemt"-fanen)</li>
+      <li>Klik på rækken for at åbne detaljevisningen</li>
+      <li>Søg efter den faktura du vil tilknytte i "Manuel tilknytning"-panelet</li>
+      <li>Klik <b>Tilknyt</b> — fakturaen bekræftes som matched øjeblikkeligt</li>
+    </ol>
+    <div class="callout callout-blue">
+      <b>Multi-faktura:</b> Én banktransaktion kan dække flere fakturaer. Tilknyt dem én efter én — systemet summerer beløbene og markerer transaktionen som fuldt afstemt når summen præcis svarer til transaktionsbeløbet.
+    </div>
+    <div class="callout callout-yellow">
+      <b>Beløbsvalidering:</b> Systemet forhindrer dig i at tilknytte en faktura hvis dens beløb overstiger det resterende beløb på transaktionen. Du ser præcis hvad der resterer: "Restbeløb: 1.234,56 kr".
+    </div>
+  </div>
+
+  <h3>Bekræft og afvis individuelle matches</h3>
+  <div class="card">
+    <table style="width:100%;border-collapse:collapse;font-size:.86rem">
+      <thead><tr style="background:#edf2f7">
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Handling</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Hvornår</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Effekt</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>✓ Bekræft</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Foreslået match (fakturanummer eller AI) du er enig i</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Match bekræftet. Faktura → matched. Transaktion → matched når alle dens matches er bekræftede</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>✗ Fjern</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Forkert auto-match eller AI-forslag du ikke godkender</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Match deaktiveres. Faktura og transaktion vender tilbage til uafstemt og kan matches igen</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:.6rem;font-size:.87rem;color:#4a5568">Fjernelse er altid ufarligt — du kan matche dem manuelt bagefter, eller køre afstemning igen.</p>
+  </div>
+
+  <h3>Slet og genindlæs data</h3>
+  <div class="card">
+    <p>Knapperne <b>Slet bankdata</b> og <b>Slet fakturaer</b> (røde, til højre i toolbar'en) giver mulighed for at rydde ud og importere forfra. Begge viser en forhåndsvisning inden sletning.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:.86rem;margin-top:.4rem">
+      <thead><tr style="background:#edf2f7">
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Knap</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Hvad slettes</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Hvad bevares</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>Slet bankdata</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Alle banktransaktioner + tilhørende matches</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Fakturaer, kunder, projekter</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>Slet fakturaer</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Alle e-conomic fakturaer + tilhørende matches</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Banktransaktioner, projekter (mister fakturalinkene)</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-yellow" style="margin-top:.7rem">
+      <b>Forhåndsvisning:</b> Inden du bekræfter sletning vises præcis hvad der vil ske — antal bekræftede afstemninger der mistes, antal projekter der mister fakturalinkene osv. Sletning kan ikke fortrydes.
+    </div>
+  </div>
+
+  <h3>is_overdue — forfaldne uafstemte fakturaer</h3>
+  <div class="card">
+    <p>Feltet <code>is_overdue</code> på en e-conomic faktura er <em>True</em> når forfaldsdatoen er passeret <b>og</b> fakturaens status er <code>unmatched</code>. Beregnes automatisk ved hvert listekald — gemmes ikke i databasen. Så snart en faktura afstemmes forsvinder den fra "kræver handling"-listen — selv hvis forfaldsdatoen er for længst overskredet.</p>
+  </div>
+
+  <h3>Dashboard KPI-kort</h3>
+  <div class="card">
+    <p>På <b>Overblik</b>-fanen vises tre afstemnings-KPI-kort:</p>
+    <div class="card-grid" style="margin-top:.5rem">
+      <div class="mod-card" style="border-color:#ed8936">
+        <h4>Afstemning uafsluttet</h4>
+        <p>Antal e-conomic fakturaer uden bekræftet bankbetaling. Klik for at åbne afstemningssiden.</p>
+      </div>
+      <div class="mod-card" style="border-color:#fc8181">
+        <h4>Forfaldne u/match</h4>
+        <p>Antal uafstemte fakturaer hvor forfaldsdatoen er passeret. Kræver øjeblikkelig handling.</p>
+      </div>
+      <div class="mod-card" style="border-color:#fc8181">
+        <h4>Forfalden beløb</h4>
+        <p>Samlet udestående beløb (kr) på forfaldne, uafstemte fakturaer.</p>
+      </div>
+    </div>
+    <p style="margin-top:.6rem">Alle tre kort er klikbare og åbner direkte <a href="/reconciliation"><b>/reconciliation</b></a>.</p>
+  </div>
+
+  <h3>AI-matching — valgfrit residuallag</h3>
+  <div class="card">
+    <p>Hvis beløbet ikke stemmer præcist og intet fakturanummer kan genkendes, kan et lokalt AI-lag (Ollama / LM Studio) foreslå matches for det der er tilbage.</p>
+    <div class="callout callout-yellow">
+      <b>AI-matches bekræftes ALDRIG automatisk.</b> De vises med status <span class="badge badge-yellow">Foreslået</span> og kræver din godkendelse. Systemet anbefaler — du bestemmer.
+    </div>
+    <p>Kræver <code>LOCAL_AI_ENDPOINT</code> sat i <code>.env</code>:</p>
+    <pre><code>LOCAL_AI_ENDPOINT=http://localhost:11434</code></pre>
+    <p>Uden denne variabel springes AI-laget over. De øvrige to lag fungerer altid. Se <a href="#env-fil">.env-filen</a>.</p>
+  </div>
+
+  <h3>Afstemningssiden — toolbar-oversigt</h3>
+  <div class="card">
+    <p>Siden åbnes via <a href="/reconciliation"><code>/reconciliation?company_id=...</code></a> eller ved klik på et KPI-kort på dashboardet.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:.86rem;margin-top:.4rem">
+      <thead><tr style="background:#edf2f7">
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Knap</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Farve</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Hvad den gør</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>Importer</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Blå</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Importerer den valgte fil (bankudtog eller fakturaer)</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>Kør afstemning</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Grøn</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Kører alle tre matchinglag for firmaet</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>Bekræft alle passende</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Lilla (vises kun når der er forslag)</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Massebekræfter alle foreslåede matches hvor beløbet balancerer</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>Udled kunder</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Teal</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Opretter kundestubs fra unikke debitornavne på importerede fakturaer</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>Opret historiske projekter</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Teal</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Opretter afsluttede projekter for alle bankbekræftede fakturaer med linket kunde</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>Opdater</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Grå</td><td style="padding:.3rem .6mm;border:1px solid #e2e8f0">Genindlæser visningen fra serveren</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>Slet bankdata</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Rød</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Sletter alle banktransaktioner (med forhåndsvisning)</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>Slet fakturaer</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Rød</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Sletter alle e-conomic fakturaer (med forhåndsvisning)</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-blue">
+      <b>Tip:</b> Åbn siden i en separat browser-fane mens du arbejder i din bank og e-conomic — så kan du importere og afstemme uden at navigere væk fra din normale arbejdsgang.
+    </div>
+  </div>
+
+  <!-- ════════════════ E-CONOMIC KUNDEKARTOTEK ════════════════ -->
+  <h2 class="section" id="economic-pipeline">e-conomic kundekartotek &amp; pipeline</h2>
+  <div class="card">
+    <p>Ud over faktura-afstemning kan du importere dit e-conomic kundekartotek og lade systemet lukke det fulde loop: fra importerede fakturaer til synkroniserede kunder og historiske projekter — alt uden manuelle mellemtrin.</p>
+    <div class="callout callout-green">
+      <b>100% offline.</b> Ingen data sendes til e-conomic. Alt sker via lokale CSV-filer fra dine e-conomic-eksporter.
+    </div>
+  </div>
+
+  <h3>Importer kundekartotek fra e-conomic</h3>
+  <div class="card">
+    <p>Eksportér dit kundekartotek fra e-conomic (Debitorer → Eksporter) som semikolon-separeret CSV.</p>
+    <h3>Forventet format</h3>
+    <pre><code>Kundenummer;Navn;Adresse;Postnummer;By;CVR;Email;Telefon
+1001;Hansen Byggeri A/S;Bredgade 12;1260;København K;12345678;info@hansen.dk;33001122
+1002;Petersen VVS;Nørrebrogade 45;2200;København N;87654321;;
+1003;Privat Kunde;;;;;;;;</code></pre>
+    <ul style="margin-top:.6rem">
+      <li><b>CVR</b> — bruges til at matche mod eksisterende kunder. Mellemrum i CVR-nummeret renses automatisk.</li>
+      <li><b>Kunder uden CVR</b> — importeres men springes over ved automatisk sync (markeres manuelt).</li>
+      <li><b>Dubletter</b> — samme <code>Kundenummer</code> importeres kun én gang (409 ved genforsøg).</li>
+    </ul>
+    <p>Import sker via <a href="/reconciliation"><b>/reconciliation</b></a> → upload-feltet (vælg "e-conomic kundekartotek") eller direkte via API:</p>
+    <pre><code>POST /economic-customers/import?company_id=...&amp;file_path=C:\Kunder\kunder.csv</code></pre>
+  </div>
+
+  <h3>Synkroniser kunder (sync-all)</h3>
+  <div class="card">
+    <p>Når kundekartotek er importeret, matcher sync-all automatisk e-conomic-kunder mod eksisterende kunder i systemet via CVR-nummer.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:.86rem;margin-top:.4rem">
+      <thead><tr style="background:#edf2f7">
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Resultat</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Hvad sker der</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>matched</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">CVR fundet i kunderegistret → e-conomic-kunden linkes til den eksisterende kunde</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>created</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">CVR ikke fundet → ny kunde oprettes automatisk og linkes</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><b>skipped</b></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Ingen CVR på e-conomic-kunden → springes over med en advarsel</td></tr>
+      </tbody>
+    </table>
+    <pre><code>POST /economic-customers/sync-all?company_id=...</code></pre>
+    <p style="margin-top:.5rem;font-size:.87rem;color:#4a5568">Allerede linkede kunder springes over — sync-all er idempotent.</p>
+  </div>
+
+  <h3>Udled kunder fra fakturanavne</h3>
+  <div class="card">
+    <p>Har du ikke en separat kundekartotek-CSV? Systemet kan udlede kunderne direkte fra dine importerede fakturaers <em>Debitor</em>-felt.</p>
+    <ol class="steps">
+      <li>Importér dine e-conomic fakturaer og kør afstemning (<a href="#bankafstemning">se Bankafstemning</a>)</li>
+      <li>Klik <b>Udled kunder</b> i toolbar'en på afstemningssiden (teal-knap) — systemet finder alle unikke debitornavne og opretter én e-conomic kundestub pr. navn</li>
+      <li>Stubs uden CVR vises i kundelisten med kilde <code>derived</code> — du kan tilføje CVR manuelt og køre sync bagefter</li>
+    </ol>
+    <p>Eller via API: <code>POST /economic-invoices/derive-customers?company_id=...</code></p>
+    <div class="callout callout-blue">
+      <b>Deduplication:</b> Samme debitornavn på tværs af fakturaer giver kun én kundestub. Alle fakturaer med det navn linkes til den samme stub. Allerede tilknyttede fakturaer tælles men genbehandles ikke.
+    </div>
+    <p>Svaret viser: <code>{ "created": 5, "linked": 23, "already_linked": 0 }</code></p>
+  </div>
+
+  <h3>Opret historiske projekter (luk loopet)</h3>
+  <div class="card">
+    <p>Det fulde loop lukkes i dette trin: for hver e-conomic faktura der er <em>bankbekræftet</em> (status = matched) og har en linket kunde, oprettes automatisk et afsluttet projekt.</p>
+    <p>Klik <b>Opret historiske projekter</b> i toolbar'en på afstemningssiden (teal-knap), eller via API:</p>
+    <pre><code>POST /economic-invoices/create-historical-projects?company_id=...</code></pre>
+    <p>Resultatet for hver faktura:</p>
+    <ul>
+      <li>Projekt oprettes med status <span class="badge badge-green">afsluttet</span> og titlen <em>"Faktura [nr] — [kundenavn]"</em></li>
+      <li>Fakturan får et <code>linked_project_id</code> — den vises nu under det historiske projekt</li>
+      <li>Kunden kan nu ses i kunderegistret med sin betalingshistorik</li>
+      <li>Hvis kunden endnu ikke har en Customer-post, oprettes den automatisk fra debitornavnet</li>
+    </ul>
+    <div class="callout callout-yellow">
+      <b>Kun bankbekræftede fakturaer.</b> Fakturaer med status <code>unmatched</code> ignoreres. Fakturaer der allerede har et <code>linked_project_id</code> springes over — endpointet er idempotent.
+    </div>
+    <p>Svaret viser: <code>{ "created": 18, "skipped": [] }</code></p>
+  </div>
+
+  <h3>Den fulde pipeline — trin for trin</h3>
+  <div class="card">
+    <p>Alt kan styres fra afstemningssiden (<a href="/reconciliation">/reconciliation</a>) uden at bruge API'en direkte:</p>
+    <ol class="steps">
+      <li><b>Importer bankudtog</b> — vælg "Bankudtog" i dropdown, angiv sti, klik Importer</li>
+      <li><b>Importer e-conomic fakturaer</b> — vælg "e-conomic fakturaer", angiv sti, klik Importer</li>
+      <li><b>Kør afstemning</b> — klik den grønne knap — alle tre matchinglag køres</li>
+      <li><b>Bekræft alle passende</b> — ét klik bekræfter alt der balancerer</li>
+      <li><b>Gennemgå foreslåede</b> — tag stilling til nær-matches og AI-forslag</li>
+      <li><b>Manuel match</b> — tilknyt resterende transaktioner manuelt fra detaljevisningen</li>
+      <li><b>Udled kunder</b> — klik den teal-knap for at oprette kundestubs</li>
+      <li><b>Opret historiske projekter</b> — klik den anden teal-knap for at lukke loopet</li>
+    </ol>
+    <p>Til automatisk seeding bruger du <code>seed_demo.py</code>:</p>
+    <pre><code>python seed_demo.py --bank-csv C:\Afstemning\bank_maj_2026.csv ^
+                    --invoice-csv C:\Afstemning\fakturaer_2026.csv ^
+                    --customer-csv C:\Afstemning\kunder.csv</code></pre>
+    <div class="callout callout-green">
+      <b>Repeat-job:</b> Har du en kunde der jævnligt bestiller nye opgaver? Brug <code>POST /customers/{id}/repeat-job?title=...</code> — det opretter et nyt projekt <em>og</em> en tilbudskladde i én kald, klar til at udfylde og sende.
+    </div>
+  </div>
+
+  <!-- ════════════════ BETALINGSRADAR ════════════════ -->
+  <h2 class="section" id="betalingsradar">Betalingsradar — faktura-overvågning</h2>
+  <div class="card">
+    <p>Betalingsradar er systemets modul til <b>automatisk overvågning af indgående fakturaer via e-mail</b>. Når en faktura ankommer som mail, klassificerer systemet den, udtrækker felter (beløb, forfaldsdato, fakturanummer, kreditor), beregner en prioritet og opretter en handlingssag som kontorholder/regnskabsdame kan behandle.</p>
+    <p>Modulet er separat fra bankafstemningen: Betalingsradar registrerer at en faktura er <em>modtaget</em> og handler om at sikre, at den bliver betalt til tiden. Bankafstemningen bekræfter at betalingen <em>faktisk er gennemført</em>. De to moduler hænger sammen via en afstemningsbro.</p>
+    <div class="callout callout-yellow">
+      <b>Vigtig skelnen:</b> <em>Håndteret</em> i Betalingsradar betyder at en bruger har markeret sagen som behandlet — det er <em>ikke</em> det samme som at betalingen er bekræftet. Bekræftet betaling (<code>payment_confirmed</code>) kan kun sættes via bankafstemningsmodulet, når transaktionen er matches mod fakturaen.
+    </div>
+  </div>
+
+  <h3>Adgang til Betalingsradar</h3>
+  <div class="card">
+    <p>Åbn Betalingsradar fra dashboardet eller gå direkte til <code>/betalingsradar</code>. Øverst i toolbaren vises et rødt tal hvis der er sager med rød prioritet der kræver øjeblikkelig handling.</p>
+    <p>Siden har tre faner:</p>
+    <ul>
+      <li><b>Aktive sager</b> — kun åbne handlingspunkter sorteret efter prioritet (rød øverst)</li>
+      <li><b>Alle sager</b> — komplet historik med status- og prioritetsfiltre</li>
+      <li><b>Kreditorer</b> — alle kendte kreditorer opdaget via indgående fakturaer</li>
+    </ul>
+  </div>
+
+  <h3>Prioritetsniveauer</h3>
+  <div class="card">
+    <table style="width:100%;border-collapse:collapse;font-size:.88rem">
+      <thead><tr style="background:#f7fafc">
+        <th style="padding:.4rem .7rem;text-align:left;border-bottom:2px solid #e2e8f0">Prioritet</th>
+        <th style="padding:.4rem .7rem;text-align:left;border-bottom:2px solid #e2e8f0">Hvornår</th>
+        <th style="padding:.4rem .7rem;text-align:left;border-bottom:2px solid #e2e8f0">Anbefalet handling</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.38rem .7rem;border-bottom:1px solid #f0f2f5"><span class="badge badge-red">Rød</span></td>
+            <td style="padding:.38rem .7rem;border-bottom:1px solid #f0f2f5">Forfalden, forfald i dag eller inden 2 dage, eller rykker modtaget</td>
+            <td style="padding:.38rem .7rem;border-bottom:1px solid #f0f2f5">Betal straks eller kontakt kreditor</td></tr>
+        <tr><td style="padding:.38rem .7rem;border-bottom:1px solid #f0f2f5"><span class="badge badge-yellow">Orange</span></td>
+            <td style="padding:.38rem .7rem;border-bottom:1px solid #f0f2f5">Forfald inden 7 dage, eller ukendt kreditor, eller lav konfidans</td>
+            <td style="padding:.38rem .7rem;border-bottom:1px solid #f0f2f5">Planlæg betaling denne uge</td></tr>
+        <tr><td style="padding:.38rem .7rem;border-bottom:1px solid #f0f2f5"><span class="badge" style="background:#fffff0;color:#b7791f">Gul</span></td>
+            <td style="padding:.38rem .7rem;border-bottom:1px solid #f0f2f5">Forfald inden 14 dage, eller beløb = 0 kr</td>
+            <td style="padding:.38rem .7rem;border-bottom:1px solid #f0f2f5">Hold øje — gennemgå inden for et par dage</td></tr>
+        <tr><td style="padding:.38rem .7rem"><span class="badge badge-green">Grøn</span></td>
+            <td style="padding:.38rem .7rem">Forfald mere end 14 dage ude, kendt kreditor, høj konfidans</td>
+            <td style="padding:.38rem .7rem">Ingen haste-handling nødvendig</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Sagsstatusser fra modtagelse til betaling</h3>
+  <div class="card">
+    <table style="width:100%;border-collapse:collapse;font-size:.88rem">
+      <thead><tr style="background:#f7fafc">
+        <th style="padding:.4rem .7rem;text-align:left;border-bottom:2px solid #e2e8f0">Status</th>
+        <th style="padding:.4rem .7rem;text-align:left;border-bottom:2px solid #e2e8f0">Betydning</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5"><code>payment_required</code></td>
+            <td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5">Faktura klassificeret som relevant — afventer betaling</td></tr>
+        <tr><td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5"><code>reminder_received</code></td>
+            <td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5">Rykker modtaget for en allerede registreret faktura — prioritet hæves til rød</td></tr>
+        <tr><td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5"><code>bank_opened</code></td>
+            <td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5">Brugeren har klikket "Åbn bank" — netbanken er åbnet for at foretage betaling. Sagen er <em>ikke</em> afsluttet endnu.</td></tr>
+        <tr><td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5"><code>handled</code></td>
+            <td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5">Markeret håndteret af en bruger. Betaling er <em>ikke nødvendigvis bekræftet</em> — kun at sagen er behandlet manuelt.</td></tr>
+        <tr><td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5"><code>payment_confirmed</code></td>
+            <td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5"><b>Betaling bekræftet via bankafstemning.</b> Kan kun sættes af afstemningsmodulet — aldrig manuelt.</td></tr>
+        <tr><td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5"><code>rejected</code></td>
+            <td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5">Afvist som falsk positiv eller ikke relevant</td></tr>
+        <tr><td style="padding:.35rem .7rem"><code>duplicate</code></td>
+            <td style="padding:.35rem .7rem">Duplikat af en allerede registreret sag</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Behandle en sag — trin for trin</h3>
+  <div class="card">
+    <ol class="steps">
+      <li>Åbn <b>Betalingsradar</b> og vælg din virksomhed</li>
+      <li>Gennemgå de <b>røde sager</b> øverst — de kræver hurtig handling</li>
+      <li>Klik på en sag-række for at udvide <b>historiktidslinjen</b> og se udtrukne felter</li>
+      <li>Er felterne forkert udtrukket? Klik <b>"Ret felt"</b> og angiv den korrekte værdi</li>
+      <li>Klik <b>"Åbn bank"</b> for at registrere at du er gået i netbanken for at betale — dette sætter status til <em>bank_opened</em></li>
+      <li>Efter at have gennemført betalingen i netbanken: klik <b>"Håndteret"</b> for at markere sagen som behandlet</li>
+      <li>Systemet opdaterer automatisk til <em>payment_confirmed</em> når bankafstemningen matcher en indgående transaktion mod fakturaen</li>
+      <li>Falsk positiv? Klik <b>"Afvis"</b> — sagen lukkes og fremgår ikke mere i aktive handlinger</li>
+    </ol>
+    <div class="callout callout-blue">
+      <b>Rykkerpost:</b> Modtager systemet en rykker for en faktura der allerede er registreret, opdateres den eksisterende sag automatisk med hændelsen <code>reminder_received</code> og prioriteten hæves til rød. Der oprettes ikke en ny separat sag.
+    </div>
+  </div>
+
+  <h3>Duplikatbeskyttelse</h3>
+  <div class="card">
+    <p>For at undgå at samme faktura oprettes flere gange beregner systemet et <b>fingeraftryk</b> baseret på: kreditorens navn, fakturanummer, beløb og forfaldsdato. Hvis en mail med identisk fingeraftryk modtages:</p>
+    <ul>
+      <li>Indeholder mailen rykkernøgleord (f.eks. "rykker", "påmindelse") → opdaterer eksisterende sag og hæver prioritet</li>
+      <li>Ellers → registreres som duplikat, ingen ny handlingssag oprettes</li>
+    </ul>
+  </div>
+
+  <h3>Forbindelsen til bankafstemning</h3>
+  <div class="card">
+    <p>De to moduler — Betalingsradar og Bankafstemning — deler den samme datakerne men har adskilte ansvarsområder:</p>
+    <ul>
+      <li><b>Betalingsradar</b> holder styr på om en faktura er modtaget, hvem kreditoren er, hvornår den forfalder, og om der er handlet på den.</li>
+      <li><b>Bankafstemning</b> matcher bankposteringer mod fakturaer og bekræfter betaling.</li>
+      <li>Når bankafstemningen bekræfter en match, aktiverer den <b>afstemningsbroen</b> som sætter Betalingsradar-sagens status til <code>payment_confirmed</code> og lukker handlingssagen automatisk.</li>
+    </ul>
+    <p>Dette sikrer at <em>betaling bekræftet</em> altid bygger på en faktisk banktransaktion — ikke på at en bruger manuelt har klikket en knap.</p>
+  </div>
+
+  <h3>Dev: Test pipeline direkte fra UI</h3>
+  <div class="card">
+    <p>I udviklings- og testmiljø (ikke produktion) er der en lilla <b>"Dev: Indsend testmail"</b>-knap i Betalingsradar-toolbaren. Den lader dig sende en simuleret faktura-mail direkte igennem pipelinen og se resultatet med det samme. Brug den til at afprøve klassificering, feltudtræk og duplikatbeskyttelse.</p>
+    <div class="callout callout-yellow">
+      <b>Kun i development/test:</b> Endpoint'et <code>POST /invoice-monitoring/dev/ingest-sample</code> returnerer HTTP 403 i produktionsmiljø.
+    </div>
+  </div>
+
+  <!-- ════════════════ PRINT & EKSPORT ════════════════ -->
+  <h2 class="section" id="print-eksport">Print &amp; Eksport</h2>
+  <div class="card">
+    <p>Systemet har tre niveauer af print- og eksportmuligheder: hurtig udskrift af en aktiv listeside, et professionelt print-dokument for et enkelt tilbud/faktura, og en dedikeret eksportside med filter og download til CSV/XLSX.</p>
+  </div>
+
+  <h3>Udskriv en listeside (alle poster)</h3>
+  <div class="card">
+    <ol class="steps">
+      <li>Gå til den fane du vil udskrive (f.eks. Fakturaer)</li>
+      <li>Klik <b>🖨 Print / PDF</b>-knappen i topbaren (øverst til højre)</li>
+      <li>Browserens printdialog åbner — vælg "Gem som PDF" eller en printer</li>
+    </ol>
+    <p>Under udskrift skjules topbar, fanebjælke og alle knapper automatisk. Kun listen og et simpelt sidetop med firmanavn og fanenavn vises. Sideretning: stående. Margener: 1,5 cm.</p>
+    <div class="callout callout-blue">
+      <b>Genvej:</b> <code>Ctrl+P</code> i browseren aktiverer det samme som Print/PDF-knappen.
+    </div>
+  </div>
+
+  <h3>Udskriv en enkelt post (skuffe-print)</h3>
+  <div class="card">
+    <ol class="steps">
+      <li>Klik på en post i listen for at åbne detaljeskuffen</li>
+      <li>Klik 🖨-ikonet øverst i skuffen (ved siden af ✕-knappen)</li>
+      <li>Et nyt vindue åbner med skuffens indhold — renset for knapper og interaktive elementer</li>
+      <li>Browserens printdialog åbner automatisk</li>
+    </ol>
+    <p>Skuffe-print fungerer for alle skuffer i alle faner — kunder, projekter, medarbejdere, indbakke, kalender osv.</p>
+  </div>
+
+  <h3>Professionelt PDF-dokument (tilbud og fakturaer)</h3>
+  <div class="card">
+    <p>For tilbud og fakturaer findes et dedikeret print-/PDF-dokument med professionelt layout — egnet til at sende til kunder eller arkivere.</p>
+    <ol class="steps">
+      <li>Åbn detaljeskuffen for et tilbud eller en faktura</li>
+      <li>Klik knappen <b>🖨 PDF-dokument</b> i skuffens handlingssektion</li>
+      <li>Dokumentet åbner i en ny fane med det fulde layout</li>
+      <li>Klik <b>🖨 Print / Gem som PDF</b> øverst i dokumentet</li>
+    </ol>
+    <h3>Dokumentets indhold</h3>
+    <div class="card-grid" style="margin-top:.4rem">
+      <div class="mod-card" style="border-color:#63b3ed">
+        <h4>Tilbud</h4>
+        <p>Firmaheader · "Til:"-kundeboks · Tilbudsnummer + gyldig til · Statusbanner · Beskrivelse · Linjeposter · Moms og total · Noter</p>
+      </div>
+      <div class="mod-card" style="border-color:#68d391">
+        <h4>Faktura</h4>
+        <p>Firmaheader · "Til:"-kundeboks · Fakturanummer + udstedt + forfald · Statusbanner · Linjeposter · Moms og total · Noter</p>
+      </div>
+    </div>
+    <p style="margin-top:.6rem">Statusbanneret er farvekodet: <span style="background:#c6f6d5;color:#22543d;padding:.1em .4em;border-radius:4px;font-size:.85rem">grøn = accepteret/betalt</span> &nbsp; <span style="background:#fed7d7;color:#742a2a;padding:.1em .4em;border-radius:4px;font-size:.85rem">rød = afvist/forfalden</span> &nbsp; <span style="background:#fefcbf;color:#744210;padding:.1em .4em;border-radius:4px;font-size:.85rem">gul = sendt/afventer</span></p>
+  </div>
+
+  <h3>Eksportside — download til CSV eller XLSX</h3>
+  <div class="card">
+    <p>Klik <b>📥 Eksport</b>-knappen på en fane for at åbne eksportsiden for det pågældende modul.</p>
+    <ol class="steps">
+      <li>Brug <b>Søg</b>-feltet til at filtrere på tekst (navn, nummer, adresse osv.)</li>
+      <li>Vælg evt. en <b>Status</b> i dropdown-menuen for at begrænse til én status</li>
+      <li>Skift mellem <b>DA</b>-format (dd/mm/yyyy, "1.234,56 kr") og <b>Rå</b> (ISO-dato, plain tal) via toggle</li>
+      <li>Klik <b>CSV</b> for at downloade det filtrerede resultat som semikolon-separeret tekstfil</li>
+      <li>Klik <b>XLSX</b> for at downloade som Excel-fil med formatering (header-farve, zebra-rækker)</li>
+      <li>Klik <b>🖨 Print</b> for at udskrive tabellen direkte</li>
+    </ol>
+    <h3>Tilgængelige eksporttyper</h3>
+    <table style="width:100%;border-collapse:collapse;font-size:.86rem">
+      <thead><tr style="background:#edf2f7">
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Fane</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Eksporttype</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Kolonner</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Fakturaer</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><code>invoices</code></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Nr · Titel · Kunde · Projekt · Udstedt · Forfald · Status · Subtotal · Moms · Total</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Tilbud</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><code>quotes</code></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Nr · Titel · Projekt · Kunde · Status · Gyldig til · Subtotal · Moms · Total · Accepteret</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Projekter</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><code>projects</code></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Titel · Kunde · Adresse · Status · Startdato · Slutdato</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Kunder</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><code>customers</code></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Navn · Email · Telefon · Adresse</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Medarbejdere</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><code>employees</code></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Navn · Rolle · Timepris · Ansat dato</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Indbakke</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><code>inbox</code></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Afsender · Email · Tlf · Emne · Kanal · Modtaget · Status</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Kalender — Frister</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><code>deadlines</code></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Titel · Kategori · Forfaldsdato · Status · Noter</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Kalender — Aftaler</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><code>appointments</code></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Titel · Type · Start · Slut · Sted · Kunde · Medarbejder · Status</td></tr>
+        <tr><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Erfaringsbank</td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0"><code>erfaringsbank</code></td><td style="padding:.3rem .6rem;border:1px solid #e2e8f0">Titel · Jobtype · Areal m² · Pris ekskl. moms · Pris/m² · År · Status</td></tr>
+      </tbody>
+    </table>
+    <div class="callout callout-green" style="margin-top:.8rem">
+      <b>CSV og Excel:</b> CSV-filen bruger semikolon som separator og UTF-8 med BOM — åbner korrekt i Excel uden konverteringstrin og viser æ, ø og å korrekt. XLSX-filen har mørk header, alternerende rækkefarve og automatisk kolonnebredde.
+    </div>
+  </div>
+
+  <!-- ════════════════ KONFIGURATION ════════════════ -->
+  <h2 class="section" id="email-imap">Email / IMAP-opsætning</h2>
+  <div class="card">
+    <p>For at bruge <b>Hent ny post</b> i Indbakken skal du forbinde systemet til en IMAP-postkasse.</p>
+    <ol class="steps">
+      <li>Kopiér <code>.env.example</code> til <code>.env</code> i projektmappen</li>
+      <li>Åbn <code>.env</code> i Notesblok og udfyld email-felterne (se nedenfor)</li>
+      <li>Genstart serveren (<code>reset_demo.bat</code> eller stop/start i terminalvinduet)</li>
+      <li>Gå til fanen <b>Indbakke</b> — den gule advarselboks forsvinder og knappen er aktiv</li>
+    </ol>
+  </div>
+
+  <h3>Gmail</h3>
+  <div class="callout callout-blue">
+    <b>Krav:</b> Du skal bruge en <b>App-adgangskode</b> — ikke dit normale Gmail-kodeord.<br>
+    Google-konto → Sikkerhed → 2-trinsbekræftelse (skal være slået til) → App-adgangskoder → Opret ny → kopiér de 16 tegn.
+  </div>
+  <pre><code>EMAIL_IMAP_HOST=imap.gmail.com
+EMAIL_IMAP_PORT=993
+EMAIL_USER=din@gmail.com
+EMAIL_PASSWORD=xxxx xxxx xxxx xxxx
+EMAIL_FOLDER=INBOX</code></pre>
+
+  <h3>Outlook / Microsoft 365</h3>
+  <div class="callout callout-blue">
+    <b>Krav:</b> IMAP skal være slået til i Outlook-indstillingerne.<br>
+    Outlook.com → Indstillinger → Mail → Synkroniser email → POP og IMAP → Aktivér IMAP.
+  </div>
+  <pre><code>EMAIL_IMAP_HOST=outlook.office365.com
+EMAIL_IMAP_PORT=993
+EMAIL_USER=din@outlook.com
+EMAIL_PASSWORD=dit-kodeord
+EMAIL_FOLDER=INBOX</code></pre>
+
+  <h3>Generisk IMAP (one.com, Simply, Surftown m.fl.)</h3>
+  <pre><code>EMAIL_IMAP_HOST=mail.din-udbyder.dk
+EMAIL_IMAP_PORT=993
+EMAIL_USER=din@email.dk
+EMAIL_PASSWORD=dit-kodeord
+EMAIL_FOLDER=INBOX</code></pre>
+  <p>Find den korrekte IMAP-hostname i din udbyders supportdokumentation eller webmail-indstillinger.</p>
+
+  <h3>Fejlfinding</h3>
+  <ul>
+    <li><b>Knappen er grå / advarselboks vises:</b> Email-variablerne er ikke sat i <code>.env</code>, eller serveren er ikke genstartet efter ændringen.</li>
+    <li><b>"IMAP-fejl: [Errno 11001]":</b> Forkert hostname. Tjek <code>EMAIL_IMAP_HOST</code>.</li>
+    <li><b>"Authentication failed":</b> Forkert brugernavn/kodeord. For Gmail: brug App-adgangskode, ikke dit normale kodeord.</li>
+    <li><b>Ingen nye beskeder importeret:</b> Systemet henter kun <em>ulæste</em> emails. Markér emails som ulæste i din mailklient og prøv igen.</li>
+  </ul>
+
+  <h2 class="section" id="env-fil">.env-filen</h2>
+  <div class="card">
+    <p>Miljøvariabler konfigureres i en fil kaldet <code>.env</code> i projektets rodmappe (<code>haandvaerker-demo\.env</code>).</p>
+    <p>Filen oprettes ved at kopiere <code>.env.example</code>:</p>
+    <pre><code>copy .env.example .env</code></pre>
+    <p>Tilgængelige variabler:</p>
+    <table style="width:100%;border-collapse:collapse;font-size:.88rem">
+      <thead><tr style="background:#edf2f7">
+        <th style="text-align:left;padding:.4rem .6rem;border:1px solid #e2e8f0">Variabel</th>
+        <th style="text-align:left;padding:.4rem .6rem;border:1px solid #e2e8f0">Standard</th>
+        <th style="text-align:left;padding:.4rem .6rem;border:1px solid #e2e8f0">Beskrivelse</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.35rem .6rem;border:1px solid #e2e8f0"><code>DATABASE_URL</code></td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0"><em>sqlite i projektmappen</em></td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0">Database-forbindelsesstreng</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.35rem .6rem;border:1px solid #e2e8f0"><code>EMAIL_IMAP_HOST</code></td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0"><em>tom (deaktiveret)</em></td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0">IMAP-serverens hostname</td></tr>
+        <tr><td style="padding:.35rem .6rem;border:1px solid #e2e8f0"><code>EMAIL_IMAP_PORT</code></td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0">993</td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0">IMAP-port (993 = SSL)</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.35rem .6rem;border:1px solid #e2e8f0"><code>EMAIL_USER</code></td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0"><em>tom</em></td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0">Email-adresse / IMAP-brugernavn</td></tr>
+        <tr><td style="padding:.35rem .6rem;border:1px solid #e2e8f0"><code>EMAIL_PASSWORD</code></td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0"><em>tom</em></td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0">Adgangskode eller App Password</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.35rem .6rem;border:1px solid #e2e8f0"><code>EMAIL_FOLDER</code></td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0">INBOX</td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0">IMAP-mappe at hente fra</td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.35rem .6rem;border:1px solid #e2e8f0"><code>LOCAL_AI_ENDPOINT</code></td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0"><em>tom (deaktiveret)</em></td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0">URL til lokal Ollama/LM Studio til vektorlighed i Erfaringsbank (f.eks. <code>http://localhost:11434</code>)</td></tr>
+        <tr><td style="padding:.35rem .6rem;border:1px solid #e2e8f0"><code>LOG_LEVEL</code></td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0">INFO</td><td style="padding:.35rem .6rem;border:1px solid #e2e8f0">Log-niveau: DEBUG, INFO, WARNING</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ════════════════ TEKNISK ════════════════ -->
+  <h2 class="section" id="api">API &amp; Swagger</h2>
+  <div class="card">
+    <p>Systemet eksponerer en fuld REST API bygget med FastAPI.</p>
+    <ul>
+      <li><a href="/docs" target="_blank"><b>/docs</b></a> — Swagger UI: interaktiv API-dokumentation, test endpoints direkte i browseren</li>
+      <li><a href="/redoc" target="_blank"><b>/redoc</b></a> — ReDoc: læsevenlig API-reference</li>
+    </ul>
+    <h3>Vigtige endpoints</h3>
+    <pre><code>GET  /companies/                     Liste over alle virksomheder
+GET  /dashboard?company_id=...       Overbliksnøgletal for et firma
+GET  /customers/?company_id=...      Kunder
+GET  /projects/?company_id=...       Projekter
+GET  /invoices/?company_id=...       Fakturaer
+GET  /quotes/?company_id=...         Tilbud
+GET  /inbox/?company_id=...          Indbakke-beskeder
+GET  /inbox/email-config-status      Er email konfigureret?
+POST /inbox/fetch-email?company_id=  Hent ny post via IMAP</code></pre>
+  </div>
+
+  <h2 class="section" id="database">Database</h2>
+  <div class="card">
+    <p>Systemet bruger SQLite — én fil: <code>haandvaerker.db</code> i projektets rodmappe.</p>
+    <ul>
+      <li>Filen oprettes automatisk ved første opstart</li>
+      <li>Slet filen og genstart for at starte helt forfra</li>
+      <li>Tag backup ved at kopiere filen</li>
+    </ul>
+    <div class="callout callout-yellow">
+      <b>Placering:</b> <code>haandvaerker-demo\haandvaerker.db</code> — altid i projektmappen, uanset hvorfra serveren startes.
+    </div>
+  </div>
+
+  <h2 class="section" id="seed">Demo-data</h2>
+  <div class="card">
+    <p>Demo-data genereres af <code>seed_demo.py</code> og opretter <strong>3 virksomheder</strong> med realistiske data:</p>
+    <div class="card-grid" style="margin-top:.7rem">
+      <div class="mod-card" style="border-color:#63b3ed">
+        <h4>PLL Malerfirma ApS</h4>
+        <p>2 medarbejdere · 3 kunder · 4 projekter<br>3 tilbud · 3 fakturaer · 7 aftaler<br>44 timer · 3 udgifter · 2 indbakkebeskeder</p>
+      </div>
+      <div class="mod-card" style="border-color:#ed8936">
+        <h4>Charlottenlund Shotokan KarateKlub</h4>
+        <p>2 medarbejdere · 3 kunder · 3 projekter<br>2 tilbud · 1 faktura · 4 aftaler<br>1 indbakkebesked</p>
+      </div>
+      <div class="mod-card" style="border-color:#68d391">
+        <h4>Gentofte Bygningsservice 69</h4>
+        <p>3 medarbejdere · 4 kunder · 4 projekter<br>3 tilbud · 2 fakturaer · 5 aftaler<br>70 timer · 2 indbakkebeskeder</p>
+      </div>
+    </div>
+    <p style="margin-top:.8rem">Alle tre virksomheder får fuldt årshjul 2026 (moms, løn, regnskab, skat, forsikring).</p>
+    <p>Kør seed manuelt:</p>
+    <pre><code>cd C:\Sti\til\haandvaerker-demo
+"C:\Program Files\Python39\python.exe" seed_demo.py</code></pre>
+    <div class="callout callout-green">
+      <b>Tip:</b> Brug <code>reset_demo.bat</code> for at rydde alt og starte med friske demo-data på under 20 sekunder.
+    </div>
+  </div>
+
+  <h3>PLL Malerfirma ApS — kalender-aftaler</h3>
+  <div class="card">
+    <p>7 aftaler der dækker fortid, denne uge og fremtid:</p>
+    <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+      <thead><tr style="background:#edf2f7">
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Dato</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Type</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Titel</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Tilknytning</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Status</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">14. maj</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Besigtigelse</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Afsluttende gennemgang — Stue + køkken</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Projekt: Stue + køkken</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-green">Afsluttet</span></td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">21. maj  08:00</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Møde</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Byggemøde — Facaderenovering uge 21</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Facaderenovering · Lars</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-blue">Planlagt</span></td></tr>
+        <tr><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">22. maj  10:00</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Besigtigelse</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Besigtigelse — Badeværelse, Morten Christensen</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Ny kunde (fra indbakke)</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-blue">Planlagt</span></td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">23. maj  08:00</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Møde</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Personalemøde — Planlægning juni</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Kontoret · Lars</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-blue">Planlagt</span></td></tr>
+        <tr><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">27. maj  13:00</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Tilbudsrunde</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Tilbudsmøde — Lejlighed Østerbrogade, Lise Borg</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Ny kunde (fra indbakke) · Lars</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-blue">Planlagt</span></td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">2. jun  10:00</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Møde</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Opfølgning på tilbud — Restaurant Kronborg</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Projekt: Restaurantlokale</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-blue">Planlagt</span></td></tr>
+        <tr><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">9. jun  07:00</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Besigtigelse</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Opstart — Facaderenovering, phase 2 (nordgavl)</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Facaderenovering · Anne</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-blue">Planlagt</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Charlottenlund Shotokan KarateKlub — kalender-aftaler</h3>
+  <div class="card">
+    <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+      <thead><tr style="background:#edf2f7">
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Dato</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Type</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Titel</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Tilknytning</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Status</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">16. maj</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Besigtigelse</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Besigtigelse — Dojo før renovering</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Projekt: Renovering af dojo · Henrik</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-green">Afsluttet</span></td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">24. maj  09:00</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Møde</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Træner-møde — Sæsonprogram efterår 2026</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Klubhuset · Henrik</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-blue">Planlagt</span></td></tr>
+        <tr><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">5. jun  14:00</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Møde</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Koordineringsmøde — Sommerstævne 2026</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Projekt: Sommerstævne · Gentofte Kommune</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-blue">Planlagt</span></td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">16. jun  12:00</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Tilbudsrunde</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Opstartsmøde — Firmafitness, Erhvervsklubben</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Projekt: Firmafitness · Henrik</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-blue">Planlagt</span></td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Gentofte Bygningsservice 69 — kalender-aftaler</h3>
+  <div class="card">
+    <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+      <thead><tr style="background:#edf2f7">
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Dato</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Type</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Titel</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Tilknytning</th>
+        <th style="text-align:left;padding:.35rem .6rem;border:1px solid #e2e8f0">Status</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">15. maj</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Besigtigelse</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Besigtigelse — Badeværelse, Knud Larsen</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Projekt: Badeværelse · Bjarne</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-green">Afsluttet</span></td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">21. maj  07:30</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Møde</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Opstartsmøde — Tagudskiftning Søndergaard</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Projekt: Tagudskiftning · Bjarne</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-blue">Planlagt</span></td></tr>
+        <tr><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">28. maj  10:00</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Møde</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Byggemøde — Facadevedligeholdelse, Tranegård Skole</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Projekt: Vedligeholdelse · Susanne</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-blue">Planlagt</span></td></tr>
+        <tr style="background:#f7fafc"><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">3. jun  13:00</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Tilbudsrunde</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Tilbudsmøde — Køkkenrenovering, Café Paradis</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Projekt: Køkkenrenovering · Bjarne</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-blue">Planlagt</span></td></tr>
+        <tr><td style="padding:.28rem .6rem;border:1px solid #e2e8f0;white-space:nowrap">10. jun  09:00</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">📅 Møde</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Leverandørmøde — Tagmaterialer, Icopal</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0">Telefonmøde · Bjarne</td><td style="padding:.28rem .6rem;border:1px solid #e2e8f0"><span class="badge badge-blue">Planlagt</span></td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:.7rem;font-size:.85rem;color:#4a5568">Afsluttede aftaler vises nedtonede med grøn kant i Kalender-fanen. Jan Holmbergs akutte tagskade i Gentofte Bygningsservice' indbakke er et godt eksempel på inbox-flowet.</p>
+  </div>
+
+</main>
+</div>
+
+<script>
+// Highlight active nav link based on scroll position
+const anchors = [...document.querySelectorAll("[id]")].filter(el => el.id);
+const links = [...document.querySelectorAll("nav a[href^='#']")];
+function updateActive() {
+  let current = "";
+  for (const a of anchors) {
+    if (a.getBoundingClientRect().top <= 80) current = a.id;
+  }
+  links.forEach(l => {
+    l.classList.toggle("active", l.getAttribute("href") === "#" + current);
+  });
+}
+window.addEventListener("scroll", updateActive, { passive: true });
+updateActive();
+</script>
+<script src="/static/nav.js"></script>
+</body>
+</html>

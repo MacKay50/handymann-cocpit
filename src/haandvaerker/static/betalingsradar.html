@@ -1,0 +1,876 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Betalingsradar</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+           background: #f0f2f5; color: #1a202c; font-size: 14px; line-height: 1.5; }
+
+    /* ── Toolbar ── */
+    .toolbar { background: #1a1a2e; color: #fff; padding: .75rem 1.25rem;
+               display: flex; align-items: center; gap: .55rem; flex-wrap: wrap; }
+    .toolbar-title { font-size: 1rem; font-weight: 700; margin-right: .25rem; white-space: nowrap; }
+    .toolbar-badge { background: rgba(229,62,62,.85); color: #fff; font-size: .7rem; font-weight: 700;
+                     border-radius: 10px; padding: 0 .45rem; margin-left: .15rem; display: inline-block; }
+    .toolbar-sep { width: 1px; height: 1.4rem; background: rgba(255,255,255,.2); flex-shrink: 0; }
+    .tb-select { padding: .35rem .6rem; border: 1.5px solid rgba(255,255,255,.25);
+      border-radius: 6px; font-size: .82rem; background: rgba(255,255,255,.1); color: #fff;
+      outline: none; cursor: pointer; max-width: 220px; }
+    .tb-select option { background: #1a1a2e; color: #fff; }
+    .btn-tb { padding: .35rem .8rem; border-radius: 6px; font-size: .82rem; font-weight: 600;
+              cursor: pointer; border: 1.5px solid transparent; white-space: nowrap; }
+    .btn-muted  { background: rgba(255,255,255,.12); color: #fff; border-color: rgba(255,255,255,.25); }
+    .btn-muted:hover { background: rgba(255,255,255,.22); }
+    .btn-dev { background: rgba(107,33,168,.7); color: #fff; border-color: rgba(159,122,234,.6); }
+    .btn-dev:hover { background: rgba(107,33,168,.9); }
+
+    /* ── Stats / back bar ── */
+    .stats-bar { background: #fff; border-bottom: 1px solid #e2e8f0; padding: .45rem 1.25rem;
+                 font-size: .82rem; color: #718096; display: flex; align-items: center; gap: 1rem; flex-wrap: wrap; }
+    .back-link { color: #2b6cb0; text-decoration: none; font-size: .82rem; }
+    .back-link:hover { text-decoration: underline; }
+
+    /* ── View tabs (Aktive / Alle sager / Kreditorer) ── */
+    .view-tabs { background: #fff; border-bottom: 2px solid #e2e8f0;
+                 padding: 0 1.25rem; display: flex; gap: 0; }
+    .view-tab { padding: .65rem 1.1rem; font-size: .85rem; font-weight: 600; cursor: pointer;
+                border: none; background: none; color: #718096; border-bottom: 3px solid transparent;
+                margin-bottom: -2px; transition: color .12s, border-color .12s; white-space: nowrap; }
+    .view-tab:hover { color: #2d3748; }
+    .view-tab.active { color: #2b6cb0; border-bottom-color: #2b6cb0; }
+    .tab-cnt { display: inline-block; margin-left: .3rem; background: #e2e8f0;
+               border-radius: 10px; padding: 0 .42rem; font-size: .7rem; color: #4a5568; }
+    .view-tab.active .tab-cnt { background: #bee3f8; color: #2b6cb0; }
+
+    /* ── Priority filter bar ── */
+    .filter-wrap { padding: .6rem 1.25rem .3rem; display: flex; gap: .4rem; flex-wrap: wrap; align-items: center; }
+    .prio-btn { padding: .28rem .75rem; border-radius: 20px; font-size: .78rem; font-weight: 600;
+                cursor: pointer; border: 1.5px solid #cbd5e0; background: #fff; color: #4a5568;
+                transition: background .12s, color .12s, border-color .12s; }
+    .prio-btn:hover { border-color: #a0aec0; }
+    .prio-btn.active { color: #fff; }
+    .prio-btn[data-p="all"].active  { background: #2b6cb0; border-color: #2b6cb0; }
+    .prio-btn[data-p="red"].active  { background: #c53030; border-color: #c53030; }
+    .prio-btn[data-p="orange"].active { background: #dd6b20; border-color: #dd6b20; }
+    .prio-btn[data-p="yellow"].active { background: #b7791f; border-color: #b7791f; }
+    .prio-btn[data-p="green"].active  { background: #276749; border-color: #276749; }
+    .filter-sep { color: #cbd5e0; font-size: .9rem; }
+    .status-sel { padding: .28rem .6rem; border: 1.5px solid #cbd5e0; border-radius: 6px;
+                  font-size: .78rem; background: #fff; color: #4a5568; cursor: pointer; outline: none; }
+
+    /* ── Section ── */
+    .section { padding: .5rem 1.25rem; }
+    .sh { display: flex; align-items: center; gap: .5rem; margin-bottom: .5rem; }
+    .sh h2 { font-size: .9rem; font-weight: 600; color: #2d3748; }
+    .sh-cnt { background: #e2e8f0; color: #4a5568; font-size: .72rem; padding: .1rem .42rem; border-radius: 10px; font-weight: 600; }
+
+    /* ── Table ── */
+    .tbl-wrap { background: #fff; border-radius: 10px; box-shadow: 0 1px 4px rgba(0,0,0,.07);
+                overflow: hidden; margin-bottom: 1.2rem; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: .85rem; }
+    thead th { background: #f7fafc; text-align: left; padding: .5rem .85rem;
+               font-size: .71rem; font-weight: 700; text-transform: uppercase;
+               letter-spacing: .4px; color: #718096; border-bottom: 2px solid #e2e8f0;
+               white-space: nowrap; }
+
+    /* ── Action item rows ── */
+    .ai-row td { padding: .55rem .85rem; border-bottom: 1px solid #f0f2f5; vertical-align: middle;
+                 transition: background .1s; }
+    .ai-row:hover td { background: #f7fafc; cursor: pointer; }
+    .ai-row.expanded td { background: #f0f7ff; border-bottom: none; }
+    .ai-row td.expand-cell { width: 28px; color: #718096; font-size: .75rem; text-align: center; user-select: none; }
+
+    /* ── Priority dot ── */
+    .prio-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0; }
+    .prio-dot.red    { background: #c53030; }
+    .prio-dot.orange { background: #dd6b20; }
+    .prio-dot.yellow { background: #d69e2e; }
+    .prio-dot.green  { background: #38a169; }
+    .prio-cell { display: flex; align-items: center; gap: .45rem; }
+
+    /* ── Amounts ── */
+    td.amt { font-weight: 600; font-variant-numeric: tabular-nums; text-align: right; white-space: nowrap; }
+    td.amt.overdue { color: #c53030; }
+
+    /* ── Badges ── */
+    .b { display: inline-block; padding: .1rem .42rem; border-radius: 4px;
+         font-size: .71rem; font-weight: 700; white-space: nowrap; letter-spacing: .2px; }
+    .b-open          { background: #ebf8ff; color: #2b6cb0; }
+    .b-bank-opened   { background: #fefcbf; color: #744210; }
+    .b-handled       { background: #f0fff4; color: #276749; }
+    .b-confirmed     { background: #f0fff4; color: #276749; border: 1px solid #9ae6b4; }
+    .b-rejected      { background: #fff5f5; color: #c53030; }
+    .b-duplicate     { background: #f7fafc; color: #718096; border: 1px solid #e2e8f0; }
+    .b-reminder      { background: #fff3cd; color: #856404; }
+    .b-not-relevant  { background: #f7fafc; color: #a0aec0; }
+    .b-red           { background: #fff5f5; color: #c53030; }
+    .b-orange        { background: #fffaf0; color: #dd6b20; }
+    .b-yellow        { background: #fffff0; color: #b7791f; }
+    .b-green         { background: #f0fff4; color: #276749; }
+
+    /* ── Action buttons ── */
+    .btn-sm { font-size: .74rem; font-weight: 600; padding: .18rem .52rem; border-radius: 5px;
+              cursor: pointer; border: 1px solid transparent; margin-right: .25rem; white-space: nowrap; }
+    .btn-bank    { background: #ebf8ff; color: #2b6cb0; border-color: #bee3f8; }
+    .btn-bank:hover { background: #bee3f8; }
+    .btn-handle  { background: #f0fff4; color: #276749; border-color: #9ae6b4; }
+    .btn-handle:hover { background: #c6f6d5; }
+    .btn-reject  { background: #fff5f5; color: #c53030; border-color: #feb2b2; }
+    .btn-reject:hover { background: #fed7d7; }
+    .btn-edit    { background: #f7fafc; color: #4a5568; border-color: #cbd5e0; }
+    .btn-edit:hover { background: #e2e8f0; }
+
+    /* ── Detail / timeline row ── */
+    .detail-row td { padding: 0 !important; border-bottom: 1px solid #e2e8f0 !important; }
+    .detail-row.hidden { display: none; }
+    .detail-cell { background: #f8faff !important; padding: .75rem .85rem .85rem 2.5rem !important; }
+
+    /* ── Timeline ── */
+    .timeline { margin-top: .25rem; }
+    .tl-item { display: flex; gap: .6rem; align-items: flex-start; margin-bottom: .4rem; }
+    .tl-dot { width: 8px; height: 8px; border-radius: 50%; background: #718096; flex-shrink: 0; margin-top: .35rem; }
+    .tl-dot.created { background: #2b6cb0; }
+    .tl-dot.handled { background: #276749; }
+    .tl-dot.reminder { background: #dd6b20; }
+    .tl-dot.rejected { background: #c53030; }
+    .tl-dot.bank     { background: #553c9a; }
+    .tl-content { font-size: .8rem; color: #4a5568; }
+    .tl-type { font-weight: 700; color: #2d3748; }
+    .tl-time { font-size: .72rem; color: #a0aec0; margin-left: .4rem; }
+    .tl-payload { font-size: .75rem; color: #718096; margin-top: .1rem; font-family: monospace; }
+
+    /* ── Evidence section ── */
+    .ev-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+               gap: .4rem; margin-top: .5rem; max-width: 700px; }
+    .ev-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 6px; padding: .4rem .6rem; font-size: .78rem; }
+    .ev-field { font-weight: 700; color: #2d3748; margin-bottom: .1rem; }
+    .ev-val { color: #2b6cb0; font-family: monospace; }
+    .ev-src { color: #a0aec0; font-size: .71rem; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .ev-conf { font-size: .68rem; color: #718096; }
+
+    /* ── Field correction inline panel ── */
+    .corr-row td { padding: 0 !important; border-bottom: 1px solid #e2e8f0 !important; }
+    .corr-row.hidden { display: none; }
+    .corr-cell { background: #fffaf0 !important; padding: .6rem .85rem .7rem 2.5rem !important; }
+    .corr-form { display: flex; flex-wrap: wrap; gap: .5rem; align-items: flex-end; max-width: 560px; }
+    .corr-label { font-size: .78rem; font-weight: 600; color: #744210; display: block; margin-bottom: .2rem; }
+    .corr-sel, .corr-inp { padding: .32rem .6rem; border: 1.5px solid #e2e8f0; border-radius: 6px;
+                           font-size: .82rem; outline: none; }
+    .corr-sel:focus, .corr-inp:focus { border-color: #4299e1; }
+    .corr-inp { min-width: 180px; }
+    .btn-corr-save { background: #2b6cb0; color: #fff; border-color: #2b6cb0; }
+    .btn-corr-save:hover { background: #2c5282; }
+    .btn-corr-cancel { background: #f7fafc; color: #4a5568; border-color: #cbd5e0; }
+
+    /* ── Dev panel ── */
+    .dev-panel { background: #1a1a2e; border: 1px solid rgba(255,255,255,.12); border-radius: 10px;
+                 padding: 1rem 1.25rem; margin-bottom: 1rem; color: #e2e8f0; }
+    .dev-panel h3 { font-size: .85rem; font-weight: 700; color: #a78bfa; margin-bottom: .75rem; }
+    .dev-form { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: .55rem; }
+    .dev-field label { display: block; font-size: .72rem; font-weight: 600; color: #a0aec0; margin-bottom: .2rem; }
+    .dev-field input, .dev-field textarea { width: 100%; padding: .32rem .55rem; border: 1px solid rgba(255,255,255,.15);
+      border-radius: 5px; background: rgba(255,255,255,.06); color: #fff; font-size: .8rem; outline: none; }
+    .dev-field input:focus, .dev-field textarea:focus { border-color: #a78bfa; }
+    .dev-field textarea { height: 60px; resize: vertical; font-family: monospace; }
+    .dev-field.wide { grid-column: 1 / -1; }
+    .btn-dev-send { background: #6b21a8; color: #fff; border: none; padding: .38rem .9rem;
+                    border-radius: 6px; font-size: .82rem; font-weight: 600; cursor: pointer; margin-top: .3rem; }
+    .btn-dev-send:hover { background: #581c87; }
+    .dev-result { margin-top: .65rem; font-size: .78rem; font-family: monospace; color: #a78bfa;
+                  background: rgba(0,0,0,.3); border-radius: 6px; padding: .5rem .7rem;
+                  white-space: pre-wrap; max-height: 200px; overflow-y: auto; }
+
+    /* ── Creditors table ── */
+    .cred-row td { padding: .5rem .85rem; border-bottom: 1px solid #f0f2f5; }
+
+    /* ── Notices ── */
+    .notice { background: #ebf8ff; border: 1px solid #bee3f8; color: #2c5282; border-radius: 8px;
+              padding: .6rem .9rem; margin-bottom: .6rem; font-size: .83rem; }
+    .err-box { background: #fff5f5; border: 1px solid #fc8181; color: #c53030; border-radius: 8px;
+               padding: .6rem .9rem; margin-bottom: .6rem; font-size: .83rem; }
+    td.empty-cell { text-align: center; color: #a0aec0; padding: 2rem !important; font-size: .9rem; }
+    .hidden-section { display: none; }
+
+    @media print {
+      @page { margin: 1.5cm; }
+      body { background: #fff; }
+      .toolbar, .view-tabs, .filter-wrap, .btn-sm, .btn-tb, .dev-panel { display: none !important; }
+      .tbl-wrap { box-shadow: none; border: 1px solid #d0d5dd; }
+      .detail-row.hidden { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Toolbar ── -->
+<div class="toolbar">
+  <span class="toolbar-title">Betalingsradar <span class="toolbar-badge" id="red-badge" style="display:none">0</span></span>
+  <div class="toolbar-sep"></div>
+  <select class="tb-select" id="company-sel" onchange="onCompanyChange()">
+    <option value="">— Vælg virksomhed —</option>
+  </select>
+  <div class="toolbar-sep"></div>
+  <button class="btn-tb btn-muted" onclick="reload()">Opdater</button>
+  <button class="btn-tb btn-muted" onclick="window.print()">🖨 Print</button>
+  <div class="toolbar-sep"></div>
+  <button class="btn-tb btn-dev" onclick="toggleDevPanel()">Dev: Indsend testmail</button>
+</div>
+
+<!-- ── Stats bar ── -->
+<div class="stats-bar">
+  <a class="back-link" href="/ui">← Dashboard</a>
+  <a class="back-link" href="/reconciliation">Bankafstemning →</a>
+  <span id="stats-text">Vælg en virksomhed</span>
+</div>
+
+<!-- ── View tabs ── -->
+<div class="view-tabs">
+  <button class="view-tab active" data-view="active" onclick="switchView('active', this)">
+    Aktive sager <span class="tab-cnt" id="cnt-active">0</span>
+  </button>
+  <button class="view-tab" data-view="all" onclick="switchView('all', this)">
+    Alle sager <span class="tab-cnt" id="cnt-all">0</span>
+  </button>
+  <button class="view-tab" data-view="creditors" onclick="switchView('creditors', this)">
+    Kreditorer <span class="tab-cnt" id="cnt-cred">0</span>
+  </button>
+</div>
+
+<!-- ── Dev ingest panel ── -->
+<div class="section hidden-section" id="dev-panel-section">
+  <div class="dev-panel">
+    <h3>Dev: Send testmail til Betalingsradar</h3>
+    <div class="dev-form">
+      <div class="dev-field">
+        <label>Emne</label>
+        <input id="d-subject" value="Faktura 10001 fra Leverandør A/S">
+      </div>
+      <div class="dev-field">
+        <label>Afsender</label>
+        <input id="d-sender" value="faktura@leverandoer.dk">
+      </div>
+      <div class="dev-field">
+        <label>Fakturanummer</label>
+        <input id="d-invnum" value="10001">
+      </div>
+      <div class="dev-field">
+        <label>Beløb (øre)</label>
+        <input id="d-amount" type="number" value="500000" placeholder="500000 = 5.000 kr">
+      </div>
+      <div class="dev-field">
+        <label>Forfaldsdato (YYYY-MM-DD)</label>
+        <input id="d-due" type="date">
+      </div>
+      <div class="dev-field">
+        <label>Kreditor</label>
+        <input id="d-creditor" value="Leverandør A/S">
+      </div>
+      <div class="dev-field wide">
+        <label>Brødtekst</label>
+        <textarea id="d-body">Faktura nr. 10001. Beløb: 5.000,00 kr. Forfaldsdato: 15-07-2026.</textarea>
+      </div>
+    </div>
+    <button class="btn-dev-send" onclick="devIngest()">Send til pipeline</button>
+    <div class="dev-result" id="dev-result" style="display:none"></div>
+  </div>
+</div>
+
+<!-- ── Messages ── -->
+<div class="section" id="msg-area"></div>
+
+<!-- ── Priority filter (shown for active + all) ── -->
+<div class="filter-wrap" id="filter-wrap">
+  <button class="prio-btn active" data-p="all" onclick="setPrio('all', this)">
+    Alle <span class="tab-cnt" id="pcnt-all">0</span>
+  </button>
+  <button class="prio-btn" data-p="red" onclick="setPrio('red', this)">
+    🔴 Rød <span class="tab-cnt" id="pcnt-red">0</span>
+  </button>
+  <button class="prio-btn" data-p="orange" onclick="setPrio('orange', this)">
+    🟠 Orange <span class="tab-cnt" id="pcnt-orange">0</span>
+  </button>
+  <button class="prio-btn" data-p="yellow" onclick="setPrio('yellow', this)">
+    🟡 Gul <span class="tab-cnt" id="pcnt-yellow">0</span>
+  </button>
+  <button class="prio-btn" data-p="green" onclick="setPrio('green', this)">
+    🟢 Grøn <span class="tab-cnt" id="pcnt-green">0</span>
+  </button>
+  <span class="filter-sep">|</span>
+  <select class="status-sel" id="status-sel" onchange="render()" style="display:none">
+    <option value="">Alle statusser</option>
+    <option value="payment_required">Afventer betaling</option>
+    <option value="bank_opened">Bank åbnet</option>
+    <option value="reminder_received">Rykker modtaget</option>
+    <option value="needs_review">Kræver gennemgang</option>
+    <option value="handled">Håndteret</option>
+    <option value="payment_confirmed">Betaling bekræftet</option>
+    <option value="rejected">Afvist</option>
+    <option value="duplicate">Duplikat</option>
+    <option value="not_relevant">Ikke relevant</option>
+  </select>
+</div>
+
+<!-- ── Active action items view ── -->
+<div class="section" id="view-active">
+  <div class="sh">
+    <h2>Aktive fakturaer kræver handling</h2>
+    <span class="sh-cnt" id="active-count">0</span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:28px"></th>
+          <th>Prioritet</th>
+          <th>Kreditor</th>
+          <th>Fakturanr.</th>
+          <th style="text-align:right">Beløb</th>
+          <th>Forfald</th>
+          <th>Status</th>
+          <th>Handlinger</th>
+        </tr>
+      </thead>
+      <tbody id="active-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── All cases view ── -->
+<div class="section hidden-section" id="view-all">
+  <div class="sh">
+    <h2>Alle sager</h2>
+    <span class="sh-cnt" id="all-count">0</span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th style="width:28px"></th>
+          <th>Prioritet</th>
+          <th>Kreditor</th>
+          <th>Fakturanr.</th>
+          <th style="text-align:right">Beløb</th>
+          <th>Forfald</th>
+          <th>Status</th>
+          <th>Oprettet</th>
+        </tr>
+      </thead>
+      <tbody id="all-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- ── Creditors view ── -->
+<div class="section hidden-section" id="view-creditors">
+  <div class="sh">
+    <h2>Kendte kreditorer</h2>
+    <span class="sh-cnt" id="cred-count">0</span>
+  </div>
+  <div class="tbl-wrap">
+    <table>
+      <thead>
+        <tr>
+          <th>Navn</th>
+          <th>CVR</th>
+          <th>Kategori</th>
+          <th>Risikoniveau</th>
+          <th>Oprettet</th>
+        </tr>
+      </thead>
+      <tbody id="cred-tbody"></tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+"use strict";
+
+// ── State ─────────────────────────────────────────────────────────────────────
+let _company      = "";
+let _actionItems  = [];
+let _allCases     = [];
+let _creditors    = [];
+let _activePrio   = "all";
+let _activeView   = "active";
+let _expandedRows = new Set();
+let _corrOpen     = null;   // case_id of open correction panel
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+function fmtOre(ore) {
+  if (ore == null || ore === 0) return "0,00 kr";
+  const kr = ore / 100;
+  return kr.toLocaleString("da-DK", { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + " kr";
+}
+function fdate(d) {
+  if (!d) return "—";
+  const s = String(d).slice(0, 10);
+  const [y, m, day] = s.split("-");
+  return `${day}/${m}/${y}`;
+}
+function fdtime(d) {
+  if (!d) return "—";
+  const dt = new Date(d);
+  return dt.toLocaleString("da-DK", { day: "2-digit", month: "2-digit", year: "numeric",
+                                       hour: "2-digit", minute: "2-digit" });
+}
+function isOverdue(dueDate) {
+  if (!dueDate) return false;
+  return new Date(dueDate) < new Date(new Date().toISOString().slice(0, 10));
+}
+function statusLabel(s) {
+  const m = {
+    payment_required: "Afventer betaling", bank_opened: "Bank åbnet",
+    handled: "Håndteret", payment_confirmed: "Betaling bekræftet",
+    rejected: "Afvist", duplicate: "Duplikat", not_relevant: "Ikke relevant",
+    reminder_received: "Rykker modtaget", needs_review: "Kræver gennemgang",
+    received: "Modtaget", classified: "Klassificeret",
+    reconciliation_pending: "Afstemning afventer", archived: "Arkiveret",
+  };
+  return m[s] || s;
+}
+function statusBadge(s) {
+  const cls = {
+    payment_required: "b-open", bank_opened: "b-bank-opened",
+    handled: "b-handled", payment_confirmed: "b-confirmed",
+    rejected: "b-rejected", duplicate: "b-duplicate",
+    not_relevant: "b-not-relevant", reminder_received: "b-reminder",
+    needs_review: "b-bank-opened",
+  };
+  return `<span class="b ${cls[s] || "b-open"}">${statusLabel(s)}</span>`;
+}
+function prioBadge(p) {
+  if (!p) return "";
+  const m = { red: "b-red", orange: "b-orange", yellow: "b-yellow", green: "b-green" };
+  const lbl = { red: "Rød", orange: "Orange", yellow: "Gul", green: "Grøn" };
+  return `<span class="b ${m[p] || ""}">${lbl[p] || p}</span>`;
+}
+function prioCell(p) {
+  if (!p) return `<span class="prio-dot" style="background:#e2e8f0"></span>`;
+  return `<span class="prio-cell"><span class="prio-dot ${p}"></span>${prioBadge(p)}</span>`;
+}
+function evDotClass(evType) {
+  if (["invoice_case_created", "action_item_created"].includes(evType)) return "created";
+  if (["marked_handled", "payment_confirmed"].includes(evType)) return "handled";
+  if (["reminder_received"].includes(evType)) return "reminder";
+  if (["rejected", "duplicate_detected"].includes(evType)) return "rejected";
+  if (["bank_opened"].includes(evType)) return "bank";
+  return "";
+}
+function evLabel(t) {
+  const m = {
+    mail_received: "Mail modtaget", document_classified: "Dokument klassificeret",
+    invoice_fields_extracted: "Felter udtrukket", creditor_matched: "Kreditor matchet",
+    invoice_case_created: "Sag oprettet", action_item_created: "Handling oprettet",
+    bank_opened: "Bank åbnet", marked_handled: "Markeret håndteret",
+    field_corrected: "Felt korrigeret", duplicate_detected: "Duplikat registreret",
+    reminder_received: "Rykker modtaget", rejected: "Afvist",
+    payment_confirmed: "Betaling bekræftet",
+  };
+  return m[t] || t;
+}
+function esc(s) {
+  return String(s ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function msg(html, cls = "notice") {
+  const a = document.getElementById("msg-area");
+  a.innerHTML = `<div class="${cls}">${html}</div>`;
+  setTimeout(() => { a.innerHTML = ""; }, 5000);
+}
+function err(txt) { msg(esc(txt), "err-box"); }
+async function api(method, path, body) {
+  const opts = { method, headers: { "Content-Type": "application/json" } };
+  if (body != null) opts.body = JSON.stringify(body);
+  const r = await fetch(path, opts);
+  if (!r.ok) {
+    const j = await r.json().catch(() => ({}));
+    throw new Error(j.detail || `HTTP ${r.status}`);
+  }
+  return r.json();
+}
+
+// ── Bootstrap ─────────────────────────────────────────────────────────────────
+document.addEventListener("DOMContentLoaded", async () => {
+  // Set default due date for dev form to 20 days out
+  const d = new Date(); d.setDate(d.getDate() + 20);
+  const dd = d.toISOString().slice(0, 10);
+  const el = document.getElementById("d-due");
+  if (el) el.value = dd;
+
+  await loadCompanies();
+});
+
+async function loadCompanies() {
+  try {
+    const cos = await api("GET", "/companies");
+    const sel = document.getElementById("company-sel");
+    cos.forEach(c => {
+      const o = document.createElement("option");
+      o.value = c.id; o.textContent = c.name;
+      sel.appendChild(o);
+    });
+    if (cos.length === 1) {
+      sel.value = cos[0].id;
+      onCompanyChange();
+    }
+  } catch (e) { err("Kunne ikke hente virksomheder: " + e.message); }
+}
+
+async function onCompanyChange() {
+  _company = document.getElementById("company-sel").value;
+  _expandedRows.clear();
+  _corrOpen = null;
+  if (!_company) {
+    document.getElementById("stats-text").textContent = "Vælg en virksomhed";
+    return;
+  }
+  await reload();
+}
+
+async function reload() {
+  if (!_company) return;
+  try {
+    const [items, cases, creds] = await Promise.all([
+      api("GET", `/invoice-monitoring/action-items?company_id=${_company}`),
+      api("GET", `/invoice-monitoring/cases?company_id=${_company}`),
+      api("GET", `/invoice-monitoring/creditors?company_id=${_company}`),
+    ]);
+    _actionItems = items;
+    _allCases    = cases;
+    _creditors   = creds;
+    updateCounts();
+    render();
+  } catch (e) { err("Indlæsning fejlede: " + e.message); }
+}
+
+// ── Counts ────────────────────────────────────────────────────────────────────
+function updateCounts() {
+  document.getElementById("cnt-active").textContent  = _actionItems.length;
+  document.getElementById("cnt-all").textContent     = _allCases.length;
+  document.getElementById("cnt-cred").textContent    = _creditors.length;
+
+  const redCount = _actionItems.filter(x => x.priority === "red").length;
+  const rb = document.getElementById("red-badge");
+  if (redCount > 0) { rb.textContent = redCount; rb.style.display = ""; }
+  else rb.style.display = "none";
+
+  const countPrio = (arr, p) => arr.filter(x => x.priority === p).length;
+  const src = _activeView === "all" ? _allCases : _actionItems;
+  document.getElementById("pcnt-all").textContent    = src.length;
+  document.getElementById("pcnt-red").textContent    = countPrio(src, "red");
+  document.getElementById("pcnt-orange").textContent = countPrio(src, "orange");
+  document.getElementById("pcnt-yellow").textContent = countPrio(src, "yellow");
+  document.getElementById("pcnt-green").textContent  = countPrio(src, "green");
+
+  const stats = `${_actionItems.length} aktive handlinger — ${_allCases.length} sager total — ${_creditors.length} kreditorer`;
+  document.getElementById("stats-text").textContent = stats;
+}
+
+// ── View switching ─────────────────────────────────────────────────────────────
+function switchView(v, btn) {
+  _activeView = v;
+  document.querySelectorAll(".view-tab").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+
+  document.getElementById("view-active").classList.toggle("hidden-section", v !== "active");
+  document.getElementById("view-all").classList.toggle("hidden-section", v !== "all");
+  document.getElementById("view-creditors").classList.toggle("hidden-section", v !== "creditors");
+  document.getElementById("filter-wrap").style.display = v === "creditors" ? "none" : "";
+  document.getElementById("status-sel").style.display = v === "all" ? "" : "none";
+
+  updateCounts();
+  render();
+}
+
+// ── Priority filter ────────────────────────────────────────────────────────────
+function setPrio(p, btn) {
+  _activePrio = p;
+  document.querySelectorAll(".prio-btn").forEach(b => b.classList.remove("active"));
+  btn.classList.add("active");
+  render();
+}
+
+// ── Render dispatcher ──────────────────────────────────────────────────────────
+function render() {
+  if (_activeView === "active") renderActive();
+  else if (_activeView === "all") renderAll();
+  else renderCreditors();
+}
+
+// ── Render active action items ─────────────────────────────────────────────────
+function renderActive() {
+  const filtered = _actionItems.filter(x =>
+    _activePrio === "all" || x.priority === _activePrio
+  );
+  document.getElementById("active-count").textContent = filtered.length;
+  const tbody = document.getElementById("active-tbody");
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td class="empty-cell" colspan="8">Ingen aktive handlinger${_activePrio !== "all" ? " med den valgte prioritet" : ""}</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(item => {
+    const exp = _expandedRows.has(item.invoice_case_id);
+    const overdue = isOverdue(item.due_date);
+    return `
+      <tr class="ai-row${exp ? " expanded" : ""}" onclick="toggleExpand('${esc(item.invoice_case_id)}', '${esc(item.id)}')">
+        <td class="expand-cell">${exp ? "▼" : "▶"}</td>
+        <td>${prioCell(item.priority)}</td>
+        <td>${esc(item.creditor_name || "—")}</td>
+        <td><code style="font-size:.8rem">${esc(item.invoice_number || "—")}</code></td>
+        <td class="amt${overdue ? " overdue" : ""}">${fmtOre(item.amount_ore)}</td>
+        <td${overdue ? ' style="color:#c53030;font-weight:600"' : ""}>${fdate(item.due_date)}</td>
+        <td>${statusBadge(item.status)}</td>
+        <td onclick="event.stopPropagation()">
+          <button class="btn-sm btn-bank" onclick="doOpenBank('${esc(item.invoice_case_id)}')">Åbn bank</button>
+          <button class="btn-sm btn-handle" onclick="doMarkHandled('${esc(item.invoice_case_id)}')">Håndteret</button>
+          <button class="btn-sm btn-reject" onclick="doReject('${esc(item.invoice_case_id)}')">Afvis</button>
+          <button class="btn-sm btn-edit" onclick="toggleCorr('${esc(item.invoice_case_id)}')">Ret felt</button>
+        </td>
+      </tr>
+      <tr class="corr-row${_corrOpen === item.invoice_case_id ? "" : " hidden"}" id="corr-${esc(item.invoice_case_id)}">
+        <td colspan="8" class="corr-cell">${buildCorrForm(item.invoice_case_id)}</td>
+      </tr>
+      <tr class="detail-row${exp ? "" : " hidden"}" id="detail-${esc(item.invoice_case_id)}">
+        <td colspan="8" class="detail-cell">
+          <div style="color:#718096;font-style:italic;font-size:.8rem">Indlæser…</div>
+        </td>
+      </tr>`;
+  }).join("");
+}
+
+// ── Render all cases ───────────────────────────────────────────────────────────
+function renderAll() {
+  const statusFilter = document.getElementById("status-sel").value;
+  let filtered = _allCases.filter(x => {
+    if (_activePrio !== "all" && x.priority !== _activePrio) return false;
+    if (statusFilter && x.status !== statusFilter) return false;
+    return true;
+  });
+  document.getElementById("all-count").textContent = filtered.length;
+  const tbody = document.getElementById("all-tbody");
+  if (!filtered.length) {
+    tbody.innerHTML = `<tr><td class="empty-cell" colspan="8">Ingen sager matcher de valgte filtre</td></tr>`;
+    return;
+  }
+  tbody.innerHTML = filtered.map(c => {
+    const exp = _expandedRows.has(c.id);
+    const overdue = isOverdue(c.due_date);
+    return `
+      <tr class="ai-row${exp ? " expanded" : ""}" onclick="toggleExpand('${esc(c.id)}', null)">
+        <td class="expand-cell">${exp ? "▼" : "▶"}</td>
+        <td>${prioCell(c.priority)}</td>
+        <td>${esc(c.creditor_name_raw || "—")}</td>
+        <td><code style="font-size:.8rem">${esc(c.invoice_number || "—")}</code></td>
+        <td class="amt${overdue ? " overdue" : ""}">${fmtOre(c.amount_ore)}</td>
+        <td${overdue ? ' style="color:#c53030;font-weight:600"' : ""}>${fdate(c.due_date)}</td>
+        <td>${statusBadge(c.status)}</td>
+        <td>${fdate(c.created_at)}</td>
+      </tr>
+      <tr class="detail-row${exp ? "" : " hidden"}" id="detail-${esc(c.id)}">
+        <td colspan="8" class="detail-cell">
+          <div style="color:#718096;font-style:italic;font-size:.8rem">Indlæser…</div>
+        </td>
+      </tr>`;
+  }).join("");
+}
+
+// ── Render creditors ───────────────────────────────────────────────────────────
+function renderCreditors() {
+  const tbody = document.getElementById("cred-tbody");
+  document.getElementById("cred-count").textContent = _creditors.length;
+  if (!_creditors.length) {
+    tbody.innerHTML = `<tr><td class="empty-cell" colspan="5">Ingen kreditorer endnu</td></tr>`;
+    return;
+  }
+  const riskLabel = { low: "Lav", medium: "Medium", high: "Høj" };
+  tbody.innerHTML = _creditors.map(c => `
+    <tr class="cred-row">
+      <td><strong>${esc(c.name)}</strong></td>
+      <td>${esc(c.cvr_number || "—")}</td>
+      <td>${esc(c.default_category || "—")}</td>
+      <td>${esc(riskLabel[c.risk_level] || c.risk_level || "—")}</td>
+      <td>${fdate(c.created_at)}</td>
+    </tr>`).join("");
+}
+
+// ── Expand / detail ────────────────────────────────────────────────────────────
+async function toggleExpand(caseId, _itemId) {
+  const detailRow = document.getElementById(`detail-${caseId}`);
+  if (!detailRow) return;
+  const isOpen = _expandedRows.has(caseId);
+  if (isOpen) {
+    _expandedRows.delete(caseId);
+    detailRow.classList.add("hidden");
+  } else {
+    _expandedRows.add(caseId);
+    detailRow.classList.remove("hidden");
+    await loadDetail(caseId, detailRow);
+  }
+  render();
+}
+
+async function loadDetail(caseId, row) {
+  try {
+    const detail = await api("GET", `/invoice-monitoring/cases/${caseId}`);
+    const cell = row.querySelector("td");
+    cell.innerHTML = buildDetailHtml(detail);
+  } catch (e) {
+    const cell = row.querySelector("td");
+    cell.innerHTML = `<span style="color:#c53030;font-size:.8rem">${esc(e.message)}</span>`;
+  }
+}
+
+function buildDetailHtml(d) {
+  // Evidence
+  let evHtml = "";
+  if (d.evidence && d.evidence.length) {
+    evHtml = `<div style="margin-bottom:.65rem">
+      <div style="font-size:.75rem;font-weight:700;color:#718096;margin-bottom:.3rem;text-transform:uppercase;letter-spacing:.3px">Udtrukne felter</div>
+      <div class="ev-grid">${d.evidence.map(e =>
+        `<div class="ev-card">
+          <div class="ev-field">${esc(e.field_name)}</div>
+          <div class="ev-val">${esc(e.extracted_value || "—")}</div>
+          <div class="ev-src">${esc(e.source_text || "")}</div>
+          <div class="ev-conf">Konfidans: ${(e.confidence * 100).toFixed(0)}%</div>
+        </div>`).join("")}
+      </div>
+    </div>`;
+  }
+
+  // Timeline
+  const tlHtml = (d.events || []).map(ev => {
+    const payloadStr = ev.payload ? JSON.stringify(ev.payload, null, 2) : null;
+    return `<div class="tl-item">
+      <div class="tl-dot ${evDotClass(ev.event_type)}"></div>
+      <div class="tl-content">
+        <span class="tl-type">${esc(evLabel(ev.event_type))}</span>
+        <span class="tl-time">${fdtime(ev.created_at)}</span>
+        ${payloadStr ? `<div class="tl-payload">${esc(payloadStr)}</div>` : ""}
+      </div>
+    </div>`;
+  }).join("");
+
+  // Reconciliation note if handled
+  const noteHtml = d.status === "handled"
+    ? `<div class="notice" style="margin-bottom:.5rem;font-size:.78rem">
+        ℹ️ Sagen er markeret håndteret. Bekræftet betaling sættes kun via bankafstemningsmodulet.
+       </div>`
+    : "";
+
+  return `${noteHtml}${evHtml}
+    <div style="font-size:.75rem;font-weight:700;color:#718096;margin-bottom:.4rem;text-transform:uppercase;letter-spacing:.3px">Historik</div>
+    <div class="timeline">${tlHtml || '<div style="color:#a0aec0;font-size:.8rem">Ingen hændelser</div>'}</div>`;
+}
+
+// ── Correction panel ───────────────────────────────────────────────────────────
+function buildCorrForm(caseId) {
+  return `<div class="corr-form">
+    <div>
+      <label class="corr-label">Felt</label>
+      <select class="corr-sel" id="corr-sel-${esc(caseId)}">
+        <option value="invoice_number">Fakturanummer</option>
+        <option value="amount_ore">Beløb (øre)</option>
+        <option value="due_date">Forfaldsdato (YYYY-MM-DD)</option>
+        <option value="invoice_date">Fakturadato (YYYY-MM-DD)</option>
+        <option value="payment_reference">Betalingsreference</option>
+        <option value="creditor_name_raw">Kreditor (rå navn)</option>
+      </select>
+    </div>
+    <div>
+      <label class="corr-label">Ny værdi</label>
+      <input class="corr-inp" id="corr-inp-${esc(caseId)}" placeholder="Ny værdi...">
+    </div>
+    <div style="padding-top:1.35rem">
+      <button class="btn-sm btn-corr-save" onclick="saveCorr('${esc(caseId)}')">Gem rettelse</button>
+      <button class="btn-sm btn-corr-cancel" onclick="toggleCorr('${esc(caseId)}')">Annuller</button>
+    </div>
+  </div>`;
+}
+
+function toggleCorr(caseId) {
+  if (_corrOpen === caseId) {
+    _corrOpen = null;
+  } else {
+    _corrOpen = caseId;
+  }
+  render();
+}
+
+async function saveCorr(caseId) {
+  const fieldName = document.getElementById(`corr-sel-${caseId}`)?.value;
+  const newValue  = document.getElementById(`corr-inp-${caseId}`)?.value?.trim();
+  if (!fieldName || !newValue) { err("Udfyld felt og ny værdi."); return; }
+  try {
+    await api("PATCH", `/invoice-monitoring/cases/${caseId}/fields`, { field_name: fieldName, new_value: newValue });
+    msg("Rettelse gemt.");
+    _corrOpen = null;
+    await reload();
+  } catch (e) { err("Rettelse fejlede: " + e.message); }
+}
+
+// ── Actions ────────────────────────────────────────────────────────────────────
+async function doOpenBank(caseId) {
+  try {
+    const r = await api("POST", `/invoice-monitoring/cases/${caseId}/open-bank`);
+    msg(`Bank åbnet — status er nu <strong>${statusLabel(r.status)}</strong>.`);
+    await reload();
+  } catch (e) { err("Kunne ikke åbne bank: " + e.message); }
+}
+
+async function doMarkHandled(caseId) {
+  const by = prompt("Håndteret af (brugernavn):", "user") ?? "user";
+  if (!by.trim()) return;
+  try {
+    const r = await api("POST", `/invoice-monitoring/cases/${caseId}/mark-handled?handled_by=${encodeURIComponent(by)}`);
+    msg(`Sag markeret håndteret. <em>${esc(r.note)}</em>`);
+    await reload();
+  } catch (e) { err("Kunne ikke markere håndteret: " + e.message); }
+}
+
+async function doReject(caseId) {
+  const reason = prompt("Årsag til afvisning (valgfri):", "false_positive");
+  if (reason === null) return;
+  try {
+    await api("POST", `/invoice-monitoring/cases/${caseId}/reject?reason=${encodeURIComponent(reason)}`);
+    msg("Sag afvist.");
+    await reload();
+  } catch (e) { err("Afvisning fejlede: " + e.message); }
+}
+
+// ── Dev ingest ────────────────────────────────────────────────────────────────
+function toggleDevPanel() {
+  const s = document.getElementById("dev-panel-section");
+  s.classList.toggle("hidden-section");
+}
+
+async function devIngest() {
+  if (!_company) { err("Vælg en virksomhed først."); return; }
+  const body = {
+    company_id:     _company,
+    subject:        document.getElementById("d-subject").value,
+    sender:         document.getElementById("d-sender").value,
+    body_text:      document.getElementById("d-body").value,
+    invoice_number: document.getElementById("d-invnum").value || null,
+    creditor_name:  document.getElementById("d-creditor").value || null,
+    due_date:       document.getElementById("d-due").value || null,
+    amount_ore:     parseInt(document.getElementById("d-amount").value) || null,
+  };
+  const resultEl = document.getElementById("dev-result");
+  resultEl.style.display = "";
+  resultEl.textContent = "Sender…";
+  try {
+    const r = await api("POST", "/invoice-monitoring/dev/ingest-sample", body);
+    resultEl.textContent = JSON.stringify(r, null, 2);
+    msg("Mail indsendt til pipeline.");
+    await reload();
+  } catch (e) {
+    resultEl.textContent = "Fejl: " + e.message;
+    err("Pipeline fejlede: " + e.message);
+  }
+}
+</script>
+<script src="/static/nav.js"></script>
+</body>
+</html>

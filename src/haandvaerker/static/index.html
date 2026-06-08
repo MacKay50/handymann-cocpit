@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Håndværker Business System</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5;
+      color: #222;
+      line-height: 1.6;
+    }
+
+    /* ── Header ── */
+    header {
+      background: #1a1a2e;
+      color: #fff;
+      padding: 2.5rem 2rem 2rem;
+      text-align: center;
+    }
+    header h1 { font-size: 2rem; font-weight: 700; letter-spacing: -0.5px; }
+    header p  { margin-top: .4rem; color: #a0aec0; font-size: .95rem; }
+    .badge-row { margin-top: 1rem; display: flex; justify-content: center; gap: .6rem; flex-wrap: wrap; }
+    .badge {
+      background: rgba(255,255,255,.1);
+      border: 1px solid rgba(255,255,255,.2);
+      color: #e2e8f0;
+      border-radius: 999px;
+      padding: .2rem .8rem;
+      font-size: .78rem;
+      font-weight: 500;
+    }
+
+    /* ── Quick links ── */
+    .quicklinks {
+      display: flex;
+      justify-content: center;
+      gap: 1rem;
+      flex-wrap: wrap;
+      padding: 1.5rem 2rem;
+      background: #16213e;
+    }
+    .btn {
+      display: inline-block;
+      padding: .55rem 1.4rem;
+      border-radius: 6px;
+      font-size: .9rem;
+      font-weight: 600;
+      text-decoration: none;
+      transition: opacity .15s;
+    }
+    .btn:hover { opacity: .85; }
+    .btn-primary  { background: #4299e1; color: #fff; }
+    .btn-secondary{ background: #2d3748; color: #e2e8f0; border: 1px solid #4a5568; }
+    .btn-green    { background: #38a169; color: #fff; }
+
+    /* ── Overview ── */
+    .overview {
+      max-width: 900px;
+      margin: 2rem auto 0;
+      padding: 0 1.5rem;
+    }
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-top: 1rem;
+    }
+    .stat-card {
+      background: #fff;
+      border-radius: 10px;
+      padding: 1.2rem 1rem;
+      text-align: center;
+      box-shadow: 0 1px 4px rgba(0,0,0,.08);
+    }
+    .stat-card .num { font-size: 1.8rem; font-weight: 700; color: #1a1a2e; }
+    .stat-card .lbl { font-size: .8rem; color: #718096; margin-top: .2rem; }
+
+    /* ── Section headings ── */
+    .section-title {
+      max-width: 900px;
+      margin: 2.5rem auto .8rem;
+      padding: 0 1.5rem;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      text-transform: uppercase;
+      letter-spacing: .06em;
+    }
+
+    /* ── Flow cards ── */
+    .flows {
+      max-width: 900px;
+      margin: 0 auto 3rem;
+      padding: 0 1.5rem;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(380px, 1fr));
+      gap: 1.2rem;
+    }
+    .card {
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 1px 6px rgba(0,0,0,.09);
+      overflow: hidden;
+    }
+    .card-header {
+      padding: .85rem 1.2rem;
+      display: flex;
+      align-items: center;
+      gap: .7rem;
+    }
+    .card-header .num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      background: rgba(255,255,255,.25);
+      color: #fff;
+      font-size: .85rem;
+      font-weight: 700;
+      display: flex; align-items: center; justify-content: center;
+      flex-shrink: 0;
+    }
+    .card-header h2 { font-size: 1rem; font-weight: 700; color: #fff; }
+    .card-header p  { font-size: .78rem; color: rgba(255,255,255,.8); margin-top: .1rem; }
+
+    .c1 .card-header { background: #2b6cb0; }
+    .c2 .card-header { background: #276749; }
+    .c3 .card-header { background: #744210; }
+    .c4 .card-header { background: #553c9a; }
+    .c5 .card-header { background: #702459; }
+    .c6 .card-header { background: #1a1a2e; }
+
+    .card-body { padding: .9rem 1.2rem 1.1rem; }
+
+    .step {
+      display: flex;
+      gap: .7rem;
+      align-items: flex-start;
+      margin-bottom: .55rem;
+    }
+    .step:last-child { margin-bottom: 0; }
+    .step-dot {
+      width: 20px; height: 20px;
+      border-radius: 50%;
+      background: #edf2f7;
+      color: #4a5568;
+      font-size: .7rem;
+      font-weight: 700;
+      flex-shrink: 0;
+      display: flex; align-items: center; justify-content: center;
+      margin-top: 2px;
+    }
+    .step-content { flex: 1; }
+    .step-content strong { display: block; font-size: .88rem; color: #1a202c; }
+    .step-content span  { font-size: .8rem; color: #718096; }
+
+    code {
+      font-family: "Consolas", "SF Mono", monospace;
+      font-size: .78rem;
+      background: #edf2f7;
+      padding: .1rem .4rem;
+      border-radius: 4px;
+      color: #2d3748;
+    }
+    .method {
+      display: inline-block;
+      font-size: .68rem;
+      font-weight: 700;
+      padding: .1rem .4rem;
+      border-radius: 3px;
+      margin-right: .3rem;
+      font-family: "Consolas", "SF Mono", monospace;
+    }
+    .GET    { background: #c6f6d5; color: #22543d; }
+    .POST   { background: #bee3f8; color: #2a4365; }
+    .PATCH  { background: #fefcbf; color: #744210; }
+    .DELETE { background: #fed7d7; color: #742a2a; }
+
+    .note {
+      margin-top: .8rem;
+      padding: .6rem .8rem;
+      background: #fffbeb;
+      border-left: 3px solid #f6ad55;
+      border-radius: 0 6px 6px 0;
+      font-size: .8rem;
+      color: #744210;
+    }
+
+    /* ── Footer ── */
+    footer {
+      text-align: center;
+      padding: 1.5rem;
+      font-size: .8rem;
+      color: #a0aec0;
+      border-top: 1px solid #e2e8f0;
+    }
+  </style>
+</head>
+<body>
+
+<header>
+  <h1>Håndværker Business System</h1>
+  <p>Intern demo-platform · Lokal sandkasse · Ingen ekstern kommunikation</p>
+  <div class="badge-row">
+    <span class="badge">Python 3.9 + FastAPI</span>
+    <span class="badge">SQLite</span>
+    <span class="badge">ReportLab PDF</span>
+    <span class="badge">448 tests ✓</span>
+    <span class="badge">v1.0 · 2026-05-20</span>
+  </div>
+</header>
+
+<div class="quicklinks">
+  <a class="btn btn-green"     href="/ui"    target="_blank">Demo Dashboard  →  /ui</a>
+  <a class="btn btn-primary"   href="/docs"  target="_blank">Swagger UI  →  /docs</a>
+  <a class="btn btn-secondary" href="/redoc" target="_blank">ReDoc  →  /redoc</a>
+</div>
+
+<!-- ── Oversigt ── -->
+<div class="overview">
+  <div class="overview-grid">
+    <div class="stat-card"><div class="num">20+</div><div class="lbl">API-ressourcer</div></div>
+    <div class="stat-card"><div class="num">5</div><div class="lbl">Rapport-endpoints</div></div>
+    <div class="stat-card"><div class="num">2</div><div class="lbl">PDF-typer</div></div>
+    <div class="stat-card"><div class="num">CSV</div><div class="lbl">Eksport på alle rapporter</div></div>
+    <div class="stat-card"><div class="num">448</div><div class="lbl">Tests bestået</div></div>
+  </div>
+</div>
+
+<div class="section-title">Demo-flows — start her</div>
+
+<div class="flows">
+
+  <!-- Flow 1: Grunddata -->
+  <div class="card c1">
+    <div class="card-header">
+      <div class="num">1</div>
+      <div>
+        <h2>Grunddata</h2>
+        <p>Opret virksomhed, kunde og medarbejder</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="step">
+        <div class="step-dot">1</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/companies/</code></strong>
+          <span>Navn, adresse, CVR-nummer</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">2</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/customers/</code></strong>
+          <span>Navn, adresse + <code>company_id</code> fra trin 1</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">3</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/employees/</code></strong>
+          <span>Navn, standardtimepris + <code>company_id</code></span>
+        </div>
+      </div>
+      <div class="note">Gem <code>company_id</code> — den bruges i alle efterfølgende kald.</div>
+    </div>
+  </div>
+
+  <!-- Flow 2: Tilbudsflow -->
+  <div class="card c2">
+    <div class="card-header">
+      <div class="num">2</div>
+      <div>
+        <h2>Tilbud → Faktura (automatisk)</h2>
+        <p>Komplet salgsflow fra henvendelse til kladde</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="step">
+        <div class="step-dot">1</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/projects/</code></strong>
+          <span>Opret projekt med <code>customer_id</code></span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">2</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/quotes/</code></strong>
+          <span>Tilbud med linjer (beskrivelse, enhed, antal, pris)</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">3</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/quotes/{id}/send</code></strong>
+          <span>Skift status: draft → sent</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">4</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/quotes/{id}/accept</code></strong>
+          <span>Projekt aktiveres + faktura-kladde oprettes automatisk</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">5</div>
+        <div class="step-content">
+          <strong><span class="method GET">GET</span><code>/quotes/{id}/pdf</code></strong>
+          <span>Download tilbud som PDF</span>
+        </div>
+      </div>
+      <div class="note">Svar fra <code>/accept</code> indeholder <code>invoice_id</code> på den auto-oprettede kladde.</div>
+    </div>
+  </div>
+
+  <!-- Flow 3: Timer + Udgifter → Faktura -->
+  <div class="card c3">
+    <div class="card-header">
+      <div class="num">3</div>
+      <div>
+        <h2>Timer &amp; Udgifter → Faktura</h2>
+        <p>Registrer forbrug og fakturer samlet</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="step">
+        <div class="step-dot">1</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/time-entries/</code></strong>
+          <span>Dato, timer, medarbejder, projekt — <code>billable: true</code></span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">2</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/expenses/</code></strong>
+          <span>Kategori, beløb, kvittering — materialer, parkering, km</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">3</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/invoices/draft-from-project</code></strong>
+          <span>Samler alle ubillede poster på projektet til én kladde</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">4</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/invoices/{id}/send</code></strong>
+          <span>Send faktura → status: draft → sent</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">5</div>
+        <div class="step-content">
+          <strong><span class="method GET">GET</span><code>/invoices/{id}/pdf</code></strong>
+          <span>Download professionel faktura-PDF</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">6</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/invoices/{id}/pay</code></strong>
+          <span>Marker som betalt</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flow 4: Dashboard & Admin -->
+  <div class="card c4">
+    <div class="card-header">
+      <div class="num">4</div>
+      <div>
+        <h2>Dashboard &amp; Årshjul</h2>
+        <p>Overblik og administrative deadlines</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="step">
+        <div class="step-dot">1</div>
+        <div class="step-content">
+          <strong><span class="method GET">GET</span><code>/dashboard?company_id=…</code></strong>
+          <span>Indbakke, henvendelser, projekter, fakturaer, forfaldne, deadlines</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">2</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/admin-deadlines/generate-year</code></strong>
+          <span>Generer årshjul: moms, løn, årsregnskab, skat, forsikring</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">3</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/admin-deadlines/{id}/complete</code></strong>
+          <span>Marker deadline som fuldført</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">4</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/inbox/</code></strong>
+          <span>Log indgående besked (telefon, mail, walk-in)</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">5</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/inbox/{id}/convert</code></strong>
+          <span>Konverter besked → henvendelse automatisk</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Flow 5: Rapporter -->
+  <div class="card c5">
+    <div class="card-header">
+      <div class="num">5</div>
+      <div>
+        <h2>Rapporter &amp; CSV-eksport</h2>
+        <p>Tilføj <code>?format=csv</code> til alle for download</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="step">
+        <div class="step-dot">1</div>
+        <div class="step-content">
+          <strong><span class="method GET">GET</span><code>/reports/revenue</code></strong>
+          <span>Omsætning pr. måned/kvartal/år — <code>&amp;group_by=month</code></span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">2</div>
+        <div class="step-content">
+          <strong><span class="method GET">GET</span><code>/reports/project-profitability</code></strong>
+          <span>Bruttomargin pr. projekt (faktureret − timer − udgifter)</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">3</div>
+        <div class="step-content">
+          <strong><span class="method GET">GET</span><code>/reports/employee-hours</code></strong>
+          <span>Timer og omkostninger pr. medarbejder i datointerval</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">4</div>
+        <div class="step-content">
+          <strong><span class="method GET">GET</span><code>/reports/top-customers</code></strong>
+          <span>Topkunder sorteret efter omsætning — <code>&amp;limit=10</code></span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">5</div>
+        <div class="step-content">
+          <strong><span class="method GET">GET</span><code>/reports/expense-breakdown</code></strong>
+          <span>Udgifter fordelt på kategorier inkl. momsbeløb</span>
+        </div>
+      </div>
+      <div class="note">Alle rapporter: tilføj <code>?format=csv</code> for at downloade som Excel-kompatibel CSV-fil.</div>
+    </div>
+  </div>
+
+  <!-- Flow 6: Øvrige moduler -->
+  <div class="card c6">
+    <div class="card-header">
+      <div class="num">6</div>
+      <div>
+        <h2>Øvrige moduler</h2>
+        <p>Løn, moms, betalinger, aftaler, påmindelser</p>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="step">
+        <div class="step-dot">→</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/salaries/</code></strong>
+          <span>Lønudbetalinger pr. medarbejder med status-flow</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">→</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/vat-periods/</code></strong>
+          <span>Momsperioder med eksport af afgiftsgrundlag</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">→</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/payments/</code></strong>
+          <span>Betalingsregistrering mod fakturaer</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">→</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/appointments/</code></strong>
+          <span>Aftaler og besigtigelser pr. projekt</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">→</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/reminders/</code></strong>
+          <span>Påmindelser knyttet til fakturaer, projekter, kunder</span>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-dot">→</div>
+        <div class="step-content">
+          <strong><span class="method POST">POST</span><code>/enquiries/</code></strong>
+          <span>Henvendelsesstyring med kvalificering og konvertering</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<footer>
+  Håndværker Business System · Intern demo · Kører lokalt på denne maskine · Ingen data sendes eksternt
+</footer>
+
+<script src="/static/nav.js"></script>
+</body>
+</html>

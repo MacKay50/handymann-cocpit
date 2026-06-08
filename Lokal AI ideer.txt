@@ -1,0 +1,338 @@
+ Hvordan anvender vi lokale AI (Ollama, mistral eller andre) til at chrunche data lokalt, så som at analysere mail beskeder, tilbud, bankafstemme og andet der skal AI kraft      til og ikke skal i skyen eller er behov for at bruge claude til - Altså som en dal at det færdige lukkede program/app? Blot ideer ingen kodning!
+● Gode spørgsmål — her er ideerne, struktureret efter hvilke problemer der giver mest mening at løse med lokal AI kontra den regelbaserede logik der allerede er der.
+
+  ---
+  Det grundlæggende mønster
+
+  Jern-regel: LLM foreslår, kode beslutter.
+  Al AI-output er forslag der vises til brugeren eller valideres af deterministic kode inden noget skrives. Aldrig auto-handling baseret på LLM-output alene.
+
+  Rådata → Kode forbereder prompt → Ollama → JSON-svar → Kode validerer → Bruger bekræfter
+
+  ---
+  Ollama på Windows — praktisk
+
+  - Ollama er den nemmeste vej: winget install Ollama.Ollama, kører som baggrundsservice på localhost:11434
+  - Gode modeller til dette use-case:
+    - mistral (7B) — stærk til struktureret udtræk og dansk tekst
+    - phi3:mini (3.8B) — hurtigere, god nok til klassificering
+    - llama3.2:3b — lille, hurtig, rimeligt dansk
+    - nomic-embed-text — embeddings til lighed (allerede delvist brugt i Erfaringsbank)
+  - Systemet har allerede local_ai.py med LOCAL_AI_ENDPOINT — Ollama sættes bare ind her
+
+  ---
+  Use-cases rangeret efter værdi vs. kompleksitet
+
+  1. Besked-analyse og udtræk (høj værdi, lav risiko)
+
+  Problem: Den nuværende regelbaserede router misser nuancerede beskeder — "kunne I komme og kigge på vores facade, vi har lidt problemer med fugt" udtrækker ikke kontaktinfo,
+  adresse, opgavetype præcist.
+
+  Idé: LLM læser beskedens rå tekst og returnerer struktureret JSON:
+  {
+    "opgavetype": "facaderenovering + fugtsikring",
+    "haster": true,
+    "mangler": ["adresse", "m2", "kontaktperson"],
+    "foreslaaet_prioritet": "høj",
+    "kladde_svar": "Tak for din henvendelse..."
+  }
+  Koden merger det ind i QuotePreparation-modellen — brugeren ser og retter.
+
+  ---
+  2. Erfaringsbank-udtræk (høj værdi, eksisterer delvist)
+
+  Problem: Regelbaseret udtræk fra PDF/DOCX misser meget — fri tekst, ustrukturerede dokumenter, håndskrevne noter scannet til PDF.
+
+  Idé: Send den udtrukne tekst til LLM med en prompt der beder om:
+  - pris ekskl. moms, areal, timer, år, jobtype
+  - som valideret JSON med confidence-score per felt
+
+  LLM er meget bedre end regex til at forstå "Arbejdet udgør i alt kr. 187.500,- excl. moms" uanset formatering. Koden accepterer kun felter med høj confidence og beder brugeren
+   bekræfte resten.
+
+  ---
+  3. Bankafstemning (høj værdi, ny funktionalitet)
+
+  Problem: Bankudtog fra CSV/Excel skal matches mod fakturaer og udgifter — transaktionsbeskrivelserne er rod ("OVERF 220526 FRA HANSEN BYGGE A/S PBS-REF 884421").
+
+  Idé i to lag:
+  - Lag 1 (kode): Match på beløb ± 0,01 kr og dato ± 7 dage — automatisk, ingen AI
+  - Lag 2 (LLM): De uafklarede transaktioner sendes til LLM med en liste af åbne fakturaer/udlæg — LLM foreslår match med begrundelse
+
+  Brugeren ser: "Transaktionen 'OVERF HANSEN BYGGE 12.500,00' ligner FKT-2026-019 (Morten Hansen, 12.500,00 kr, forfaldt 15/5) — Bekræft?"
+
+  Dette er meget svært at gøre godt med ren regelbaseret logik, men præcist hvad LLM'er er gode til.
+
+  ---
+  4. Udgiftskategorisering
+
+  Problem: Importerede udgifter fra bankkort eller kvitteringer mangler kategori — "BAUHAUS GENTOFTE 1.247,50" skal blive til materialer.
+
+  Idé: Batch-klassificering af ukategoriserede udgifter. Koden sender liste af beskrivelser til LLM, får kategorier retur, viser som forslag med "Godkend alle / Ret enkeltvis".
+
+  Lille model (phi3:mini) er mere end god nok til dette — det er simpel klassificering.
+
+  ---
+  5. Tilbudsforberedelse — prisestimering
+
+  Problem: De foreslåede tilbudslinjer er altid 0 kr og baseret på template, ikke virkelighed.
+
+  Idé: Når brugeren klikker "Find lignende tilbud" i Tilbudsgrundlag-skuffen, sender systemet:
+  - Erfaringsbank-match-data (median pris/m², range)
+  - Opgavebeskrivelsen
+  - De foreslåede linjer
+
+  LLM foreslår prisudfyldning med begrundelse: "Baseret på 3 lignende malerjobs 2023-2024 (185-220 kr/m²), foreslår jeg 195 kr/m² for spartling og 85 kr/m² for malerarbejde."
+
+  Brugeren accepterer eller justerer. Koden skriver aldrig priser automatisk.
+
+  ---
+  6. Månedlig rapport-opsummering
+
+  Problem: Rapportdata er tal — de fleste brugere vil hellere læse "Maj var din bedste måned: 3 fakturaer på 312.000 kr, Morten Hansen er din mest profitable kunde."
+
+  Idé: Dashboard-endpoint sender nøgletal til LLM, får 3-5 sætninger retur på dansk. Vises øverst på Overblik-fanen som en "god morgen"-besked. Lavt stakes — det er kun tekst,
+  ingen handlinger.
+
+  ---
+  Arkitektur-overvejelser
+
+  ┌─────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  LLM foreslår prisudfyldning med begrundelse: "Baseret på 3 lignende malerjobs 2023-2024 (185-220 kr/m²), foreslår jeg 195 kr/m² for spartling og 85 kr/m² for malerarbejde."
+
+  Brugeren accepterer eller justerer. Koden skriver aldrig priser automatisk.
+
+  ---
+  6. Månedlig rapport-opsummering
+
+  Problem: Rapportdata er tal — de fleste brugere vil hellere læse "Maj var din bedste måned: 3 fakturaer på 312.000 kr, Morten Hansen er din mest profitable kunde."
+
+  Idé: Dashboard-endpoint sender nøgletal til LLM, får 3-5 sætninger retur på dansk. Vises øverst på Overblik-fanen som en "god morgen"-besked. Lavt stakes — det erkun                                                                                                                                                                  tekst,
+  ingen handlinger.
+
+  ---
+  Arkitektur-overvejelser
+
+  ┌─────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │          Spørgsmål          │                                                                Anbefaling                                                         │
+  ├─────────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────   enkeltvis".
+
+  Lille model (phi3:mini) er mere end god nok til dette — det er simpel klassificering.
+
+  ---
+  5. Tilbudsforberedelse — prisestimering
+
+  Problem: De foreslåede tilbudslinjer er altid 0 kr og baseret på template, ikke virkelighed.
+
+  Idé: Når brugeren klikker "Find lignende tilbud" i Tilbudsgrundlag-skuffen, sender systemet:
+  - Erfaringsbank-match-data (median pris/m², range)
+  - Opgavebeskrivelsen
+  - De foreslåede linjer
+
+  LLM foreslår prisudfyldning med begrundelse: "Baseret på 3 lignende malerjobs 2023-2024 (185-220 kr/m²), foreslår jeg 195 kr/m² for spartling og 85 kr/m²                                                                                                                                                        for
+  malerarbejde."
+
+  Brugeren accepterer eller justerer. Koden skriver aldrig priser automatisk.
+
+  ---
+  6. Månedlig rapport-opsummering
+
+  Problem: Rapportdata er tal — de fleste brugere vil hellere læse "Maj var din bedste måned: 3 fakturaer på 312.000 kr, Morten Hansen er din mest profitable
+  kunde."
+
+  Idé: Dashboard-endpoint sender nøgletal til LLM, får 3-5 sætninger retur på dansk. Vises øverst på Overblik-fanen som en "god morgen"-besked. Lavt stakes                                                                                                                                                        det                                                                                                                                                       er
+   kun tekst, ingen handlinger.
+
+  ---
+  Arkitektur-overvejelser
+
+  ┌────────────────────────────┬────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │         Spørgsmål          │                                                           Anbefaling                                                    │
+  ├────────────────────────────┼────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Synkron eller async?       │ Batch-jobs (bankafstemning, erfaringsbank) kører async med status-polling. Besked-analyse kan være synkron (<2 sek fo  Idé: Batch-klassificering af ukategoriserede udgifter. Koden sender liste af beskrivelser til LLM, får kategorier retur, viser som forslag med "Godkend
+  alle / Ret enkeltvis".
+
+  Lille model (phi3:mini) er mere end god nok til dette — det er simpel klassificering.
+
+  ---
+  5. Tilbudsforberedelse — prisestimering
+
+  Problem: De foreslåede tilbudslinjer er altid 0 kr og baseret på template, ikke virkelighed.
+
+  Idé: Når brugeren klikker "Find lignende tilbud" i Tilbudsgrundlag-skuffen, sender systemet:
+  - Erfaringsbank-match-data (median pris/m², range)
+  - Opgavebeskrivelsen
+  - De foreslåede linjer
+
+  LLM foreslår prisudfyldning med begrundelse: "Baseret på 3 lignende malerjobs 2023-2024 (185-220 kr/m²), foreslår jeg 195 kr/m² for spartling og 85
+  kr/m² for malerarbejde."
+
+  Brugeren accepterer eller justerer. Koden skriver aldrig priser automatisk.
+
+  ---
+  6. Månedlig rapport-opsummering
+
+  Problem: Rapportdata er tal — de fleste brugere vil hellere læse "Maj var din bedste måned: 3 fakturaer på 312.000 kr, Morten Hansen er din mest
+  profitable kunde."
+
+  Idé: Dashboard-endpoint sender nøgletal til LLM, får 3-5 sætninger retur på dansk. Vises øverst på Overblik-fanen som en "god morgen"-besked. Lavt
+  stakes — det er kun tekst, ingen handlinger.
+
+  ---
+  Arkitektur-overvejelser
+
+  ┌────────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │         Spørgsmål          │                                                      Anbefaling                                                     │
+  ├────────────────────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────
+  LLM foreslår prisudfyldning med begrundelse: "Baseret på 3 lignende malerjobs 2023-2024 (185-220 kr/m²), foreslår jeg 195 kr/m² for spartling                                                                                                                                            og
+  85 kr/m² for malerarbejde."
+
+  Brugeren accepterer eller justerer. Koden skriver aldrig priser automatisk.
+
+  ---
+  6. Månedlig rapport-opsummering
+
+  Problem: Rapportdata er tal — de fleste brugere vil hellere læse "Maj var din bedste måned: 3 fakturaer på 312.000 kr, Morten Hansen er dinmest
+  profitable kunde."
+
+  Idé: Dashboard-endpoint sender nøgletal til LLM, får 3-5 sætninger retur på dansk. Vises øverst på Overblik-fanen som en "god morgen"-besked.                                                                                                                                            Lavt
+   stakes — det er kun tekst, ingen handlinger.
+
+  ---
+  Arkitektur-overvejelser
+
+  ┌───────────────────────────┬─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │         Spørgsmål         │                                                   Anbefaling                                                 │
+  ├───────────────────────────┼─────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Synkron eller async?      │ Batch-jobs (bankafstemning, erfaringsbank) kører async med status-polling. Besked-analyse kan være synkron
+  Brugeren accepterer eller justerer. Koden skriver aldrig priser automatisk.
+
+  ---
+  6. Månedlig rapport-opsummering
+
+  Problem: Rapportdata er tal — de fleste brugere vil hellere læse "Maj var din bedste måned: 3 fakturaer på 312.000 kr, Morten Hansen erdin
+   mest profitable kunde."
+
+  Idé: Dashboard-endpoint sender nøgletal til LLM, får 3-5 sætninger retur på dansk. Vises øverst på Overblik-fanen som en "god
+  morgen"-besked. Lavt stakes — det er kun tekst, ingen handlinger.
+
+  Brugeren accepterer eller justerer. Koden skriver aldrig priser automatisk.
+
+
+  Brugeren accepterer eller justerer. Koden skriver aldrig priser automatisk.
+
+  ---
+  6. Månedlig rapport-opsummering
+  Brugeren accepterer eller justerer. Koden skriver aldrig priser automatisk.
+
+  ---
+  6. Månedlig rapport-opsummering
+
+  LLM foreslår prisudfyldning med begrundelse: "Baseret på 3 lignende malerjobs 2023-2024 (185-220 kr/m²), foreslår jeg 195 kr/m² for
+  spartling og 85 kr/m² for malerarbejde."
+
+  Brugeren accepterer eller justerer. Koden skriver aldrig priser automatisk.
+
+  ---
+
+  ---
+  6. Månedlig rapport-opsummering
+
+  Problem: Rapportdata er tal — de fleste brugere vil hellere læse "Maj var din bedste måned: 3 fakturaer på 312.000 kr, Morten
+  Hansen er din mest profitable kunde."
+
+  Idé: Dashboard-endpoint sender nøgletal til LLM, får 3-5 sætninger retur på dansk. Vises øverst på Overblik-fanen som en "god
+  morgen"-besked. Lavt stakes — det er kun tekst, ingen handlinger.
+
+  ---
+  Arkitektur-overvejelser
+
+  ┌──────────────────────────┬───────────────────────────────────────────────────────────────────────────────────────────────────┐
+  │        Spørgsmål         │                                            Anbefaling                                             │
+  ├──────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Synkron eller async?     │ Batch-jobs (bankafstemning, erfaringsbank) kører async med status-polling. Besked-analyse kan     │
+  │                          │ være synkron (<2 sek for lille model)                                                             │
+  ├──────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Hvad hvis Ollama ikke    │ Graceful degradation — alle AI-features er additive, systemet fungerer 100% uden                  │
+  │ kører?                   │                                                                                                   │
+  ├──────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Prompt-sprog?            │ Dansk fungerer godt med Mistral 7B. Prompten kan være dansk, output altid JSON                    │
+  ├──────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Kontekststørrelse?       │ De fleste opgaver er korte. Banktransaktionsliste skal chunkes hvis >50 linjer                    │
+  ├──────────────────────────┼───────────────────────────────────────────────────────────────────────────────────────────────────┤
+  │ Model per opgave?        │ Ét API-kald til Ollama kan bruge hvilken model der passer — embeddings med nomic-embed-text,      │
+  │                          │ klassificering med phi3:mini, udtræk med mistral                                                  │
+  └──────────────────────────┴───────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  ---
+  Hvad der IKKE bør bruges lokal AI til
+
+  - Tilstandsmaskiner og statusskift — det er kode, ikke AI
+  - Beregninger (moms, løn, totaler) — LLM er upålidelig på tal; brug Decimal
+  - Adgangskontrol / sikkerhedsbeslutninger — aldrig
+  - Alt hvor "forkert svar" har finansiel eller juridisk konsekvens uden menneske i løkken
+
+  ---
+  Kort sagt: Lokal Ollama passer perfekt til de tre opgaver der er svære med regler — fri-tekst forståelse (beskeder, dokumenter),
+  fuzzy matching (bankafstemning), og sproglig output (opsummeringer, udkast). Alt andet lader du koden klare. Intet kræver Claude
+  eller internetforbindelse.
+
+-----
+hvor starter vi logisk og mest optimalt med at aktivere en lokal AI?                                                               
+● Kort svar: Indbakken. Her er begrundelsen og en klar rækkefølge.
+
+  ---
+  Rækkefølge-logik
+
+  Trin 0 — Slå det til der allerede er der (0 ny kode)
+
+  local_ai.py og Erfaringsbank-lighed er færdigbygget men deaktiveret. Det aktiveres med to kommandoer:
+
+  ollama pull nomic-embed-text
+  og i .env:
+  LOCAL_AI_ENDPOINT=http://localhost:11434
+
+  Dette giver øjeblikkeligt vektorlighed i "Find lignende tilbud". Ingen kodning, bare konfiguration. Gør dette inden du starter på
+  noget nyt — du får bekræftet at Ollama virker og har et fungerende AI-fundament.
+
+  ---
+  Trin 1 — Indbakken (det rigtige startpunkt)
+
+  Hvorfor her frem for alt andet:
+
+  Indbakken er indgangen til alt. Hvert tilbud, hvert projekt, hver faktura starter med en besked. Forbedrer du AI-udtræk her, løfter
+   du automatisk Tilbudsflowet, QuotePreparation og BeskedRouter på én gang.
+
+  Konkret hvad der byttes ud: message_router.py's regelbaserede nøgleordssøgning erstattes/suppleres af et LLM-kald der returnerer
+  struktureret JSON. Det eksisterende system bliver fallback hvis Ollama ikke kører.
+
+  Hvad brugeren oplever:
+  - Bedre udtræk fra rodede beskeder ("Hej jeg hedder Jan og vil høre om I kan komme og se på min facade..." → navn, opgave, adresse
+  udtrukket korrekt)
+  - Mere præcise "manglende oplysninger"-tjeklister
+  - Bedre priortering (haster vs. generel forespørgsel)
+
+  Risiko: Minimal. LLM-output er forslag der vises i skuffe — brugeren bekræfter. Fallback til regelbaseret hvis Ollama er nede.
+
+  ---
+  Trin 2 — Bankafstemning (næste naturlige skridt)
+
+  Når AI-integrationen er bevist stabil i besked-analyse, er bankafstemning det næste. Det kræver en ny modul (bankimport +
+  matchning), men AI-laget er nu velkendt. Dette er det use-case der sparer mest manuelt arbejde i en rigtig virksomhed.
+
+  ---
+  Trin 3 — Udgiftskategorisering og rapport-opsummering
+
+  Disse er additive og nemme — bygger ovenpå det fundament der er etableret i trin 0-2.
+
+  ---
+  Den logiske grund til denne rækkefølge
+
+  Trin 0: Bekræft infrastruktur (Ollama virker, endpoint er rigtigt)
+  Trin 1: Bevis værdien på det hyppigst brugte flow (alle beskeder)
+  Trin 2: Udvid til nyt modul (bankafstemning) med bevist AI-lag
+  Trin 3: Lav-hængende frugter ovenpå
+
+  Hvert trin giver brugerbar funktionalitet inden næste begynder, og hvert trin validerer fundamentet for det næste. Bankafstemning
+  springer du kun til efter du har set AI-output fra beskedanalyse i praksis og ved hvilken model og prompt-strategi der virker i
+  dette system.
