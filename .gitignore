@@ -8,8 +8,16 @@ dist/
 build/
 .env
 haandvaerker.db
+*.db
+*.db__*
+*.log
+server.log
 research/
 docs/notes/
 .mypy_cache/
 .ruff_cache/
 .pytest_cache/
+uploads/
+BUILD_STATUS.txt
+screenshot.png
+SECURITY_AUDIT_*.txt
