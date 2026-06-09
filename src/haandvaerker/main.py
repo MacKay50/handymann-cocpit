@@ -110,6 +110,11 @@ def wizard_page() -> HTMLResponse:
     return HTMLResponse((_STATIC / "wizard.html").read_text(encoding="utf-8"))
 
 
+@app.get("/settings", response_class=HTMLResponse, include_in_schema=False)
+def settings_page() -> HTMLResponse:
+    return HTMLResponse((_STATIC / "settings.html").read_text(encoding="utf-8"))
+
+
 app.include_router(company_config_router)
 app.include_router(admin_deadlines_router)
 app.include_router(appointments_router)

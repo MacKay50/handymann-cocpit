@@ -71,6 +71,12 @@
       ],
       defaultHref: "/wizard",
     },
+    {
+      id: "indstillinger", label: "Indstillinger",
+      match: function (p) { return p === "/settings"; },
+      subs: [],
+      defaultHref: "/settings",
+    },
   ];
 
   var TAB_TO_INTAKE = {

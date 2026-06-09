@@ -1,0 +1,576 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Indstillinger</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5; color: #1a202c; font-size: 14px; line-height: 1.5;
+    }
+    .page { max-width: 780px; margin: 0 auto; padding: 2rem 1rem 4rem; }
+    .page-header { margin-bottom: 2rem; }
+    .page-header h1 { font-size: 1.5rem; font-weight: 700; color: #1a1a2e; }
+
+    /* Sections */
+    .settings-section, details.settings-section {
+      background: #fff;
+      border-radius: 10px;
+      box-shadow: 0 1px 4px rgba(0,0,0,.07);
+      padding: 1.5rem 1.75rem;
+      margin-bottom: 1.5rem;
+    }
+    .settings-section h2, details.settings-section > summary {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 1.2rem;
+      cursor: default;
+    }
+    details.settings-section > summary {
+      list-style: none;
+      cursor: pointer;
+      margin-bottom: 0;
+    }
+    details.settings-section > summary::-webkit-details-marker { display: none; }
+    details.settings-section > summary::before {
+      content: "▶ ";
+      font-size: .8rem;
+      color: #718096;
+    }
+    details.settings-section[open] > summary::before { content: "▼ "; }
+    details.settings-section[open] > summary { margin-bottom: 1.2rem; }
+
+    /* Form rows */
+    .f-row { margin-bottom: .9rem; }
+    .f-row label {
+      display: block; font-size: .82rem; font-weight: 600; color: #4a5568; margin-bottom: .28rem;
+    }
+    .f-row input, .f-row textarea, .f-row select {
+      width: 100%; padding: .45rem .7rem; border: 1.5px solid #cbd5e0; border-radius: 6px;
+      font-size: .87rem; font-family: inherit; outline: none; background: #fff;
+    }
+    .f-row input:focus, .f-row textarea:focus, .f-row select:focus { border-color: #4299e1; }
+    .f-row textarea { min-height: 110px; resize: vertical; }
+
+    /* Sub-headings within a section */
+    .sub-heading {
+      font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .4px;
+      color: #a0aec0; margin: 1.2rem 0 .6rem; border-top: 1px solid #e2e8f0; padding-top: .8rem;
+    }
+    .sub-heading:first-child { border-top: none; margin-top: 0; padding-top: 0; }
+
+    /* Two-column grid for compact fields */
+    .f-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+    .f-grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0 1rem; }
+
+    /* Password status badge */
+    .pwd-row { display: flex; align-items: center; gap: .6rem; }
+    .pwd-row input { flex: 1; }
+    .pwd-status { font-size: .78rem; white-space: nowrap; font-weight: 600; }
+    .pwd-status.set { color: #276749; }
+    .pwd-status.unset { color: #a0aec0; }
+
+    /* Checkbox row */
+    .f-check { display: flex; align-items: center; gap: .5rem; margin-bottom: .9rem; }
+    .f-check input[type="checkbox"] { width: auto; }
+    .f-check label { font-size: .87rem; color: #4a5568; font-weight: 500; margin-bottom: 0; }
+
+    /* Buttons */
+    .btn { padding: .42rem .95rem; border-radius: 6px; border: none; cursor: pointer; font-size: .82rem; font-weight: 600; }
+    .btn-primary { background: #2b6cb0; color: #fff; }
+    .btn-primary:hover { background: #2c5282; }
+    .btn-danger  { background: #e53e3e; color: #fff; }
+    .btn-danger:hover  { background: #c53030; }
+    .btn-secondary { background: #e2e8f0; color: #4a5568; }
+    .btn-secondary:hover { background: #cbd5e0; }
+    .btn-test  { background: #744210; color: #fff; }
+    .btn-test:hover  { background: #5a3000; }
+
+    /* Section footer */
+    .section-footer { display: flex; align-items: center; gap: .75rem; margin-top: 1.2rem; padding-top: .9rem; border-top: 1px solid #f0f2f5; }
+    .save-confirm { font-size: .82rem; font-weight: 600; color: #276749; }
+    .test-result { font-size: .82rem; font-weight: 600; padding: .2rem .6rem; border-radius: 4px; }
+    .test-result.ok  { background: #f0fff4; color: #276749; }
+    .test-result.err { background: #fff5f5; color: #c53030; }
+
+    /* Error bar */
+    .error-bar {
+      background: #fff5f5; border: 1px solid #fc8181; color: #c53030;
+      border-radius: 6px; padding: .6rem .85rem; margin-bottom: .75rem;
+      font-size: .83rem; display: none;
+    }
+    .error-bar.visible { display: block; }
+
+    /* Logo */
+    .logo-preview { margin-bottom: .75rem; }
+    .logo-preview img { max-height: 80px; max-width: 240px; border: 1px solid #e2e8f0; border-radius: 6px; }
+    .logo-none { font-size: .82rem; color: #a0aec0; margin-bottom: .75rem; }
+  </style>
+</head>
+<body>
+
+<div class="page">
+  <div class="page-header">
+    <h1>Indstillinger</h1>
+  </div>
+
+  <!-- ── Sektion 1: Virksomhedsoplysninger ── -->
+  <section class="settings-section" id="section-company">
+    <h2>Virksomhedsoplysninger</h2>
+    <div class="error-bar" id="err-company"></div>
+
+    <div class="f-row">
+      <label for="co-name">Virksomhedsnavn</label>
+      <input type="text" id="co-name" placeholder="Firmanavn ApS">
+    </div>
+    <div class="f-grid-2">
+      <div class="f-row">
+        <label for="co-phone">Telefon</label>
+        <input type="text" id="co-phone" placeholder="+45 12 34 56 78">
+      </div>
+      <div class="f-row">
+        <label for="co-email">E-mail</label>
+        <input type="email" id="co-email" placeholder="kontakt@firma.dk">
+      </div>
+    </div>
+    <div class="f-row">
+      <label for="co-address">Adresse</label>
+      <input type="text" id="co-address" placeholder="Gade 1, 1234 By">
+    </div>
+
+    <div class="section-footer">
+      <button class="btn btn-primary" onclick="saveCompany()">Gem virksomhedsdata</button>
+      <span class="save-confirm" id="co-saved" style="display:none">Gemt ✓</span>
+    </div>
+  </section>
+
+  <!-- ── Sektion 2: Logo ── -->
+  <section class="settings-section" id="section-logo">
+    <h2>Logo</h2>
+    <div class="error-bar" id="err-logo"></div>
+
+    <div class="logo-preview" id="logo-preview" style="display:none">
+      <img id="logo-img" src="" alt="Virksomhedslogo">
+    </div>
+    <div class="logo-none" id="logo-none">Intet logo uploadet endnu.</div>
+
+    <div class="f-row">
+      <label for="logo-file">Upload nyt logo (JPG, PNG, GIF, WebP — maks. 2 MB)</label>
+      <input type="file" id="logo-file" accept=".jpg,.jpeg,.png,.gif,.webp">
+    </div>
+
+    <div class="section-footer">
+      <button class="btn btn-primary" onclick="uploadLogo()">Upload logo</button>
+      <button class="btn btn-danger" id="logo-delete-btn" onclick="deleteLogo()" style="display:none">Slet logo</button>
+      <span class="save-confirm" id="logo-saved" style="display:none">Uploadet ✓</span>
+    </div>
+  </section>
+
+  <!-- ── Sektion 3: E-mail konfiguration ── -->
+  <section class="settings-section" id="section-email">
+    <h2>E-mail konfiguration</h2>
+    <div class="error-bar" id="err-email"></div>
+
+    <div class="sub-heading">IMAP (indgående post)</div>
+    <div class="f-grid-2">
+      <div class="f-row">
+        <label for="imap-host">IMAP-server</label>
+        <input type="text" id="imap-host" placeholder="imap.gmail.com">
+      </div>
+      <div class="f-row">
+        <label for="imap-port">Port</label>
+        <input type="number" id="imap-port" placeholder="993" min="1" max="65535">
+      </div>
+    </div>
+    <div class="f-row">
+      <label for="imap-user">Brugernavn</label>
+      <input type="text" id="imap-user" placeholder="brugernavn@firma.dk">
+    </div>
+    <div class="f-row">
+      <label for="imap-pass">Adgangskode</label>
+      <div class="pwd-row">
+        <input type="password" id="imap-pass" placeholder="Indtast ny adgangskode for at opdatere">
+        <span class="pwd-status unset" id="imap-pwd-status">Ikke sat</span>
+      </div>
+    </div>
+
+    <div class="sub-heading">SMTP (udgående post)</div>
+    <div class="f-grid-2">
+      <div class="f-row">
+        <label for="smtp-host">SMTP-server</label>
+        <input type="text" id="smtp-host" placeholder="smtp.gmail.com">
+      </div>
+      <div class="f-row">
+        <label for="smtp-port">Port</label>
+        <input type="number" id="smtp-port" placeholder="587" min="1" max="65535">
+      </div>
+    </div>
+    <div class="f-row">
+      <label for="smtp-user">Brugernavn</label>
+      <input type="text" id="smtp-user" placeholder="brugernavn@firma.dk">
+    </div>
+    <div class="f-row">
+      <label for="smtp-pass">Adgangskode</label>
+      <div class="pwd-row">
+        <input type="password" id="smtp-pass" placeholder="Indtast ny adgangskode for at opdatere">
+        <span class="pwd-status unset" id="smtp-pwd-status">Ikke sat</span>
+      </div>
+    </div>
+    <div class="f-row">
+      <label for="smtp-from">Afsenderadresse (From)</label>
+      <input type="email" id="smtp-from" placeholder="no-reply@firma.dk">
+    </div>
+    <div class="f-check">
+      <input type="checkbox" id="smtp-tls">
+      <label for="smtp-tls">Brug TLS/STARTTLS</label>
+    </div>
+
+    <div class="section-footer">
+      <button class="btn btn-primary" onclick="saveEmail()">Gem e-mail konfiguration</button>
+      <button class="btn btn-test" onclick="testEmail()">Test forbindelse</button>
+      <span class="save-confirm" id="email-saved" style="display:none">Gemt ✓</span>
+      <span class="test-result" id="email-test-result" style="display:none"></span>
+    </div>
+  </section>
+
+  <!-- ── Sektion 4: AI konfiguration ── -->
+  <section class="settings-section" id="section-ai">
+    <h2>AI konfiguration</h2>
+    <div class="error-bar" id="err-ai"></div>
+
+    <div class="f-row">
+      <label for="ai-endpoint">API-endpoint</label>
+      <input type="text" id="ai-endpoint" placeholder="http://localhost:11434/v1">
+    </div>
+    <div class="f-grid-2">
+      <div class="f-row">
+        <label for="ai-model">Primær model</label>
+        <input type="text" id="ai-model" placeholder="llama3:8b">
+      </div>
+      <div class="f-row">
+        <label for="ai-fallback-model">Fallback model</label>
+        <input type="text" id="ai-fallback-model" placeholder="llama3:8b-instruct">
+      </div>
+    </div>
+
+    <div class="section-footer">
+      <button class="btn btn-primary" onclick="saveAi()">Gem AI konfiguration</button>
+      <span class="save-confirm" id="ai-saved" style="display:none">Gemt ✓</span>
+    </div>
+  </section>
+
+  <!-- ── Sektion 5: Prompt-konfiguration (lukket som standard) ── -->
+  <details class="settings-section" id="section-prompts">
+    <summary>Avanceret: Prompt-konfiguration</summary>
+    <div class="error-bar" id="err-prompts"></div>
+
+    <div class="f-row">
+      <label for="prompt-system">System-prompt (draft_system)</label>
+      <textarea id="prompt-system" placeholder="Du er en hjælpsom assistent..."></textarea>
+    </div>
+    <div class="f-row">
+      <label for="prompt-user">
+        Bruger-prompt (draft_user) — skal indeholde <code>{context}</code>
+      </label>
+      <textarea id="prompt-user" placeholder="Skriv et udkast baseret på følgende:\n{context}"></textarea>
+    </div>
+
+    <div class="section-footer">
+      <button class="btn btn-primary" onclick="savePrompts()">Gem prompt-konfiguration</button>
+      <span class="save-confirm" id="prompts-saved" style="display:none">Gemt ✓</span>
+    </div>
+  </details>
+</div>
+
+<script>
+"use strict";
+
+var _companyId = null;
+
+// ── Boot ──────────────────────────────────────────────────────────────────────
+
+(async function boot() {
+  try {
+    var res = await fetch("/session/current", { credentials: "include" });
+    if (!res.ok) { showError("err-company", "Ikke logget ind — kan ikke hente virksomhedsdata."); return; }
+    var session = await res.json();
+    _companyId = session.company_id;
+
+    // Parallel fetch af alle fire konfigurationer
+    var results = await Promise.allSettled([
+      fetch("/companies/" + _companyId, { credentials: "include" }),
+      fetch("/companies/" + _companyId + "/email-config", { credentials: "include" }),
+      fetch("/companies/" + _companyId + "/ai-config", { credentials: "include" }),
+      fetch("/companies/" + _companyId + "/prompts", { credentials: "include" }),
+    ]);
+
+    // Company master data
+    if (results[0].status === "fulfilled" && results[0].value.ok) {
+      var co = await results[0].value.json();
+      document.getElementById("co-name").value    = co.name    || "";
+      document.getElementById("co-phone").value   = co.phone   || "";
+      document.getElementById("co-email").value   = co.email   || "";
+      document.getElementById("co-address").value = co.address || "";
+      if (co.logo_url) {
+        var img = document.getElementById("logo-img");
+        img.src = co.logo_url;
+        document.getElementById("logo-preview").style.display = "";
+        document.getElementById("logo-none").style.display    = "none";
+        document.getElementById("logo-delete-btn").style.display = "";
+      }
+    }
+
+    // Email config
+    if (results[1].status === "fulfilled" && results[1].value.ok) {
+      var em = await results[1].value.json();
+      document.getElementById("imap-host").value = em.imap_host || "";
+      document.getElementById("imap-port").value = em.imap_port || "";
+      document.getElementById("imap-user").value = em.imap_user || "";
+      setPasswordStatus("imap-pwd-status", em.imap_password_set);
+
+      document.getElementById("smtp-host").value = em.smtp_host || "";
+      document.getElementById("smtp-port").value = em.smtp_port || "";
+      document.getElementById("smtp-user").value = em.smtp_user || "";
+      document.getElementById("smtp-from").value = em.smtp_from || "";
+      document.getElementById("smtp-tls").checked = !!em.smtp_use_tls;
+      setPasswordStatus("smtp-pwd-status", em.smtp_password_set);
+    }
+
+    // AI config
+    if (results[2].status === "fulfilled" && results[2].value.ok) {
+      var ai = await results[2].value.json();
+      document.getElementById("ai-endpoint").value      = ai.endpoint       || "";
+      document.getElementById("ai-model").value         = ai.model          || "";
+      document.getElementById("ai-fallback-model").value = ai.fallback_model || "";
+    }
+
+    // Prompt config
+    if (results[3].status === "fulfilled" && results[3].value.ok) {
+      var pr = await results[3].value.json();
+      document.getElementById("prompt-system").value = pr.draft_system || "";
+      document.getElementById("prompt-user").value   = pr.draft_user   || "";
+    }
+  } catch (e) {
+    showError("err-company", "Netværksfejl ved indlæsning: " + e.message);
+  }
+})();
+
+// ── Hjælpere ──────────────────────────────────────────────────────────────────
+
+function setPasswordStatus(spanId, isSet) {
+  var el = document.getElementById(spanId);
+  if (isSet) {
+    el.textContent = "Adgangskode gemt ✓";
+    el.className = "pwd-status set";
+  } else {
+    el.textContent = "Ikke sat";
+    el.className = "pwd-status unset";
+  }
+}
+
+function showError(barId, msg) {
+  var el = document.getElementById(barId);
+  el.textContent = msg;
+  el.classList.add("visible");
+}
+
+function hideError(barId) {
+  var el = document.getElementById(barId);
+  el.classList.remove("visible");
+}
+
+function flashConfirm(spanId) {
+  var el = document.getElementById(spanId);
+  el.style.display = "";
+  setTimeout(function () { el.style.display = "none"; }, 2000);
+}
+
+function intOrNull(val) {
+  var n = parseInt(val, 10);
+  return isNaN(n) ? null : n;
+}
+
+// ── Gem virksomhedsdata ───────────────────────────────────────────────────────
+
+async function saveCompany() {
+  hideError("err-company");
+  if (!_companyId) { showError("err-company", "Virksomhed ikke indlæst."); return; }
+  var payload = {
+    name:    document.getElementById("co-name").value.trim()    || null,
+    phone:   document.getElementById("co-phone").value.trim()   || null,
+    email:   document.getElementById("co-email").value.trim()   || null,
+    address: document.getElementById("co-address").value.trim() || null,
+  };
+  try {
+    var res = await fetch("/companies/" + _companyId, {
+      method: "PATCH", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) { var err = await res.json(); showError("err-company", fmtApiError(err)); return; }
+    flashConfirm("co-saved");
+  } catch (e) { showError("err-company", "Netværksfejl: " + e.message); }
+}
+
+// ── Logo ──────────────────────────────────────────────────────────────────────
+
+async function uploadLogo() {
+  hideError("err-logo");
+  if (!_companyId) { showError("err-logo", "Virksomhed ikke indlæst."); return; }
+  var fileInput = document.getElementById("logo-file");
+  if (!fileInput.files.length) { showError("err-logo", "Vælg en billedfil først."); return; }
+  var fd = new FormData();
+  fd.append("file", fileInput.files[0]);
+  try {
+    var res = await fetch("/companies/logo", {
+      method: "POST", credentials: "include", body: fd,
+    });
+    if (!res.ok) { var err = await res.json(); showError("err-logo", fmtApiError(err)); return; }
+    var data = await res.json();
+    if (data.logo_url) {
+      var img = document.getElementById("logo-img");
+      img.src = data.logo_url;
+      document.getElementById("logo-preview").style.display = "";
+      document.getElementById("logo-none").style.display    = "none";
+      document.getElementById("logo-delete-btn").style.display = "";
+    }
+    flashConfirm("logo-saved");
+  } catch (e) { showError("err-logo", "Netværksfejl: " + e.message); }
+}
+
+async function deleteLogo() {
+  hideError("err-logo");
+  if (!_companyId) { showError("err-logo", "Virksomhed ikke indlæst."); return; }
+  try {
+    var res = await fetch("/companies/logo", { method: "DELETE", credentials: "include" });
+    if (!res.ok) { var err = await res.json(); showError("err-logo", fmtApiError(err)); return; }
+    document.getElementById("logo-preview").style.display    = "none";
+    document.getElementById("logo-none").style.display       = "";
+    document.getElementById("logo-delete-btn").style.display = "none";
+    document.getElementById("logo-img").src = "";
+  } catch (e) { showError("err-logo", "Netværksfejl: " + e.message); }
+}
+
+// ── E-mail konfiguration ──────────────────────────────────────────────────────
+
+async function saveEmail() {
+  hideError("err-email");
+  if (!_companyId) { showError("err-email", "Virksomhed ikke indlæst."); return; }
+  var payload = {
+    imap_host: document.getElementById("imap-host").value.trim() || null,
+    imap_port: intOrNull(document.getElementById("imap-port").value),
+    imap_user: document.getElementById("imap-user").value.trim() || null,
+    smtp_host: document.getElementById("smtp-host").value.trim() || null,
+    smtp_port: intOrNull(document.getElementById("smtp-port").value),
+    smtp_user: document.getElementById("smtp-user").value.trim() || null,
+    smtp_from: document.getElementById("smtp-from").value.trim() || null,
+    smtp_use_tls: document.getElementById("smtp-tls").checked,
+  };
+  // Kun inkludér adgangskoder hvis brugeren har tastet noget
+  var imapPass = document.getElementById("imap-pass").value;
+  if (imapPass) payload.imap_password = imapPass;
+  var smtpPass = document.getElementById("smtp-pass").value;
+  if (smtpPass) payload.smtp_password = smtpPass;
+
+  try {
+    var res = await fetch("/companies/" + _companyId + "/email-config", {
+      method: "PUT", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) { var err = await res.json(); showError("err-email", fmtApiError(err)); return; }
+    var data = await res.json();
+    setPasswordStatus("imap-pwd-status", data.imap_password_set);
+    setPasswordStatus("smtp-pwd-status", data.smtp_password_set);
+    document.getElementById("imap-pass").value = "";
+    document.getElementById("smtp-pass").value = "";
+    flashConfirm("email-saved");
+  } catch (e) { showError("err-email", "Netværksfejl: " + e.message); }
+}
+
+async function testEmail() {
+  hideError("err-email");
+  if (!_companyId) { showError("err-email", "Virksomhed ikke indlæst."); return; }
+  var resultEl = document.getElementById("email-test-result");
+  resultEl.textContent = "Tester…";
+  resultEl.className = "test-result";
+  resultEl.style.display = "";
+  try {
+    var res = await fetch("/companies/" + _companyId + "/email-config/test", {
+      method: "POST", credentials: "include",
+    });
+    var data = await res.json();
+    if (data.success) {
+      resultEl.textContent = "Forbindelsen virker ✓";
+      resultEl.className = "test-result ok";
+    } else {
+      resultEl.textContent = "Fejl: " + (data.error || "Ukendt fejl");
+      resultEl.className = "test-result err";
+    }
+  } catch (e) {
+    resultEl.textContent = "Netværksfejl: " + e.message;
+    resultEl.className = "test-result err";
+  }
+}
+
+// ── AI konfiguration ──────────────────────────────────────────────────────────
+
+async function saveAi() {
+  hideError("err-ai");
+  if (!_companyId) { showError("err-ai", "Virksomhed ikke indlæst."); return; }
+  var payload = {
+    endpoint:       document.getElementById("ai-endpoint").value.trim()       || null,
+    model:          document.getElementById("ai-model").value.trim()           || null,
+    fallback_model: document.getElementById("ai-fallback-model").value.trim() || null,
+  };
+  try {
+    var res = await fetch("/companies/" + _companyId + "/ai-config", {
+      method: "PUT", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) { var err = await res.json(); showError("err-ai", fmtApiError(err)); return; }
+    flashConfirm("ai-saved");
+  } catch (e) { showError("err-ai", "Netværksfejl: " + e.message); }
+}
+
+// ── Prompt-konfiguration ──────────────────────────────────────────────────────
+
+async function savePrompts() {
+  hideError("err-prompts");
+  if (!_companyId) { showError("err-prompts", "Virksomhed ikke indlæst."); return; }
+  var payload = {
+    draft_system: document.getElementById("prompt-system").value || null,
+    draft_user:   document.getElementById("prompt-user").value   || null,
+  };
+  try {
+    var res = await fetch("/companies/" + _companyId + "/prompts", {
+      method: "PUT", credentials: "include",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) { var err = await res.json(); showError("err-prompts", fmtApiError(err)); return; }
+    flashConfirm("prompts-saved");
+  } catch (e) { showError("err-prompts", "Netværksfejl: " + e.message); }
+}
+
+// ── Fejlformatering ───────────────────────────────────────────────────────────
+
+function fmtApiError(err) {
+  if (err && err.detail) {
+    if (typeof err.detail === "string") return err.detail;
+    if (Array.isArray(err.detail)) {
+      return err.detail.map(function (e) {
+        return ((e.loc || []).slice(1).join(" → ") || "felt") + ": " + (e.msg || "");
+      }).join("; ");
+    }
+  }
+  return JSON.stringify(err);
+}
+</script>
+<script src="/static/nav.js"></script>
+</body>
+</html>
