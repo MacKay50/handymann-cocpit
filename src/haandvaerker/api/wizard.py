@@ -12,6 +12,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from ..dependencies import CompanyContextDep
+from ..prompts import DRAFT_SYSTEM, DRAFT_USER
 from ..services import local_ai
 from ..services.offer_search import keyword_search
 
@@ -202,57 +203,11 @@ class AiDraftResponse(BaseModel):
     ai_used: bool
 
 
-@router.post("/ai-draft", response_model=AiDraftResponse)
-def ai_draft(data: AiDraftRequest, ctx: CompanyContextDep) -> AiDraftResponse:
-    """Generate a project description draft via local AI. Degrades gracefully if Ollama is unavailable."""
-    _company_id = ctx.company_id  # validates session
-
-    if not local_ai.is_enabled():
-        return AiDraftResponse(short_summary="", detailed_description="", ai_used=False)
-
-    context_parts = [f"Opgavetype: {data.task_type}"]
-    if data.customer_name:
-        context_parts.append(f"Kundenavn: {data.customer_name}")
-    if data.address:
-        context_parts.append(f"Adresse: {data.address}")
-    if data.job_notes and data.job_notes.strip():
-        context_parts.append(f"Notater om opgaven:\n{data.job_notes.strip()}")
-
-    prompt = (
-        "\n".join(context_parts) + "\n\n"
-        "Skriv en professionel projektbeskrivelse til et håndværkertilbud som JSON. "
-        "Brug KUN de faktiske oplysninger fra notaterne — gæt ikke på detaljer der ikke fremgår.\n"
-        '{"short_summary": "Én kort sætning (max 100 tegn)", '
-        '"detailed_description": "2-4 sætninger med konkrete detaljer fra notaterne"}'
-    )
-
-    raw = local_ai.chat_completion(
-        prompt=prompt,
-        system="Du er en professionel dansk håndværkerassistent. Returner KUN det JSON-objekt, ingen anden tekst.",
-    )
-    if raw is None:
-        logger.warning("AI draft returned None for task_type=%s", data.task_type)
-        return AiDraftResponse(short_summary="", detailed_description="", ai_used=False)
-
-    parsed = _strip_and_parse(raw)
-    if parsed is None:
-        logger.warning("AI draft invalid JSON: %.80s", raw)
-        return AiDraftResponse(short_summary="", detailed_description="", ai_used=False)
-
-    short = str(parsed.get("short_summary", "")).strip()[:200]
-    dd_raw = parsed.get("detailed_description", "")
-    if isinstance(dd_raw, list):
-        dd = " ".join(str(s) for s in dd_raw).strip()
-    else:
-        dd = str(dd_raw).strip()
-    return AiDraftResponse(short_summary=short, detailed_description=dd[:1000], ai_used=True)
-
-
-# ── POST /wizard/ai-draft-stream ──────────────────────────────────────────────
+# ── POST /wizard/ai-draft + /wizard/ai-draft-stream ──────────────────────────
 
 
 def _build_draft_context(data: AiDraftRequest) -> tuple[str, str]:
-    """Return (prompt, system) for the streaming plain-text format."""
+    """Return (prompt, system) using templates from prompts.py."""
     parts = [f"Opgavetype: {data.task_type}"]
     if data.customer_name:
         parts.append(f"Kundenavn: {data.customer_name}")
@@ -261,19 +216,29 @@ def _build_draft_context(data: AiDraftRequest) -> tuple[str, str]:
     if data.job_notes and data.job_notes.strip():
         parts.append(f"Notater om opgaven:\n{data.job_notes.strip()}")
 
-    prompt = (
-        "\n".join(parts) + "\n\n"
-        "Skriv en professionel projektbeskrivelse til et håndværkertilbud.\n"
-        "Brug KUN de faktiske oplysninger fra notaterne — gæt ikke på detaljer der ikke fremgår.\n\n"
-        "Format (følg præcist, ingen ekstra tekst):\n"
-        "Opsummering: [én kort sætning, max 100 tegn]\n"
-        "Beskrivelse: [2-4 sætninger med konkrete detaljer]"
-    )
-    system = (
-        "Du er en professionel dansk håndværkerassistent. "
-        "Svar KUN i det angivne format — ingen ekstra forklaringer eller markdown."
-    )
-    return prompt, system
+    prompt = DRAFT_USER.format(context="\n".join(parts))
+    return prompt, DRAFT_SYSTEM
+
+
+@router.post("/ai-draft", response_model=AiDraftResponse)
+def ai_draft(data: AiDraftRequest, ctx: CompanyContextDep) -> AiDraftResponse:
+    """Generate a project description draft via local AI. Degrades gracefully if Ollama is unavailable."""
+    _company_id = ctx.company_id  # validates session
+
+    if not local_ai.is_enabled():
+        return AiDraftResponse(short_summary="", detailed_description="", ai_used=False)
+
+    prompt, system = _build_draft_context(data)
+    raw = local_ai.chat_completion(prompt=prompt, system=system)
+    if raw is None:
+        logger.warning("AI draft returned None for task_type=%s", data.task_type)
+        return AiDraftResponse(short_summary="", detailed_description="", ai_used=False)
+
+    short, dd = _parse_plain_draft(raw)
+    if not short and not dd:
+        logger.warning("AI draft produced no parseable output: %.80s", raw)
+        return AiDraftResponse(short_summary="", detailed_description="", ai_used=False)
+    return AiDraftResponse(short_summary=short, detailed_description=dd, ai_used=True)
 
 
 def _parse_plain_draft(text: str) -> tuple[str, str]:
