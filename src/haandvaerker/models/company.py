@@ -31,7 +31,7 @@ class CompanyRead(SQLModel):
     address: Optional[str]
     phone: Optional[str]
     email: Optional[str]
-    logo_ref: Optional[str]
+    logo_url: Optional[str] = None
     active: bool
 
     @classmethod
@@ -45,7 +45,7 @@ class CompanyRead(SQLModel):
             address=company.address,
             phone=company.phone,
             email=company.email,
-            logo_ref=company.logo_ref,
+            logo_url=company.logo_ref,
             active=company.active,
         )
 

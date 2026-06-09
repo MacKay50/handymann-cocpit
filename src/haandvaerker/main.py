@@ -41,10 +41,15 @@ from .api.session import router as session_router
 from .api.intake import router as intake_router
 from .api.jobs import router as jobs_router
 from .api.wizard import router as wizard_router
+from .api.company_logo import router as company_logo_router
+from .models import company_config as _company_config_models  # noqa: F401
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
+    (pathlib.Path(__file__).parent / "static" / "uploads" / "logos").mkdir(
+        parents=True, exist_ok=True
+    )
     create_db_and_tables()
     yield
 
@@ -107,6 +112,7 @@ def wizard_page() -> HTMLResponse:
 app.include_router(admin_deadlines_router)
 app.include_router(appointments_router)
 app.include_router(dashboard_router)
+app.include_router(company_logo_router)
 app.include_router(companies_router)
 app.include_router(customers_router)
 app.include_router(employees_router)
