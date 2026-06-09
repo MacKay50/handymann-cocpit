@@ -15,7 +15,7 @@ from ..config import settings
 
 logger = logging.getLogger(__name__)
 
-_TIMEOUT = 30
+_TIMEOUT = 120  # llama3.1:8b needs up to 90s on cold start
 
 
 def is_enabled() -> bool:
