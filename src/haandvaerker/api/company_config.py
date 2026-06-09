@@ -25,7 +25,11 @@ from ..models.company_config import (
     CompanyEmailConfig,
     CompanyEmailConfigRead,
     CompanyEmailConfigUpdate,
+    CompanyPromptConfig,
+    CompanyPromptConfigRead,
+    CompanyPromptConfigUpdate,
 )
+from ..prompts import DRAFT_SYSTEM, DRAFT_USER
 from ..services.config_resolver import is_valid_external_host
 
 logger = logging.getLogger(__name__)
@@ -147,8 +151,8 @@ def _test_imap(host: str, port: int, user: str, password: str) -> Optional[str]:
         finally:
             try:
                 imap.logout()
-            except Exception:  # noqa: S110  # swallow logout failure; must not mask login result
-                pass
+            except Exception as _exc:  # swallow logout failure; must not mask login result
+                logger.debug("IMAP logout cleanup failed (ignored): %s", _exc)
         return None
     except imaplib.IMAP4.error as exc:
         logger.warning("Email test failed for %s:%s — %s", host, port, exc)
@@ -332,5 +336,70 @@ def put_ai_config(
         model=row.model,
         fallback_model=row.fallback_model,
         ai_enabled=bool(row.endpoint),
+        updated_at=row.updated_at,
+    )
+
+
+# ── Prompt config endpoints ────────────────────────────────────────────────────
+
+@router.get("/companies/{company_id}/prompts", response_model=CompanyPromptConfigRead)
+def get_prompt_config(company_id: str, ctx: CompanyContextDep) -> CompanyPromptConfigRead:
+    """Return prompt config for the session company.
+
+    Returns prompts.py defaults when no DB row exists (updated_at=None).
+    """
+    if company_id != ctx.company_id:
+        raise HTTPException(status_code=403, detail="Adgang nægtet.")
+    row = ctx.session.get(CompanyPromptConfig, ctx.company_id)
+    if row is None:
+        return CompanyPromptConfigRead(
+            company_id=ctx.company_id,
+            draft_system=DRAFT_SYSTEM,
+            draft_user=DRAFT_USER,
+            updated_at=None,
+        )
+    return CompanyPromptConfigRead(
+        company_id=row.company_id,
+        draft_system=row.draft_system if row.draft_system is not None else DRAFT_SYSTEM,
+        draft_user=row.draft_user if row.draft_user is not None else DRAFT_USER,
+        updated_at=row.updated_at,
+    )
+
+
+@router.put("/companies/{company_id}/prompts", response_model=CompanyPromptConfigRead)
+def put_prompt_config(
+    company_id: str,
+    body: CompanyPromptConfigUpdate,
+    ctx: CompanyContextDep,
+) -> CompanyPromptConfigRead:
+    """Upsert prompt config. Validates that draft_user contains {context} placeholder."""
+    if company_id != ctx.company_id:
+        raise HTTPException(status_code=403, detail="Adgang nægtet.")
+
+    if body.draft_user is not None and "{context}" not in body.draft_user:
+        raise HTTPException(
+            status_code=422,
+            detail="draft_user skal indeholde {context} placeholder",
+        )
+
+    session = ctx.session
+    row = session.get(CompanyPromptConfig, ctx.company_id)
+    if row is None:
+        row = CompanyPromptConfig(company_id=ctx.company_id)
+
+    if body.draft_system is not None:
+        row.draft_system = body.draft_system
+    if body.draft_user is not None:
+        row.draft_user = body.draft_user
+
+    row.updated_at = datetime.utcnow()
+
+    session.add(row)
+    session.commit()
+    session.refresh(row)
+    return CompanyPromptConfigRead(
+        company_id=row.company_id,
+        draft_system=row.draft_system if row.draft_system is not None else DRAFT_SYSTEM,
+        draft_user=row.draft_user if row.draft_user is not None else DRAFT_USER,
         updated_at=row.updated_at,
     )

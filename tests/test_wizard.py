@@ -542,3 +542,64 @@ def test_ai_draft_empty_task_type_returns_422(client: TestClient) -> None:
     """Empty task_type → 422."""
     r = client.post("/wizard/ai-draft", json={"task_type": ""})
     assert r.status_code == 422, r.json()
+
+
+# ── Phase 3: DB prompt vs. fallback ──────────────────────────────────────────
+
+
+def test_draft_uses_db_prompt_when_row_exists(client: TestClient, company_id: str, session) -> None:
+    """With a CompanyPromptConfig row for the company, /wizard/ai-draft uses DB system prompt."""
+    from sqlmodel import Session
+    from haandvaerker.models.company_config import CompanyPromptConfig
+
+    db_system = "DB-specifik system prompt."
+    db_user = "Bruger template med {context} placeholder."
+
+    row = CompanyPromptConfig(
+        company_id=company_id,
+        draft_system=db_system,
+        draft_user=db_user,
+    )
+    session.add(row)
+    session.commit()
+
+    ai_response = '{"short_summary": "Test", "detailed_description": "Detaljer."}'
+
+    captured_calls: list[dict] = []
+
+    def fake_chat_completion(prompt: str, system: str = "") -> str:
+        captured_calls.append({"prompt": prompt, "system": system})
+        return ai_response
+
+    with patch("haandvaerker.api.wizard.local_ai.is_enabled", return_value=True), \
+         patch("haandvaerker.api.wizard.local_ai.chat_completion", side_effect=fake_chat_completion):
+        r = client.post("/wizard/ai-draft", json={"task_type": "malerarbejde"})
+
+    assert r.status_code == 200, r.json()
+    assert len(captured_calls) == 1
+    assert captured_calls[0]["system"] == db_system, (
+        f"Expected DB system prompt '{db_system}', got '{captured_calls[0]['system']}'"
+    )
+
+
+def test_draft_uses_default_prompt_when_no_row(client: TestClient, company_id: str) -> None:
+    """Without a CompanyPromptConfig row, /wizard/ai-draft falls back to DRAFT_SYSTEM from prompts.py."""
+    from haandvaerker.prompts import DRAFT_SYSTEM
+
+    ai_response = '{"short_summary": "Fallback test", "detailed_description": "Details."}'
+
+    captured_calls: list[dict] = []
+
+    def fake_chat_completion(prompt: str, system: str = "") -> str:
+        captured_calls.append({"prompt": prompt, "system": system})
+        return ai_response
+
+    with patch("haandvaerker.api.wizard.local_ai.is_enabled", return_value=True), \
+         patch("haandvaerker.api.wizard.local_ai.chat_completion", side_effect=fake_chat_completion):
+        r = client.post("/wizard/ai-draft", json={"task_type": "tømrerarbejde"})
+
+    assert r.status_code == 200, r.json()
+    assert len(captured_calls) == 1
+    assert captured_calls[0]["system"] == DRAFT_SYSTEM, (
+        f"Expected default DRAFT_SYSTEM, got '{captured_calls[0]['system']}'"
+    )

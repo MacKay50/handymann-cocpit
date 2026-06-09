@@ -82,7 +82,7 @@ class CompanyPromptConfigRead(SQLModel):
     company_id: str
     draft_system: Optional[str]
     draft_user: Optional[str]
-    updated_at: datetime
+    updated_at: Optional[datetime] = None
 
 
 class CompanyPromptConfigUpdate(SQLModel):

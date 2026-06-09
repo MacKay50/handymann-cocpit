@@ -10,8 +10,10 @@ from urllib import parse, request
 from fastapi import APIRouter
 from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
+from sqlmodel import Session
 
 from ..dependencies import CompanyContextDep
+from ..models.company_config import CompanyPromptConfig
 from ..prompts import DRAFT_SYSTEM, DRAFT_USER
 from ..services import local_ai
 from ..services.offer_search import keyword_search
@@ -206,8 +208,18 @@ class AiDraftResponse(BaseModel):
 # ── POST /wizard/ai-draft + /wizard/ai-draft-stream ──────────────────────────
 
 
-def _build_draft_context(data: AiDraftRequest) -> tuple[str, str]:
-    """Return (prompt, system) using templates from prompts.py."""
+def _build_draft_context(
+    data: AiDraftRequest, session: Session, company_id: str
+) -> tuple[str, str]:
+    """Return (prompt, system) using DB prompts when available, falling back to prompts.py."""
+    row = session.get(CompanyPromptConfig, company_id)
+    if row:
+        system_prompt = row.draft_system if row.draft_system is not None else DRAFT_SYSTEM
+        user_template = row.draft_user if row.draft_user is not None else DRAFT_USER
+    else:
+        system_prompt = DRAFT_SYSTEM
+        user_template = DRAFT_USER
+
     parts = [f"Opgavetype: {data.task_type}"]
     if data.customer_name:
         parts.append(f"Kundenavn: {data.customer_name}")
@@ -216,19 +228,17 @@ def _build_draft_context(data: AiDraftRequest) -> tuple[str, str]:
     if data.job_notes and data.job_notes.strip():
         parts.append(f"Notater om opgaven:\n{data.job_notes.strip()}")
 
-    prompt = DRAFT_USER.format(context="\n".join(parts))
-    return prompt, DRAFT_SYSTEM
+    prompt = user_template.format(context="\n".join(parts))
+    return prompt, system_prompt
 
 
 @router.post("/ai-draft", response_model=AiDraftResponse)
 def ai_draft(data: AiDraftRequest, ctx: CompanyContextDep) -> AiDraftResponse:
     """Generate a project description draft via local AI. Degrades gracefully if Ollama is unavailable."""
-    _company_id = ctx.company_id  # validates session
-
     if not local_ai.is_enabled():
         return AiDraftResponse(short_summary="", detailed_description="", ai_used=False)
 
-    prompt, system = _build_draft_context(data)
+    prompt, system = _build_draft_context(data, ctx.session, ctx.company_id)
     raw = local_ai.chat_completion(prompt=prompt, system=system)
     if raw is None:
         logger.warning("AI draft returned None for task_type=%s", data.task_type)
@@ -273,14 +283,12 @@ def ai_draft_stream(data: AiDraftRequest, ctx: CompanyContextDep) -> StreamingRe
     Each event:  data: {"t": "<token>"}
     Final event: data: {"done": true, "short_summary": "...", "detailed_description": "...", "ai_used": true/false}
     """
-    _company_id = ctx.company_id
-
     if not local_ai.is_enabled():
         def _empty():
             yield f"data: {json.dumps({'done': True, 'short_summary': '', 'detailed_description': '', 'ai_used': False})}\n\n"
         return StreamingResponse(_empty(), media_type="text/event-stream")
 
-    prompt, system = _build_draft_context(data)
+    prompt, system = _build_draft_context(data, ctx.session, ctx.company_id)
 
     def generate():
         accumulated = ""
