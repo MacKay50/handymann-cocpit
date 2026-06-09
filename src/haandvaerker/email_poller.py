@@ -86,7 +86,14 @@ def poll_inbox(company_id: str, session: Session, cfg: EmailConfig) -> int:
     # Use the standard INBOX folder — consistent with prior behaviour
     imap_folder = "INBOX"
 
-    imap = imaplib.IMAP4_SSL(cfg.imap_host, cfg.imap_port)
+    if cfg.imap_port == 993:
+        imap = imaplib.IMAP4_SSL(cfg.imap_host, cfg.imap_port)
+    else:
+        imap = imaplib.IMAP4(cfg.imap_host, cfg.imap_port)
+        try:
+            imap.starttls()
+        except imaplib.IMAP4.error:
+            pass
     try:
         imap.login(cfg.imap_user, cfg.imap_password)
         imap.select(imap_folder)

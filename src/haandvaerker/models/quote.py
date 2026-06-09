@@ -178,6 +178,7 @@ class QuotePublicRead(SQLModel):
     rejected_at: Optional[datetime]
     rejection_reason: Optional[str]
     company_name: str
+    company_logo_url: Optional[str] = None
     lines: list[QuoteLineRead] = []
 
 

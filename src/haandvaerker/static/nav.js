@@ -444,6 +444,20 @@
       if (res.ok) {
         var data = await res.json();
         companyName.textContent = data.company_name || "Virksomhed";
+        if (data.company_id) {
+          var coRes = await fetch("/companies/" + data.company_id, { credentials: "include" });
+          if (coRes.ok) {
+            var co = await coRes.json();
+            if (co.logo_url) {
+              var img = document.createElement("img");
+              img.src = co.logo_url;
+              img.alt = data.company_name || "Logo";
+              img.style.cssText = "height:28px;max-width:110px;object-fit:contain;vertical-align:middle;";
+              logo.textContent = "";
+              logo.appendChild(img);
+            }
+          }
+        }
       } else {
         companyName.textContent = "Ikke valgt";
       }

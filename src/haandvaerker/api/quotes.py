@@ -109,6 +109,7 @@ def _build_public_read(quote: Quote, session: Session) -> QuotePublicRead:
         rejected_at=quote.rejected_at,
         rejection_reason=quote.rejection_reason,
         company_name=company.name if company else "—",
+        company_logo_url=company.logo_ref if company else None,
         lines=[QuoteLineRead.model_validate(ln) for ln in lines],
     )
 

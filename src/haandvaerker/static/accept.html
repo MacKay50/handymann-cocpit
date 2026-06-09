@@ -13,6 +13,7 @@
     .card { background: #fff; border-radius: 16px; box-shadow: 0 4px 24px rgba(0,0,0,.1);
             max-width: 620px; width: 100%; padding: 2.5rem; }
     .logo { font-size: 1.5rem; font-weight: 800; color: #1a1a2e; margin-bottom: .2rem; }
+    .logo img { max-height: 64px; max-width: 200px; object-fit: contain; display: block; }
     .sub  { font-size: .88rem; color: #718096; margin-bottom: 2rem; }
     h1 { font-size: 1.25rem; font-weight: 700; color: #1a202c; margin-bottom: .3rem; }
     .qnr { font-size: .82rem; color: #718096; margin-bottom: 1.5rem; }
@@ -144,7 +145,7 @@ function renderQuote(q) {
     </div>`;
 
   document.getElementById("content").innerHTML = `
-    <div class="logo">${esc(q.company_name)}</div>
+    <div class="logo">${q.company_logo_url ? `<img src="${esc(q.company_logo_url)}" alt="${esc(q.company_name)}">` : esc(q.company_name)}</div>
     <div class="sub">Tilbudssvar</div>
     <h1>${esc(q.title)}</h1>
     <div class="qnr">Tilbud ${esc(q.quote_number)}${q.valid_until ? " · Gyldig til "+fdate(q.valid_until) : ""}</div>

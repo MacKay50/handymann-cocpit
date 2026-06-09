@@ -142,10 +142,22 @@ def put_email_config(
     return _to_email_read(row)
 
 
+def _imap_connect(host: str, port: int, timeout: int) -> imaplib.IMAP4:
+    """Port 993 → direct SSL. Any other port → plain + STARTTLS if supported."""
+    if port == 993:
+        return imaplib.IMAP4_SSL(host, port, timeout=timeout)
+    conn = imaplib.IMAP4(host, port, timeout=timeout)
+    try:
+        conn.starttls()
+    except imaplib.IMAP4.error:
+        pass  # server doesn't advertise STARTTLS; proceed plain
+    return conn
+
+
 def _test_imap(host: str, port: int, user: str, password: str) -> Optional[str]:
     """Return None on success, error string on failure."""
     try:
-        imap = imaplib.IMAP4_SSL(host, port, timeout=_TEST_TIMEOUT)
+        imap = _imap_connect(host, port, _TEST_TIMEOUT)
         try:
             imap.login(user, password)
         finally:
