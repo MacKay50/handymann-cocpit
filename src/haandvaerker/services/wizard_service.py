@@ -4,7 +4,10 @@ from __future__ import annotations
 import logging
 from typing import Optional
 
-from .smtp_sender import SmtpNotConfiguredError, SmtpSendError, is_smtp_configured, send_email
+from sqlmodel import Session
+
+from .config_resolver import resolve_email_config
+from .smtp_sender import SmtpNotConfiguredError, SmtpSendError, send_email
 
 logger = logging.getLogger(__name__)
 
@@ -32,14 +35,25 @@ def send_confirmation_email(
     company_name: str,
     subject_override: Optional[str] = None,
     body_override: Optional[str] = None,
+    session: Optional[Session] = None,
+    company_id: Optional[str] = None,
 ) -> dict[str, object]:
     """Send confirmation email.
 
+    When session and company_id are provided, resolves email config from DB
+    (DB-first with .env fallback via resolve_email_config).
     Returns {"sent": bool, "error": str | None}.
     Never raises — catches SmtpNotConfiguredError and SmtpSendError.
     Logs a WARNING on failure.
     """
-    if not is_smtp_configured():
+    if session is None or company_id is None:
+        logger.warning(
+            "Confirmation email not sent to %s: no session/company_id provided", to
+        )
+        return {"sent": False, "error": "SMTP ikke konfigureret"}
+
+    email_cfg = resolve_email_config(session, company_id)
+    if email_cfg is None:
         logger.warning(
             "Confirmation email not sent to %s: SMTP ikke konfigureret", to
         )
@@ -51,7 +65,7 @@ def send_confirmation_email(
     if body_override:
         body = body_override
     try:
-        send_email(to, subject, body)
+        send_email(to, subject, body, cfg=email_cfg)
     except SmtpNotConfiguredError:
         logger.warning("Confirmation email not sent to %s: SMTP ikke konfigureret", to)
         return {"sent": False, "error": "SMTP ikke konfigureret"}

@@ -408,6 +408,8 @@ def convert_to_flow(
                 company_name=company_name,
                 subject_override=body.email_subject or None,
                 body_override=body.email_body or None,
+                session=session,
+                company_id=ctx.company_id,
             )
             email_sent = bool(result["sent"])
             email_error = result["error"] if not email_sent else None

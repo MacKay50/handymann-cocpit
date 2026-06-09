@@ -40,20 +40,33 @@ def _inbox_source_to_enquiry_source(src: InboxSource) -> EnquirySource:
 
 
 @router.get("/email-config-status", include_in_schema=False)
-def email_config_status() -> dict:
-    from ..email_poller import is_configured
-    return {"configured": is_configured()}
+def email_config_status(ctx: CompanyContextDep) -> dict:
+    from ..services.config_resolver import resolve_email_config
+    cfg = resolve_email_config(ctx.session, ctx.company_id)
+    return {"configured": cfg is not None}
 
 
 @router.post("/fetch-email")
 def fetch_email_inbox(ctx: CompanyContextDep) -> dict:
     from ..email_poller import poll_inbox, EmailConfigError
+    from ..services.config_resolver import resolve_email_config
     session = ctx.session
+    cfg = resolve_email_config(session, ctx.company_id)
+    if cfg is None:
+        raise HTTPException(
+            status_code=422,
+            detail=(
+                "Email ikke konfigureret. "
+                "Udfyld EMAIL_IMAP_HOST, EMAIL_USER og EMAIL_PASSWORD."
+            ),
+        )
     try:
-        count = poll_inbox(ctx.company_id, session)
+        count = poll_inbox(ctx.company_id, session, cfg)
         return {"imported": count}
     except EmailConfigError as e:
         raise HTTPException(status_code=422, detail=str(e))
+    except OSError as e:
+        raise HTTPException(status_code=500, detail=f"IMAP-fejl: {str(e)}")
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"IMAP-fejl: {str(e)}")
 

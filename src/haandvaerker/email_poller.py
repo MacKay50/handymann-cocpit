@@ -1,12 +1,8 @@
 """
 IMAP email poller — henter ulæste emails og gemmer dem i Indbakken.
 
-Konfiguration via .env-fil (se .env.example):
-  EMAIL_IMAP_HOST     IMAP-serverens hostname
-  EMAIL_IMAP_PORT     Port (standard: 993)
-  EMAIL_USER          Email-adresse / brugernavn
-  EMAIL_PASSWORD      Adgangskode eller App Password
-  EMAIL_FOLDER        Mappe at læse fra (standard: INBOX)
+Credentials are passed via an EmailConfig object resolved by the caller
+(see services/config_resolver.py). No module-level .env bindings.
 """
 from __future__ import annotations
 
@@ -17,26 +13,15 @@ import imaplib
 import re
 import uuid
 from datetime import datetime, timezone
-from typing import Optional
 
 from sqlmodel import Session, select
 
-from .config import (
-    EMAIL_FOLDER,
-    EMAIL_IMAP_HOST,
-    EMAIL_IMAP_PORT,
-    EMAIL_PASSWORD,
-    EMAIL_USER,
-)
 from .models.inbox_message import InboxMessage, InboxSource
+from .services.config_resolver import EmailConfig
 
 
 class EmailConfigError(Exception):
     pass
-
-
-def is_configured() -> bool:
-    return bool(EMAIL_IMAP_HOST and EMAIL_USER and EMAIL_PASSWORD)
 
 
 def _decode(value: str) -> str:
@@ -84,22 +69,27 @@ def _parse_date(date_str: str) -> datetime:
         return datetime.utcnow()
 
 
-def poll_inbox(company_id: str, session: Session) -> int:
-    """
-    Fetch UNSEEN emails from IMAP and insert them into the inbox.
+def poll_inbox(company_id: str, session: Session, cfg: EmailConfig) -> int:
+    """Fetch UNSEEN emails from IMAP and insert them into the inbox.
+
+    Credentials are provided via cfg (no global .env reads).
     Marks each email as SEEN after import.
     Returns the number of new messages imported.
+    Raises EmailConfigError if cfg lacks required IMAP fields.
     """
-    if not is_configured():
+    if not (cfg.imap_host and cfg.imap_user and cfg.imap_password):
         raise EmailConfigError(
             "Email ikke konfigureret. "
-            "Udfyld EMAIL_IMAP_HOST, EMAIL_USER og EMAIL_PASSWORD i .env-filen."
+            "Udfyld EMAIL_IMAP_HOST, EMAIL_USER og EMAIL_PASSWORD."
         )
 
-    imap = imaplib.IMAP4_SSL(EMAIL_IMAP_HOST, EMAIL_IMAP_PORT)
+    # Use the standard INBOX folder — consistent with prior behaviour
+    imap_folder = "INBOX"
+
+    imap = imaplib.IMAP4_SSL(cfg.imap_host, cfg.imap_port)
     try:
-        imap.login(EMAIL_USER, EMAIL_PASSWORD)
-        imap.select(EMAIL_FOLDER)
+        imap.login(cfg.imap_user, cfg.imap_password)
+        imap.select(imap_folder)
 
         _, data = imap.search(None, "UNSEEN")
         uids = [u for u in data[0].split() if u]

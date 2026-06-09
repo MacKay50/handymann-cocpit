@@ -13,8 +13,8 @@ from ..dependencies import CompanyContextDep
 from ..models.customer import Customer
 from ..models.invoice import Invoice, InvoiceStatus
 from ..models.invoice_reminder import InvoiceReminder, InvoiceReminderRead
+from ..services.config_resolver import resolve_email_config
 from ..services.invoice_reminder_service import send_or_generate_reminder
-from ..services.smtp_sender import is_smtp_configured
 
 router = APIRouter(prefix="/invoice-reminders", tags=["invoice-reminders"])
 
@@ -60,11 +60,13 @@ class ReminderConfigResponse(BaseModel):
 # ── 1. GET /invoice-reminders/config ─────────────────────────────────────────
 
 @router.get("/config", response_model=ReminderConfigResponse)
-def get_reminder_config() -> ReminderConfigResponse:
-    from ..config import SMTP_HOST
+def get_reminder_config(ctx: CompanyContextDep) -> ReminderConfigResponse:
+    email_cfg = resolve_email_config(ctx.session, ctx.company_id)
+    smtp_configured = email_cfg is not None
+    smtp_host = email_cfg.smtp_host if email_cfg else "(ikke konfigureret)"
     return ReminderConfigResponse(
-        smtp_configured=is_smtp_configured(),
-        smtp_host=SMTP_HOST or "(ikke konfigureret)",
+        smtp_configured=smtp_configured,
+        smtp_host=smtp_host,
         fee_ore_1=REMINDER_FEE_ORE_1,
         fee_ore_2=REMINDER_FEE_ORE_2,
         fee_ore_3=REMINDER_FEE_ORE_3,
@@ -153,10 +155,11 @@ def send_reminder(body: SendReminderRequest, ctx: CompanyContextDep) -> SendRemi
         "failed": f"SMTP-afsendelse fejlede — tekst gemt til manuel afsendelse. Fejl: {result.smtp_error}",
     }
 
+    email_cfg = resolve_email_config(session, ctx.company_id)
     return SendReminderResponse(
         reminder=InvoiceReminderRead.model_validate(result.reminder),
         method=result.method,
-        smtp_configured=is_smtp_configured(),
+        smtp_configured=email_cfg is not None,
         smtp_error=result.smtp_error,
         message=method_msgs.get(result.method, result.method),
     )

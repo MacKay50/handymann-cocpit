@@ -343,9 +343,15 @@ def test_convert_to_flow_invalid_source(client: TestClient):
 
 def test_convert_to_flow_send_email_success(client: TestClient):
     """send_email=True, customer has email, SMTP mocked to succeed → 201, email_sent=True."""
+    from haandvaerker.services.config_resolver import EmailConfig
+    fake_cfg = EmailConfig(
+        imap_host="h", imap_port=993, imap_user="u", imap_password="p",
+        smtp_host="h", smtp_port=587, smtp_user="u", smtp_password="p",
+        smtp_from="f", smtp_use_tls=True,
+    )
     qp_id = _make_qp(client, email="lars@example.com")
     with patch(
-        "haandvaerker.services.wizard_service.is_smtp_configured", return_value=True
+        "haandvaerker.services.wizard_service.resolve_email_config", return_value=fake_cfg
     ), patch(
         "haandvaerker.services.wizard_service.send_email", return_value=None
     ):
@@ -366,10 +372,16 @@ def test_convert_to_flow_send_email_success(client: TestClient):
 def test_convert_to_flow_send_email_smtp_error(client: TestClient, session):
     """SMTP raises SmtpSendError → 201, email_sent=False, entities still in DB."""
     from haandvaerker.models.customer import Customer
+    from haandvaerker.services.config_resolver import EmailConfig
     from haandvaerker.services.smtp_sender import SmtpSendError
+    fake_cfg = EmailConfig(
+        imap_host="h", imap_port=993, imap_user="u", imap_password="p",
+        smtp_host="h", smtp_port=587, smtp_user="u", smtp_password="p",
+        smtp_from="f", smtp_use_tls=True,
+    )
     qp_id = _make_qp(client, email="lars@example.com")
     with patch(
-        "haandvaerker.services.wizard_service.is_smtp_configured", return_value=True
+        "haandvaerker.services.wizard_service.resolve_email_config", return_value=fake_cfg
     ), patch(
         "haandvaerker.services.wizard_service.send_email",
         side_effect=SmtpSendError("connection refused"),

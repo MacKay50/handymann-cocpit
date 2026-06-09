@@ -141,17 +141,21 @@ def test_build_confirmation_email() -> None:
 
 
 def test_send_confirmation_email_no_smtp() -> None:
-    """When SMTP is not configured, returns {"sent": False, "error": ...}."""
+    """When resolve_email_config returns None, returns {"sent": False, "error": ...}."""
     from haandvaerker.services.wizard_service import send_confirmation_email
 
     with patch(
-        "haandvaerker.services.wizard_service.is_smtp_configured", return_value=False
+        "haandvaerker.services.wizard_service.resolve_email_config", return_value=None
     ):
+        from unittest.mock import MagicMock
+        mock_session = MagicMock()
         result = send_confirmation_email(
             to="test@example.com",
             customer_name="Mette",
             project_title="Malerarbejde",
             company_name="Firma A/S",
+            session=mock_session,
+            company_id="test-company",
         )
     assert result["sent"] is False
     assert result["error"] is not None
@@ -159,11 +163,19 @@ def test_send_confirmation_email_no_smtp() -> None:
 
 def test_send_confirmation_email_smtp_send_error() -> None:
     """When send_email raises SmtpSendError, returns {"sent": False, "error": ...}."""
+    from unittest.mock import MagicMock
     from haandvaerker.services.smtp_sender import SmtpSendError
     from haandvaerker.services.wizard_service import send_confirmation_email
+    from haandvaerker.services.config_resolver import EmailConfig
 
+    fake_cfg = EmailConfig(
+        imap_host="h", imap_port=993, imap_user="u", imap_password="p",
+        smtp_host="h", smtp_port=587, smtp_user="u", smtp_password="p",
+        smtp_from="f", smtp_use_tls=True,
+    )
+    mock_session = MagicMock()
     with patch(
-        "haandvaerker.services.wizard_service.is_smtp_configured", return_value=True
+        "haandvaerker.services.wizard_service.resolve_email_config", return_value=fake_cfg
     ), patch(
         "haandvaerker.services.wizard_service.send_email",
         side_effect=SmtpSendError("connection refused"),
@@ -173,6 +185,8 @@ def test_send_confirmation_email_smtp_send_error() -> None:
             customer_name="Mette",
             project_title="Malerarbejde",
             company_name="Firma A/S",
+            session=mock_session,
+            company_id="test-company",
         )
     assert result["sent"] is False
     assert "connection refused" in (result["error"] or "")
@@ -180,10 +194,18 @@ def test_send_confirmation_email_smtp_send_error() -> None:
 
 def test_send_confirmation_email_success() -> None:
     """When send_email succeeds, returns {"sent": True, "error": None}."""
+    from unittest.mock import MagicMock
     from haandvaerker.services.wizard_service import send_confirmation_email
+    from haandvaerker.services.config_resolver import EmailConfig
 
+    fake_cfg = EmailConfig(
+        imap_host="h", imap_port=993, imap_user="u", imap_password="p",
+        smtp_host="h", smtp_port=587, smtp_user="u", smtp_password="p",
+        smtp_from="f", smtp_use_tls=True,
+    )
+    mock_session = MagicMock()
     with patch(
-        "haandvaerker.services.wizard_service.is_smtp_configured", return_value=True
+        "haandvaerker.services.wizard_service.resolve_email_config", return_value=fake_cfg
     ), patch(
         "haandvaerker.services.wizard_service.send_email", return_value=None
     ):
@@ -192,6 +214,8 @@ def test_send_confirmation_email_success() -> None:
             customer_name="Mette",
             project_title="Malerarbejde",
             company_name="Firma A/S",
+            session=mock_session,
+            company_id="test-company",
         )
     assert result["sent"] is True
     assert result["error"] is None

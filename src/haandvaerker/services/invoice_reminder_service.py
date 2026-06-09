@@ -12,10 +12,10 @@ from ..models.company import Company
 from ..models.customer import Customer
 from ..models.invoice import Invoice, InvoiceStatus
 from ..models.invoice_reminder import InvoiceReminder
+from ..services.config_resolver import resolve_email_config
 from ..services.smtp_sender import (
     SmtpNotConfiguredError,
     SmtpSendError,
-    is_smtp_configured,
     send_email,
 )
 
@@ -189,9 +189,10 @@ def send_or_generate_reminder(
     smtp_error: Optional[str] = None
     email_to: Optional[str] = customer.email
 
-    if is_smtp_configured() and email_to:
+    email_cfg = resolve_email_config(session, invoice.company_id)
+    if email_cfg is not None and email_to:
         try:
-            send_email(to=email_to, subject=subject, body=body)
+            send_email(to=email_to, subject=subject, body=body, cfg=email_cfg)
             method = "email"
         except (SmtpNotConfiguredError, SmtpSendError) as e:
             method = "failed"

@@ -42,6 +42,7 @@ from .api.intake import router as intake_router
 from .api.jobs import router as jobs_router
 from .api.wizard import router as wizard_router
 from .api.company_logo import router as company_logo_router
+from .api.company_config import router as company_config_router
 from .models import company_config as _company_config_models  # noqa: F401
 
 
@@ -109,6 +110,7 @@ def wizard_page() -> HTMLResponse:
     return HTMLResponse((_STATIC / "wizard.html").read_text(encoding="utf-8"))
 
 
+app.include_router(company_config_router)
 app.include_router(admin_deadlines_router)
 app.include_router(appointments_router)
 app.include_router(dashboard_router)

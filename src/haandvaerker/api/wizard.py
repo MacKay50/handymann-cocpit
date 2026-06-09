@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/wizard", tags=["wizard"])
 
 
-def _strip_and_parse(raw: str) -> Optional[dict]:
+def _strip_and_parse(raw: str) -> Optional[dict | list]:
     """Strip markdown code fences then JSON-parse. Returns None on failure."""
     text = raw.strip()
     if text.startswith("```"):
@@ -30,7 +30,7 @@ def _strip_and_parse(raw: str) -> Optional[dict]:
         text = "\n".join(lines[1:end]).strip()
     try:
         result = json.loads(text)
-        return result if isinstance(result, dict) else None
+        return result if isinstance(result, (dict, list)) else None
     except json.JSONDecodeError:
         return None
 
@@ -242,7 +242,23 @@ def ai_draft(data: AiDraftRequest, ctx: CompanyContextDep) -> AiDraftResponse:
 
 
 def _parse_plain_draft(text: str) -> tuple[str, str]:
-    """Extract Opsummering / Beskrivelse from plain-text AI output."""
+    """Parse plain-text or JSON dict draft response from AI.
+
+    JSON fallback handles test mocks and LM Studio responses that return
+    a dict instead of the plain-text format.
+    """
+    # JSON fallback (for test mocks and LM Studio responses)
+    stripped = text.strip()
+    if stripped.startswith("{"):
+        try:
+            data = json.loads(stripped)
+            if isinstance(data, dict):
+                short = (data.get("short_summary") or data.get("Opsummering") or "")[:200]
+                desc = (data.get("detailed_description") or data.get("Beskrivelse") or "")[:1000]
+                return short, desc
+        except json.JSONDecodeError:
+            pass
+    # Plain-text format: "Opsummering: ...\nBeskrivelse: ..."
     m_sum = re.search(r"Opsummering:\s*(.+?)(?:\n|$)", text)
     m_desc = re.search(r"Beskrivelse:\s*([\s\S]+)", text)
     short = m_sum.group(1).strip()[:200] if m_sum else ""

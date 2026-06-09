@@ -41,18 +41,22 @@ def chat_completion(
     system: Optional[str] = None,
     max_tokens: int = 1024,
     timeout: Optional[int] = None,
+    endpoint: Optional[str] = None,
+    model: Optional[str] = None,
 ) -> Optional[str]:
     """Send a chat completion request. Returns None on any error (fail loud via log).
 
     Tries the primary model first; on failure falls back to LOCAL_AI_FALLBACK_MODEL
     if one is configured.
+
+    Optional endpoint/model override per-company config (Phase 2).
     """
-    if not is_enabled():
+    if not is_enabled() and not endpoint:
         logger.debug("Local AI disabled — skipping completion")
         return None
-    ep = _endpoint()
+    ep = endpoint.rstrip("/") if endpoint else _endpoint()
 
-    primary = _model()
+    primary = model or _model()
     result = _do_chat(ep, prompt, system, max_tokens, timeout, primary)
     if result is not None:
         return result
@@ -137,16 +141,20 @@ def stream_chat_completion(
     system: Optional[str] = None,
     max_tokens: int = 1024,
     timeout: Optional[int] = None,
+    endpoint: Optional[str] = None,
+    model: Optional[str] = None,
 ) -> Generator[str, None, None]:
     """Yield text tokens from a streaming chat completion.
 
     Tries primary model first; if it yields nothing, tries fallback.
     Yields nothing on any error — never raises.
+
+    Optional endpoint/model override per-company config (Phase 2).
     """
-    if not is_enabled():
+    if not is_enabled() and not endpoint:
         return
-    ep = _endpoint()
-    primary = _model()
+    ep = endpoint.rstrip("/") if endpoint else _endpoint()
+    primary = model or _model()
 
     had_tokens = False
     for token in _stream_do_chat(ep, prompt, system, max_tokens, timeout, primary):
