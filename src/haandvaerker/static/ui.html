@@ -1034,13 +1034,21 @@ function inboxCardHtml(m) {
   const chipHtml = mc
     ? `<span style="font-size:.72rem;padding:.12rem .5rem;border-radius:8px;background:${CAT_CHIP_COLOR[mc.primary_category]||"#4a5568"}22;color:${CAT_CHIP_COLOR[mc.primary_category]||"#4a5568"};font-weight:600">${CAT_CHIP_LABELS[mc.primary_category]||mc.primary_category}</span>`
     : `<button class="btn" style="font-size:.7rem;padding:.12rem .5rem;opacity:.7" data-classify-inbox="${m.id}" title="Klassificer besked">Klassificer</button>`;
+  // invoice_payment: red badge so kontordamen sees it immediately (never silently archived)
+  const invoiceFlag = (mc && mc.primary_category === "invoice_payment")
+    ? `<span data-invoice-payment-flag style="font-size:.72rem;padding:.15rem .55rem;border-radius:8px;background:#fff5f5;color:#c53030;font-weight:700;border:1px solid #fc8181">&#9888; Faktura/betaling</span>`
+    : "";
+  // processing_error: retry button so kontordamen can replay failed secondary steps
+  const retryBtn = m.processing_error
+    ? `<button class="btn" style="font-size:.7rem;padding:.12rem .5rem;background:#fffbeb;color:#744210;border:1px solid #f6e05e" data-retry-inbox="${m.id}" title="Sekundært trin fejlede: ${esc(m.processing_error)} — klik for at genafspille">&#x21bb; Prøv igen</button>`
+    : "";
   return `<div class="icard ${m.status}" data-type="inbox" data-id="${m.id}">
     <div class="icard-icon">${icon}</div>
     <div style="flex:1">
       <div class="icard-sender">${esc(m.sender_name||"Ukendt")} <span class="b b-${m.source}">${slabel(m.source)}</span></div>
       <div class="icard-subject">${esc(m.subject||"")}</div>
       <div class="icard-meta">${esc((m.body||"").slice(0,90))}… · ${fdate(m.received_at)}</div>
-      <div style="margin-top:.3rem">${chipHtml}</div>
+      <div style="margin-top:.3rem;display:flex;gap:.3rem;flex-wrap:wrap">${chipHtml}${invoiceFlag}${retryBtn}</div>
     </div>
     <div style="display:flex;flex-direction:column;align-items:flex-end;gap:.4rem;flex-shrink:0">
       <span class="b b-${m.status}">${slabel(m.status)}</span>
@@ -1051,7 +1059,7 @@ function inboxCardHtml(m) {
 function wireInboxCards(el) {
   el.querySelectorAll("[data-type=inbox]").forEach(r =>
     r.addEventListener("click", e => {
-      if (e.target.closest("[data-prep-inbox],[data-classify-inbox]")) return;
+      if (e.target.closest("[data-prep-inbox],[data-classify-inbox],[data-retry-inbox]")) return;
       openDetail("inbox", r.dataset.id);
     }));
   el.querySelectorAll("[data-prep-inbox]").forEach(btn =>
@@ -1066,6 +1074,16 @@ function wireInboxCards(el) {
         S._classifications[btn.dataset.classifyInbox] = mc;
         renderInboxTab();
       } catch(ex) { showToast("Fejl ved klassificering: "+ex.message, true); btn.disabled=false; btn.textContent="Klassificer"; }
+    }));
+  el.querySelectorAll("[data-retry-inbox]").forEach(btn =>
+    btn.addEventListener("click", async e => {
+      e.stopPropagation();
+      btn.textContent = "…"; btn.disabled = true;
+      try {
+        await apiPost(`/inbox/${btn.dataset.retryInbox}/retry`, {});
+        showToast("Sekundære trin gennemført");
+        await loadAll();
+      } catch(ex) { showToast("Fejl ved genafspilning: "+ex.message, true); btn.disabled=false; btn.textContent="↻ Prøv igen"; }
     }));
 }
 

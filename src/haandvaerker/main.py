@@ -43,6 +43,7 @@ from .api.jobs import router as jobs_router
 from .api.wizard import router as wizard_router
 from .api.company_logo import router as company_logo_router
 from .api.company_config import router as company_config_router
+from .api.forespoergsel import router as forespoergsel_router
 from .models import company_config as _company_config_models  # noqa: F401
 
 
@@ -115,6 +116,11 @@ def settings_page() -> HTMLResponse:
     return HTMLResponse((_STATIC / "settings.html").read_text(encoding="utf-8"))
 
 
+@app.get("/forespoergsel", response_class=HTMLResponse, include_in_schema=False)
+def forespoergsel_page() -> HTMLResponse:
+    return HTMLResponse((_STATIC / "forespoergsel.html").read_text(encoding="utf-8"))
+
+
 app.include_router(company_config_router)
 app.include_router(admin_deadlines_router)
 app.include_router(appointments_router)
@@ -153,6 +159,7 @@ app.include_router(session_router)
 app.include_router(intake_router)
 app.include_router(jobs_router)
 app.include_router(wizard_router)
+app.include_router(forespoergsel_router)
 
 # Static file serving — mounted last so per-page HTML routes take priority.
 # nav.js is served from here; HTML pages are served by individual @app.get routes above.

@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="da">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Send forespørgsel</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #f0f2f5; color: #1a202c; font-size: 14px; line-height: 1.6;
+    }
+    .page { max-width: 580px; margin: 3rem auto; padding: 0 1rem 4rem; }
+    .card {
+      background: #fff; border-radius: 12px; padding: 2rem 2.2rem;
+      box-shadow: 0 2px 10px rgba(0,0,0,.08);
+    }
+    h1 { font-size: 1.3rem; font-weight: 700; margin-bottom: .4rem; color: #1a1a2e; }
+    .subtitle { color: #718096; font-size: .88rem; margin-bottom: 1.6rem; }
+    .f-row { margin-bottom: 1.1rem; }
+    .f-row label { display: block; font-size: .82rem; font-weight: 600; color: #4a5568; margin-bottom: .3rem; }
+    .f-row input, .f-row textarea {
+      width: 100%; padding: .55rem .75rem; border: 1.5px solid #cbd5e0; border-radius: 7px;
+      font-size: .88rem; font-family: inherit; outline: none; background: #fff; color: #1a202c;
+    }
+    .f-row input:focus, .f-row textarea:focus { border-color: #4299e1; }
+    .f-row textarea { resize: vertical; min-height: 110px; }
+    .required { color: #e53e3e; }
+    .btn-submit {
+      width: 100%; padding: .65rem 1rem; background: #2b6cb0; color: #fff; border: none;
+      border-radius: 8px; font-size: .95rem; font-weight: 700; cursor: pointer;
+      margin-top: .5rem; transition: background .15s;
+    }
+    .btn-submit:hover { background: #2c5282; }
+    .btn-submit:disabled { opacity: .6; cursor: not-allowed; }
+    .msg { border-radius: 8px; padding: .85rem 1rem; margin-bottom: 1.2rem; font-size: .88rem; display: none; }
+    .msg.ok  { background: #f0fff4; border: 1px solid #9ae6b4; color: #276749; }
+    .msg.err { background: #fff5f5; border: 1px solid #fc8181; color: #c53030; }
+    .msg.show { display: block; }
+  </style>
+</head>
+<body>
+  <div class="page">
+    <div class="card">
+      <h1>Send os en forespørgsel</h1>
+      <p class="subtitle">Udfyld formularen — vi vender tilbage hurtigst muligt.</p>
+
+      <div id="msg-ok" class="msg ok">
+        Tak! Vi har modtaget din forespørgsel og vender tilbage hurtigst muligt.
+      </div>
+      <div id="msg-err" class="msg err"></div>
+
+      <form id="frm" novalidate>
+        <div class="f-row">
+          <label for="navn">Navn <span class="required">*</span></label>
+          <input id="navn" name="sender_name" type="text" placeholder="Dit fulde navn" required autocomplete="name">
+        </div>
+        <div class="f-row">
+          <label for="email">E-mail <span class="required">*</span></label>
+          <input id="email" name="sender_email" type="email" placeholder="din@email.dk" required autocomplete="email">
+        </div>
+        <div class="f-row">
+          <label for="telefon">Telefon</label>
+          <input id="telefon" name="sender_phone" type="tel" placeholder="12 34 56 78" autocomplete="tel">
+        </div>
+        <div class="f-row">
+          <label for="emne">Emne <span class="required">*</span></label>
+          <input id="emne" name="subject" type="text" placeholder="Hvad handler din henvendelse om?" required>
+        </div>
+        <div class="f-row">
+          <label for="besked">Besked</label>
+          <textarea id="besked" name="body" placeholder="Beskriv gerne din opgave, ønsket tidsramme osv."></textarea>
+        </div>
+        <button type="submit" class="btn-submit" id="btn-send">Send forespørgsel</button>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // Read company_id from URL query parameter
+      const params = new URLSearchParams(window.location.search);
+      const companyId = params.get("company") || params.get("company_id");
+
+      const frm = document.getElementById("frm");
+      const btnSend = document.getElementById("btn-send");
+      const msgOk = document.getElementById("msg-ok");
+      const msgErr = document.getElementById("msg-err");
+
+      function showError(text) {
+        msgErr.textContent = text;
+        msgErr.classList.add("show");
+        msgOk.classList.remove("show");
+      }
+
+      frm.addEventListener("submit", async function (e) {
+        e.preventDefault();
+        msgErr.classList.remove("show");
+        msgOk.classList.remove("show");
+
+        if (!companyId) {
+          showError("Formularen er ikke korrekt konfigureret (manglende company_id). Kontakt venligst virksomheden direkte.");
+          return;
+        }
+
+        const data = {
+          sender_name: frm.sender_name.value.trim() || null,
+          sender_email: frm.sender_email.value.trim() || null,
+          sender_phone: frm.sender_phone.value.trim() || null,
+          subject: frm.subject.value.trim() || null,
+          body: frm.body.value.trim() || null,
+        };
+
+        btnSend.disabled = true;
+        btnSend.textContent = "Sender…";
+
+        try {
+          const resp = await fetch("/forespoergsel?company_id=" + encodeURIComponent(companyId), {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(data),
+          });
+          if (resp.ok) {
+            frm.reset();
+            msgOk.classList.add("show");
+            btnSend.textContent = "Sendt!";
+          } else {
+            const err = await resp.json().catch(() => ({}));
+            showError(err.detail || "Der opstod en fejl. Prøv igen eller kontakt os direkte.");
+            btnSend.disabled = false;
+            btnSend.textContent = "Send forespørgsel";
+          }
+        } catch (ex) {
+          showError("Netværksfejl — tjek din forbindelse og prøv igen.");
+          btnSend.disabled = false;
+          btnSend.textContent = "Send forespørgsel";
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -4,6 +4,8 @@ The single authorised source of ``company_id`` for all routers is
 ``get_company_context`` / ``CompanyContextDep``.  No router may accept
 ``company_id`` as a query-parameter or body field — it always comes from
 the signed session cookie set by ``POST /session/select-company``.
+Exception: the public ``/forespoergsel`` endpoint accepts ``company_id``
+as a query-parameter (no session cookie — unauthenticated public form).
 
 Iron Law 2: missing or invalid cookie → 401, never a silent default.
 """

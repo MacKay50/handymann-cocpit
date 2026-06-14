@@ -33,6 +33,7 @@ class InboxMessage(SQLModel, table=True):
     status: InboxStatus = Field(default=InboxStatus.unread)
     enquiry_id: Optional[str] = Field(default=None)
     active: bool = Field(default=True)
+    processing_error: Optional[str] = Field(default=None)
 
 
 class InboxMessageCreate(SQLModel):
@@ -59,6 +60,7 @@ class InboxMessageRead(SQLModel):
     status: InboxStatus
     enquiry_id: Optional[str]
     active: bool
+    processing_error: Optional[str] = None
 
 
 class InboxMessageConvert(SQLModel):

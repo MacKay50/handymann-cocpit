@@ -28,6 +28,59 @@ def build_confirmation_email(
     return subject, body
 
 
+def build_acknowledgement_text(
+    contact_name: str, company_name: str
+) -> tuple[str, str]:
+    """Return (subject, body) for an auto-reply to a new public enquiry."""
+    subject = f"Tak for din henvendelse - {company_name}"
+    body = (
+        f"Kære {contact_name},\n\n"
+        f"Tak for din henvendelse til {company_name}.\n\n"
+        "Vi har modtaget din besked og vender tilbage hurtigst muligt.\n\n"
+        "Med venlig hilsen\n"
+        f"{company_name}"
+    )
+    return subject, body
+
+
+def send_acknowledgement_email(
+    to: str,
+    contact_name: str,
+    company_name: str,
+    session: Optional[Session] = None,
+    company_id: Optional[str] = None,
+) -> dict[str, object]:
+    """Send auto-reply acknowledgement to enquiry sender.
+
+    Returns {"sent": bool, "error": str | None}.
+    Never raises — catches SmtpNotConfiguredError and SmtpSendError.
+    Logs a WARNING on failure.
+    """
+    if session is None or company_id is None:
+        logger.warning(
+            "Acknowledgement email not sent to %s: no session/company_id provided", to
+        )
+        return {"sent": False, "error": "SMTP ikke konfigureret"}
+
+    email_cfg = resolve_email_config(session, company_id)
+    if email_cfg is None:
+        logger.warning(
+            "Acknowledgement email not sent to %s: SMTP ikke konfigureret", to
+        )
+        return {"sent": False, "error": "SMTP ikke konfigureret"}
+
+    subject, body = build_acknowledgement_text(contact_name, company_name)
+    try:
+        send_email(to, subject, body, cfg=email_cfg)
+    except SmtpNotConfiguredError:
+        logger.warning("Acknowledgement email not sent to %s: SMTP ikke konfigureret", to)
+        return {"sent": False, "error": "SMTP ikke konfigureret"}
+    except SmtpSendError as exc:
+        logger.warning("Acknowledgement email send failed for %s: %s", to, exc)
+        return {"sent": False, "error": str(exc)}
+    return {"sent": True, "error": None}
+
+
 def send_confirmation_email(
     to: str,
     customer_name: str,

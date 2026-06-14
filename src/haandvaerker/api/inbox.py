@@ -207,6 +207,33 @@ def convert_to_enquiry(
     return EnquiryRead.model_validate(enquiry)
 
 
+@router.post("/{message_id}/retry", response_model=InboxMessageRead)
+def retry_secondary_steps(message_id: str, ctx: CompanyContextDep) -> InboxMessageRead:
+    """Replay secondary steps (e.g. auto-reply email) for a message with processing_error.
+
+    On success, processing_error is cleared.
+    Returns the updated InboxMessage.
+    """
+    from ..services.inbox_ingest import replay_secondary_steps
+    from ..models.company import Company
+
+    session = ctx.session
+    msg = session.get(InboxMessage, message_id)
+    if not msg:
+        raise HTTPException(status_code=404, detail="InboxMessage not found")
+    if msg.company_id != ctx.company_id:
+        raise HTTPException(status_code=403, detail="Adgang nægtet.")
+
+    company = session.get(Company, msg.company_id)
+    if not company:
+        raise HTTPException(status_code=500, detail="Firma ikke fundet for denne InboxMessage")
+    company_name = company.name
+
+    replay_secondary_steps(session=session, msg=msg, company_name=company_name)
+    session.refresh(msg)
+    return InboxMessageRead.model_validate(msg)
+
+
 @router.delete("/{message_id}", status_code=204)
 def delete_message(message_id: str, ctx: CompanyContextDep) -> None:
     session = ctx.session
