@@ -6,8 +6,9 @@ Route registration order (CODE-09): fixed-path routes BEFORE /{match_id}
   3. GET  /reconciliation/
   4. GET  /reconciliation/bank-view
   5. POST /reconciliation/confirm-all
-  6. POST /reconciliation/{match_id}/confirm
-  7. POST /reconciliation/{match_id}/reject
+  6. POST /reconciliation/match-debit
+  7. POST /reconciliation/{match_id}/confirm
+  8. POST /reconciliation/{match_id}/reject
 """
 from __future__ import annotations
 
@@ -26,6 +27,7 @@ from ..models.economic_invoice import (
 )
 from ..models.reconciliation_match import MatchType, ReconciliationMatch, ReconciliationMatchRead
 from ..services.reconciliation_service import run_matching
+from ..services.invoice_monitoring.reconciliation_bridge import match_debit_transaction
 from .economic_invoices import EconomicInvoiceRead, _to_read as _invoice_read
 
 router = APIRouter(prefix="/reconciliation", tags=["reconciliation"])
@@ -62,6 +64,16 @@ class ConfirmAllResult(BaseModel):
     confirmed_matches: int
     confirmed_transactions: int
     skipped_transactions: int
+
+
+class MatchDebitRequest(BaseModel):
+    bank_transaction_id: str
+
+
+class MatchDebitResult(BaseModel):
+    matched: bool
+    auto_confirmed: bool
+    case_id: Optional[str]
 
 
 class InvoiceMatchPairRead(BaseModel):
@@ -126,7 +138,7 @@ def manual_match(body: ManualMatchRequest, ctx: CompanyContextDep) -> Reconcilia
     existing_matches = session.exec(
         select(ReconciliationMatch).where(
             ReconciliationMatch.bank_transaction_id == tx.id,
-            ReconciliationMatch.active == True,  # noqa: E712
+            ReconciliationMatch.active == True,
         )
     ).all()
 
@@ -191,7 +203,7 @@ def list_reconciliation(
 
     invoices_q = select(EconomicInvoice).where(EconomicInvoice.company_id == company_id)
     if active_only:
-        invoices_q = invoices_q.where(EconomicInvoice.active == True)  # noqa: E712
+        invoices_q = invoices_q.where(EconomicInvoice.active == True)
     if date_from:
         invoices_q = invoices_q.where(EconomicInvoice.invoice_date >= date_from)
     if date_to:
@@ -204,7 +216,7 @@ def list_reconciliation(
         matches = session.exec(
             select(ReconciliationMatch).where(
                 ReconciliationMatch.economic_invoice_id.in_(invoice_ids),
-                ReconciliationMatch.active == True,  # noqa: E712
+                ReconciliationMatch.active == True,
             )
         ).all()
 
@@ -257,7 +269,7 @@ def list_reconciliation(
     orphan_q = select(BankTransaction).where(
         BankTransaction.company_id == company_id,
         BankTransaction.status == BankTransactionStatus.unmatched,
-        BankTransaction.active == True,  # noqa: E712
+        BankTransaction.active == True,
     )
     orphan_txs = [
         tx for tx in session.exec(orphan_q).all()
@@ -281,7 +293,7 @@ def bank_view(
 
     txs_q = select(BankTransaction).where(BankTransaction.company_id == company_id)
     if active_only:
-        txs_q = txs_q.where(BankTransaction.active == True)  # noqa: E712
+        txs_q = txs_q.where(BankTransaction.active == True)
     txs_q = txs_q.order_by(BankTransaction.transaction_date.desc())
     txs = session.exec(txs_q).all()
 
@@ -291,7 +303,7 @@ def bank_view(
         all_matches = session.exec(
             select(ReconciliationMatch).where(
                 ReconciliationMatch.bank_transaction_id.in_(tx_ids),
-                ReconciliationMatch.active == True,  # noqa: E712
+                ReconciliationMatch.active == True,
             )
         ).all()
 
@@ -356,8 +368,8 @@ def confirm_all_balanced(ctx: CompanyContextDep) -> ConfirmAllResult:
 
     unconfirmed = session.exec(
         select(ReconciliationMatch).where(
-            ReconciliationMatch.active == True,  # noqa: E712
-            ReconciliationMatch.confirmed == False,  # noqa: E712
+            ReconciliationMatch.active == True,
+            ReconciliationMatch.confirmed == False,
         )
     ).all()
 
@@ -420,7 +432,37 @@ def confirm_all_balanced(ctx: CompanyContextDep) -> ConfirmAllResult:
     )
 
 
-# ── 6. POST /reconciliation/{match_id}/confirm ───────────────────────────────
+# ── 6. POST /reconciliation/match-debit ─────────────────────────────────────
+
+@router.post("/match-debit", response_model=MatchDebitResult)
+def match_debit(body: MatchDebitRequest, ctx: CompanyContextDep) -> MatchDebitResult:
+    """Match a debit bank transaction against open InvoiceCases.
+
+    Auto-confirms on exact match of amount + bank_reference + date within 7 days.
+    Non-exact matches are never auto-confirmed (Iron Law 3).
+    """
+    session = ctx.session
+
+    tx = session.get(BankTransaction, body.bank_transaction_id)
+    if not tx or not tx.active:
+        raise HTTPException(
+            status_code=404,
+            detail=f"BankTransaction '{body.bank_transaction_id}' ikke fundet",
+        )
+    if tx.company_id != ctx.company_id:
+        raise HTTPException(status_code=403, detail="Adgang nægtet.")
+
+    result = match_debit_transaction(session, tx, ctx.company_id)
+    session.commit()
+
+    return MatchDebitResult(
+        matched=result.matched,
+        auto_confirmed=result.auto_confirmed,
+        case_id=result.case_id,
+    )
+
+
+# ── 7. POST /reconciliation/{match_id}/confirm ───────────────────────────────
 
 @router.post("/{match_id}/confirm", response_model=ReconciliationMatchRead)
 def confirm_match(match_id: str, ctx: CompanyContextDep) -> ReconciliationMatchRead:
@@ -454,7 +496,7 @@ def confirm_match(match_id: str, ctx: CompanyContextDep) -> ReconciliationMatchR
     all_tx_matches = session.exec(
         select(ReconciliationMatch).where(
             ReconciliationMatch.bank_transaction_id == tx.id,
-            ReconciliationMatch.active == True,  # noqa: E712
+            ReconciliationMatch.active == True,
         )
     ).all()
     if all(m.confirmed for m in all_tx_matches):
@@ -466,7 +508,7 @@ def confirm_match(match_id: str, ctx: CompanyContextDep) -> ReconciliationMatchR
     return ReconciliationMatchRead.model_validate(match, from_attributes=True)
 
 
-# ── 7. POST /reconciliation/{match_id}/reject ────────────────────────────────
+# ── 8. POST /reconciliation/{match_id}/reject ────────────────────────────────
 
 @router.post("/{match_id}/reject", response_model=ReconciliationMatchRead)
 def reject_match(match_id: str, ctx: CompanyContextDep) -> ReconciliationMatchRead:
@@ -494,7 +536,7 @@ def reject_match(match_id: str, ctx: CompanyContextDep) -> ReconciliationMatchRe
     remaining = session.exec(
         select(ReconciliationMatch).where(
             ReconciliationMatch.bank_transaction_id == tx.id,
-            ReconciliationMatch.active == True,  # noqa: E712
+            ReconciliationMatch.active == True,
             ReconciliationMatch.id != match_id,
         )
     ).all()
