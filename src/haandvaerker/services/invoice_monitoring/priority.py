@@ -1,15 +1,18 @@
 """InvoicePriorityService — deterministic priority assignment.
 
 Rules (evaluated top-to-bottom, first match wins):
+  PRECONDITION: amount_ore must be > 0; raises ValueError otherwise.
+    Callers must escalate amount_ore==0 to needs_review BEFORE calling.
   red:    overdue | due today | due within 2 days | is_reminder
   orange: due within 7 days | unknown creditor | confidence < 0.6 | amount > threshold
-  yellow: due within 14 days | missing amount
+          | due_date is None (unknown risk — treat conservatively)
+  yellow: due within 14 days
   green:  due > 14 days AND known creditor AND confidence >= 0.8
   yellow: fallback
 """
 from __future__ import annotations
 
-from datetime import date, timedelta
+from datetime import date
 from typing import Optional
 
 from ...models.invoice_case import InvoicePriority
@@ -35,6 +38,15 @@ def compute_priority(
     confidence: float,
     amount_ore: int,
 ) -> InvoicePriority:
+    # amount_ore==0 is a data quality failure on a payment-relevant invoice.
+    # The caller must intercept this BEFORE calling compute_priority and
+    # escalate the case to needs_review/red (Iron Law 2: fail loud, never mask).
+    if amount_ore == 0:
+        raise ValueError(
+            "amount_ore must be > 0 for priority computation; "
+            "escalate to needs_review before calling compute_priority"
+        )
+
     today = date.today()
 
     # ── red ───────────────────────────────────────────────────────────────────
@@ -46,7 +58,10 @@ def compute_priority(
             return InvoicePriority.red
 
     # ── orange ────────────────────────────────────────────────────────────────
-    if due_date is not None and (due_date - today).days <= 7:
+    if due_date is None:
+        # Unknown due_date is an unknown-risk signal — treat conservatively.
+        return InvoicePriority.orange
+    if (due_date - today).days <= 7:
         return InvoicePriority.orange
     if creditor_id is None:
         return InvoicePriority.orange
@@ -56,9 +71,7 @@ def compute_priority(
         return InvoicePriority.orange
 
     # ── yellow ────────────────────────────────────────────────────────────────
-    if due_date is not None and (due_date - today).days <= 14:
-        return InvoicePriority.yellow
-    if amount_ore == 0:
+    if (due_date - today).days <= 14:
         return InvoicePriority.yellow
 
     # ── green ─────────────────────────────────────────────────────────────────

@@ -34,7 +34,7 @@ from sqlmodel import Session, col, select
 
 from ...models.extraction_evidence import ExtractionEvidence
 from ...models.invoice_action_item import InvoiceActionItem, InvoiceActionItemStatus
-from ...models.invoice_case import InvoiceCase, InvoiceCaseStatus
+from ...models.invoice_case import InvoiceCase, InvoiceCaseStatus, InvoicePriority
 from ...models.invoice_document import InvoiceDocument, InvoiceDocumentType, OcrStatus
 from ...models.invoice_event import InvoiceEventType
 from ...models.mail_message import MailMessage, MailProcessingStatus
@@ -232,17 +232,24 @@ def ingest_from_inbox(
 
     # ── 6. Create InvoiceCase ─────────────────────────────────────────────────
     is_reminder = extraction.is_reminder or classification.document_type == "reminder"
-    priority = compute_priority(
-        due_date=final_due_date,
-        is_reminder=is_reminder,
-        creditor_id=matched_creditor_id,
-        confidence=final_confidence,
-        amount_ore=final_amount_ore,
-    )
-    initial_status = (
-        InvoiceCaseStatus.reminder_received if is_reminder
-        else InvoiceCaseStatus.payment_required
-    )
+
+    # amount_ore==0 on a payment-relevant invoice is a data quality failure.
+    # Escalate immediately to needs_review/red (Iron Law 2: fail loud, never mask).
+    if final_amount_ore == 0:
+        initial_status = InvoiceCaseStatus.needs_review
+        priority = InvoicePriority.red
+    else:
+        priority = compute_priority(
+            due_date=final_due_date,
+            is_reminder=is_reminder,
+            creditor_id=matched_creditor_id,
+            confidence=final_confidence,
+            amount_ore=final_amount_ore,
+        )
+        initial_status = (
+            InvoiceCaseStatus.reminder_received if is_reminder
+            else InvoiceCaseStatus.payment_required
+        )
     case = InvoiceCase(
         company_id=company_id,
         creditor_id=matched_creditor_id,
@@ -288,8 +295,11 @@ def ingest_from_inbox(
         audit.emit(session, case.id, InvoiceEventType.creditor_matched,
                    payload={"creditor_id": matched_creditor_id,
                             "creditor_name": final_creditor_name})
+    _case_created_payload = {"status": initial_status.value, "priority": priority.value}
+    if final_amount_ore == 0:
+        _case_created_payload["needs_review_reason"] = "amount_ore==0: data quality failure"
     audit.emit(session, case.id, InvoiceEventType.invoice_case_created,
-               payload={"status": initial_status.value, "priority": priority.value})
+               payload=_case_created_payload)
 
     # ── 9. ActionItem ─────────────────────────────────────────────────────────
     action_item = InvoiceActionItem(
@@ -418,6 +428,9 @@ def recompute_priorities(session: Session, company_id: str) -> int:
 
     changed = 0
     for case in cases:
+        # Skip needs_review cases — they require human correction before recompute.
+        if case.status == InvoiceCaseStatus.needs_review:
+            continue
         new_priority = compute_priority(
             due_date=case.due_date,
             is_reminder=case.is_reminder,
