@@ -10,14 +10,26 @@ import email
 import email.header
 import email.utils
 import imaplib
+import logging
+import pathlib
 import re
+import uuid
 from datetime import datetime, timezone
 
 from sqlmodel import Session, select
 
+from .api.inbox import (
+    ATTACHMENT_ALLOWED_EXTENSIONS,
+    ATTACHMENT_MAX_SIZE_BYTES,
+    ATTACHMENTS_DIR,
+    _attachment_storage_path,
+)
+from .models.inbox_attachment import InboxAttachment
 from .models.inbox_message import InboxMessage, InboxSource
 from .services.config_resolver import EmailConfig
 from .services.inbox_ingest import ingest_message
+
+logger = logging.getLogger(__name__)
 
 
 class EmailConfigError(Exception):
@@ -67,6 +79,84 @@ def _parse_date(date_str: str) -> datetime:
         return parsed.astimezone(timezone.utc).replace(tzinfo=None)
     except Exception:
         return datetime.utcnow()
+
+
+def _save_attachments(
+    msg: email.message.Message,
+    company_id: str,
+    inbox_message_id: str,
+    session: Session,
+    attachments_dir: pathlib.Path,
+) -> None:
+    """Extract and save allowed attachments from a parsed email message.
+
+    For each attachment part:
+    - Skip if extension is not in ATTACHMENT_ALLOWED_EXTENSIONS.
+    - Skip if payload exceeds ATTACHMENT_MAX_SIZE_BYTES.
+    - Save with UUID-based filename (path-traversal guard).
+    - Create InboxAttachment DB row.
+
+    Errors on individual parts are logged and skipped — never abort the caller.
+    """
+    if not msg.is_multipart():
+        return
+
+    for part in msg.walk():
+        disposition = str(part.get("Content-Disposition", ""))
+        if "attachment" not in disposition:
+            continue
+
+        raw_filename = part.get_filename() or ""
+        suffix = pathlib.Path(raw_filename).suffix.lower()
+        if suffix not in ATTACHMENT_ALLOWED_EXTENSIONS:
+            logger.warning(
+                "email_poller: skipping attachment '%s' — disallowed extension '%s'",
+                raw_filename,
+                suffix,
+            )
+            continue
+
+        try:
+            payload: bytes = part.get_payload(decode=True)  # type: ignore[assignment]
+            if payload is None:
+                logger.warning(
+                    "email_poller: skipping attachment '%s' — empty payload",
+                    raw_filename,
+                )
+                continue
+            if len(payload) > ATTACHMENT_MAX_SIZE_BYTES:
+                logger.warning(
+                    "email_poller: skipping attachment '%s' — size %d exceeds limit %d",
+                    raw_filename,
+                    len(payload),
+                    ATTACHMENT_MAX_SIZE_BYTES,
+                )
+                continue
+
+            attachments_dir.mkdir(parents=True, exist_ok=True)
+            stored_name = str(uuid.uuid4()) + suffix
+            dest = attachments_dir / stored_name
+            dest.write_bytes(payload)
+
+            content_type = part.get_content_type() or "application/octet-stream"
+            storage_path = _attachment_storage_path(stored_name)
+            att = InboxAttachment(
+                company_id=company_id,
+                inbox_message_id=inbox_message_id,
+                filename=raw_filename,
+                content_type=content_type,
+                size_bytes=len(payload),
+                storage_path=storage_path,
+            )
+            session.add(att)
+
+        except Exception as exc:
+            logger.error(
+                "email_poller: failed to save attachment '%s': %s",
+                raw_filename,
+                exc,
+            )
+            continue
 
 
 def poll_inbox(company_id: str, session: Session, cfg: EmailConfig) -> int:
@@ -126,7 +216,7 @@ def poll_inbox(company_id: str, session: Session, cfg: EmailConfig) -> int:
                     imap.store(uid, "+FLAGS", "\\Seen")
                     continue
 
-                ingest_message(
+                new_msg = ingest_message(
                     session=session,
                     company_id=company_id,
                     company_name="",
@@ -139,10 +229,19 @@ def poll_inbox(company_id: str, session: Session, cfg: EmailConfig) -> int:
                     classify=True,
                     use_llm=False,
                 )
+                _save_attachments(
+                    msg=msg,
+                    company_id=company_id,
+                    inbox_message_id=new_msg.id,
+                    session=session,
+                    attachments_dir=ATTACHMENTS_DIR,
+                )
+                session.commit()
                 imap.store(uid, "+FLAGS", "\\Seen")
                 imported += 1
 
-            except Exception:
+            except Exception as exc:
+                logger.error("email_poller: skipping message uid=%s — %s", uid, exc)
                 continue  # skip broken messages, don't abort the whole poll
 
         return imported

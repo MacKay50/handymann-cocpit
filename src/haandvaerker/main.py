@@ -45,13 +45,14 @@ from .api.company_logo import router as company_logo_router
 from .api.company_config import router as company_config_router
 from .api.forespoergsel import router as forespoergsel_router
 from .models import company_config as _company_config_models  # noqa: F401
+from .models import inbox_attachment as _inbox_attachment_models  # noqa: F401
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
-    (pathlib.Path(__file__).parent / "static" / "uploads" / "logos").mkdir(
-        parents=True, exist_ok=True
-    )
+    _static = pathlib.Path(__file__).parent / "static" / "uploads"
+    (_static / "logos").mkdir(parents=True, exist_ok=True)
+    (_static / "attachments").mkdir(parents=True, exist_ok=True)
     create_db_and_tables()
     yield
 

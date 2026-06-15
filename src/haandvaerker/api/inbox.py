@@ -1,9 +1,11 @@
+import pathlib
 import uuid
 from typing import Optional
-from fastapi import APIRouter, HTTPException
+from fastapi import APIRouter, HTTPException, UploadFile
 from sqlmodel import select
 from ..dependencies import CompanyContextDep
 from ..models.enquiry import EnquiryRead
+from ..models.inbox_attachment import InboxAttachment, InboxAttachmentRead
 from ..models.inbox_message import (
     InboxMessage, InboxMessageConvert, InboxMessageCreate, InboxMessageRead,
     InboxSource, InboxStatus,
@@ -11,6 +13,24 @@ from ..models.inbox_message import (
 from ..services.inbox_ingest import create_enquiry_from_message
 
 router = APIRouter(prefix="/inbox", tags=["inbox"])
+
+# ---------------------------------------------------------------------------
+# Attachment upload constants — mirrors company_logo.py pattern
+# ---------------------------------------------------------------------------
+ATTACHMENT_ALLOWED_EXTENSIONS = {
+    ".pdf", ".jpg", ".jpeg", ".png", ".gif", ".webp",
+    ".doc", ".docx", ".xls", ".xlsx", ".txt", ".csv",
+}
+ATTACHMENT_MAX_SIZE_BYTES = 10 * 1024 * 1024  # 10 MB
+
+ATTACHMENTS_DIR = pathlib.Path(__file__).parent.parent / "static" / "uploads" / "attachments"
+# Relative storage prefix derived from ATTACHMENTS_DIR — single source of truth
+_ATTACHMENTS_STORAGE_PREFIX = "/".join(ATTACHMENTS_DIR.parts[-3:])
+
+
+def _attachment_storage_path(stored_name: str) -> str:
+    """Return the DB-stored relative path for an attachment (always posix-style)."""
+    return f"{_ATTACHMENTS_STORAGE_PREFIX}/{stored_name}"
 
 VALID_TRANSITIONS: dict[InboxStatus, set[InboxStatus]] = {
     InboxStatus.unread: {InboxStatus.read, InboxStatus.archived, InboxStatus.converted},
@@ -212,6 +232,75 @@ def retry_secondary_steps(message_id: str, ctx: CompanyContextDep) -> InboxMessa
     replay_secondary_steps(session=session, msg=msg, company_name=company_name)
     session.refresh(msg)
     return InboxMessageRead.model_validate(msg)
+
+
+@router.post("/{message_id}/attachments", response_model=InboxAttachmentRead, status_code=201)
+async def upload_attachment(
+    message_id: str, file: UploadFile, ctx: CompanyContextDep
+) -> InboxAttachmentRead:
+    """Upload a file attachment to an inbox message (company-scoped)."""
+    session = ctx.session
+    msg = session.get(InboxMessage, message_id)
+    if not msg:
+        raise HTTPException(status_code=404, detail="InboxMessage not found")
+    if msg.company_id != ctx.company_id:
+        raise HTTPException(status_code=403, detail="Adgang nægtet.")
+
+    suffix = pathlib.Path(file.filename or "").suffix.lower()
+    if suffix not in ATTACHMENT_ALLOWED_EXTENSIONS:
+        allowed = sorted(ATTACHMENT_ALLOWED_EXTENSIONS)
+        raise HTTPException(
+            status_code=422,
+            detail=f"File type '{suffix}' not allowed. Allowed: {allowed}",
+        )
+
+    data = await file.read(ATTACHMENT_MAX_SIZE_BYTES + 1)
+    if len(data) > ATTACHMENT_MAX_SIZE_BYTES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"File exceeds maximum size of {ATTACHMENT_MAX_SIZE_BYTES} bytes.",
+        )
+
+    ATTACHMENTS_DIR.mkdir(parents=True, exist_ok=True)
+    stored_name = str(uuid.uuid4()) + suffix
+    dest = ATTACHMENTS_DIR / stored_name
+    dest.write_bytes(data)
+
+    att = InboxAttachment(
+        company_id=ctx.company_id,
+        inbox_message_id=message_id,
+        filename=file.filename or stored_name,
+        content_type=file.content_type or "application/octet-stream",
+        size_bytes=len(data),
+        storage_path=_attachment_storage_path(stored_name),
+    )
+    session.add(att)
+    try:
+        session.commit()
+    except Exception:
+        dest.unlink(missing_ok=True)  # REL-01: clean up orphaned file if DB commit fails
+        raise
+    session.refresh(att)
+    return InboxAttachmentRead.model_validate(att)
+
+
+@router.get("/{message_id}/attachments", response_model=list[InboxAttachmentRead])
+def list_attachments(message_id: str, ctx: CompanyContextDep) -> list[InboxAttachmentRead]:
+    """List attachments for an inbox message (company-scoped)."""
+    session = ctx.session
+    msg = session.get(InboxMessage, message_id)
+    if not msg:
+        raise HTTPException(status_code=404, detail="InboxMessage not found")
+    if msg.company_id != ctx.company_id:
+        raise HTTPException(status_code=403, detail="Adgang nægtet.")
+
+    rows = session.exec(
+        select(InboxAttachment)
+        .where(InboxAttachment.inbox_message_id == message_id)
+        .where(InboxAttachment.company_id == ctx.company_id)
+        .where(InboxAttachment.active == True)  # noqa: E712
+    ).all()
+    return [InboxAttachmentRead.model_validate(r) for r in rows]
 
 
 @router.delete("/{message_id}", status_code=204)
