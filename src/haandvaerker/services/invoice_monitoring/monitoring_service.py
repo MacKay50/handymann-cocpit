@@ -27,10 +27,10 @@ from __future__ import annotations
 import hashlib
 import logging
 from dataclasses import dataclass
-from datetime import date
+from datetime import date, datetime
 from typing import Optional
 
-from sqlmodel import Session, select
+from sqlmodel import Session, col, select
 
 from ...models.extraction_evidence import ExtractionEvidence
 from ...models.invoice_action_item import InvoiceActionItem, InvoiceActionItemStatus
@@ -387,3 +387,53 @@ def ingest_sample(
         priority=case.priority.value if case.priority else None,
         status=case.status.value,
     )
+
+
+# ── Priority recompute ────────────────────────────────────────────────────────
+
+_CLOSED_STATUSES = frozenset({
+    InvoiceCaseStatus.payment_confirmed,
+    InvoiceCaseStatus.rejected,
+    InvoiceCaseStatus.handled,
+})
+
+
+def recompute_priorities(session: Session, company_id: str) -> int:
+    """Recompute priority for all active, open InvoiceCases for the company.
+
+    For each case whose computed priority differs from the stored one:
+      - Updates ``case.priority``
+      - Emits a ``priority_raised`` InvoiceEvent
+
+    Returns the count of cases whose priority actually changed.
+    Commits once at the end.
+    """
+    cases = session.exec(
+        select(InvoiceCase).where(
+            InvoiceCase.company_id == company_id,
+            InvoiceCase.active == True,
+            col(InvoiceCase.status).notin_(_CLOSED_STATUSES),
+        )
+    ).all()
+
+    changed = 0
+    for case in cases:
+        new_priority = compute_priority(
+            due_date=case.due_date,
+            is_reminder=case.is_reminder,
+            creditor_id=case.creditor_id,
+            confidence=case.confidence,
+            amount_ore=case.amount_ore,
+        )
+        if new_priority != case.priority:
+            case.priority = new_priority
+            case.updated_at = datetime.utcnow()
+            session.add(case)
+            audit.emit(
+                session, case.id, InvoiceEventType.priority_raised,
+                payload={"new_priority": new_priority.value},
+            )
+            changed += 1
+
+    session.commit()
+    return changed

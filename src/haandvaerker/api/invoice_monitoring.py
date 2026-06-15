@@ -5,12 +5,13 @@ Route registration order (fixed paths BEFORE /{case_id}):
   2. GET  /invoice-monitoring/cases
   3. GET  /invoice-monitoring/creditors
   4. POST /invoice-monitoring/dev/ingest-sample   (dev/test only)
-  5. GET  /invoice-monitoring/cases/{case_id}
-  6. POST /invoice-monitoring/cases/{case_id}/open-bank
-  7. POST /invoice-monitoring/cases/{case_id}/mark-handled
-  8. POST /invoice-monitoring/cases/{case_id}/reject
-  9. POST /invoice-monitoring/cases/{case_id}/mark-duplicate
- 10. PATCH /invoice-monitoring/cases/{case_id}/fields
+  5. POST /invoice-monitoring/recompute-priorities
+  6. GET  /invoice-monitoring/cases/{case_id}
+  7. POST /invoice-monitoring/cases/{case_id}/open-bank
+  8. POST /invoice-monitoring/cases/{case_id}/mark-handled
+  9. POST /invoice-monitoring/cases/{case_id}/reject
+ 10. POST /invoice-monitoring/cases/{case_id}/mark-duplicate
+ 11. PATCH /invoice-monitoring/cases/{case_id}/fields
 
 Permissions: defined as constants, not enforced in V1.
 """
@@ -32,7 +33,10 @@ from ..models.invoice_action_item import InvoiceActionItem, InvoiceActionItemSta
 from ..models.invoice_case import InvoiceCase, InvoiceCaseStatus, InvoicePriority
 from ..models.invoice_event import InvoiceEvent, InvoiceEventType
 from ..services.invoice_monitoring import audit
-from ..services.invoice_monitoring.monitoring_service import ingest_sample as _ingest_sample
+from ..services.invoice_monitoring.monitoring_service import (
+    ingest_sample as _ingest_sample,
+    recompute_priorities as _recompute_priorities,
+)
 from ..services.invoice_monitoring.priority import compute_priority
 
 router = APIRouter(prefix="/invoice-monitoring", tags=["invoice-monitoring"])
@@ -308,7 +312,16 @@ def dev_ingest_sample(body: IngestSampleRequest, ctx: CompanyContextDep) -> dict
     }
 
 
-# ── 5. GET /invoice-monitoring/cases/{case_id} ────────────────────────────────
+# ── 5. POST /invoice-monitoring/recompute-priorities ─────────────────────────
+
+@router.post("/recompute-priorities")
+def recompute_priorities_endpoint(ctx: CompanyContextDep) -> dict:
+    """Daily/on-demand recompute: escalates open cases toward red as due dates approach."""
+    updated = _recompute_priorities(ctx.session, ctx.company_id)
+    return {"updated": updated}
+
+
+# ── 6. GET /invoice-monitoring/cases/{case_id} ────────────────────────────────
 
 @router.get("/cases/{case_id}", response_model=InvoiceCaseDetailRead)
 def get_case(case_id: str, ctx: CompanyContextDep) -> InvoiceCaseDetailRead:
