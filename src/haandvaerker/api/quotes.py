@@ -1,4 +1,5 @@
 from __future__ import annotations
+import logging
 import uuid
 from datetime import date, datetime, timedelta
 from typing import Annotated, Optional
@@ -21,6 +22,9 @@ from ..models.quote import (
     QuoteUpdate, compute_line_total, compute_quote_totals, compute_room_m2,
 )
 from ..pdf.quote_pdf import generate_quote_pdf
+from ..services.offer_from_quote import create_historical_offer_from_quote
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/quotes", tags=["quotes"])
 
@@ -400,6 +404,18 @@ def accept_by_token(token: str, session: SessionDep) -> QuotePublicRead:
 
     session.commit()
     session.refresh(quote)
+
+    try:
+        create_historical_offer_from_quote(session, quote)
+        session.commit()
+    except Exception as exc:
+        session.rollback()
+        logger.error(
+            "erfaringsbank: failed to create HistoricalOffer for quote %s: %s",
+            quote.id,
+            exc,
+        )
+
     return _build_public_read(quote, session)
 
 
@@ -530,6 +546,18 @@ def accept_quote(quote_id: str, ctx: CompanyContextDep) -> QuoteRead:
     session.add(quote)
     session.commit()
     session.refresh(quote)
+
+    try:
+        create_historical_offer_from_quote(session, quote)
+        session.commit()
+    except Exception as exc:
+        session.rollback()
+        logger.error(
+            "erfaringsbank: failed to create HistoricalOffer for quote %s: %s",
+            quote.id,
+            exc,
+        )
+
     return _build_quote_read(quote, session)
 
 

@@ -67,6 +67,7 @@ class HistoricalOffer(SQLModel, table=True):
     summary: Optional[str] = Field(default=None)
     assumptions: Optional[str] = Field(default=None)
     exclusions: Optional[str] = Field(default=None)
+    quote_id: Optional[str] = Field(default=None, index=True, unique=True)
     extraction_status: ExtractionStatus = Field(default=ExtractionStatus.needs_review)
     active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
