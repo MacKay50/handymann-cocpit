@@ -53,6 +53,7 @@ class InvoiceCase(SQLModel, table=True):
     is_reminder: bool = Field(default=False)
     reminder_level: Optional[int] = Field(default=None)
     creditor_name_raw: Optional[str] = Field(default=None, max_length=255)
+    source_inbox_message_id: Optional[str] = Field(default=None, index=True)
     active: bool = Field(default=True)
     created_at: datetime = Field(default_factory=datetime.utcnow)
     updated_at: datetime = Field(default_factory=datetime.utcnow)

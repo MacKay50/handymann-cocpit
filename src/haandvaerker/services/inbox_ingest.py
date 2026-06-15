@@ -32,6 +32,7 @@ from ..models.message_classification import (
     MessageClassification,
     MessageEntity,
 )
+from .invoice_monitoring.monitoring_service import ingest_from_inbox
 from .message_router import ClassificationResult, classify_message
 from .wizard_service import send_acknowledgement_email
 
@@ -233,6 +234,9 @@ def _run_secondary_classify(
         ):
             _auto_create_enquiry(session, msg)
 
+        if result.primary_category == MessageCategory.invoice_payment:
+            _auto_create_invoice_case(session, msg)
+
         session.commit()
 
     except Exception as exc:
@@ -258,6 +262,26 @@ def _auto_create_enquiry(session: Session, msg: InboxMessage) -> None:
     enquiry = create_enquiry_from_message(session, msg, msg.company_id)
     msg.enquiry_id = enquiry.id
     session.add(msg)
+
+
+def _auto_create_invoice_case(session: Session, msg: InboxMessage) -> None:
+    """Promote an invoice_payment InboxMessage to an InvoiceCase.
+
+    Delegates to ingest_from_inbox which is idempotent on source_inbox_message_id.
+    Never raises — exceptions are caught and written to msg.processing_error.
+    Caller is responsible for committing.
+    """
+    try:
+        ingest_from_inbox(session, msg, msg.company_id)
+    except Exception as exc:
+        session.rollback()
+        logger.warning(
+            "Invoice case creation failed for InboxMessage %s: %s",
+            msg.id,
+            exc,
+        )
+        msg.processing_error = f"Faktura-sag kunne ikke oprettes: {exc}"
+        session.add(msg)
 
 
 # ── Secondary step: send acknowledgement ─────────────────────────────────────
