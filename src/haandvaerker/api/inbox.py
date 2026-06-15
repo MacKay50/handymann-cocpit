@@ -3,11 +3,12 @@ from typing import Optional
 from fastapi import APIRouter, HTTPException
 from sqlmodel import select
 from ..dependencies import CompanyContextDep
-from ..models.enquiry import Enquiry, EnquiryRead, EnquirySource, EnquiryStatus
+from ..models.enquiry import EnquiryRead
 from ..models.inbox_message import (
     InboxMessage, InboxMessageConvert, InboxMessageCreate, InboxMessageRead,
     InboxSource, InboxStatus,
 )
+from ..services.inbox_ingest import create_enquiry_from_message
 
 router = APIRouter(prefix="/inbox", tags=["inbox"])
 
@@ -26,17 +27,6 @@ def _apply_transition(msg: InboxMessage, target: InboxStatus) -> None:
             detail=f"Cannot transition from '{msg.status}' to '{target}'",
         )
     msg.status = target
-
-
-def _inbox_source_to_enquiry_source(src: InboxSource) -> EnquirySource:
-    mapping = {
-        InboxSource.email: EnquirySource.email,
-        InboxSource.phone: EnquirySource.phone,
-        InboxSource.website: EnquirySource.website,
-        InboxSource.walk_in: EnquirySource.walk_in,
-        InboxSource.other: EnquirySource.other,
-    }
-    return mapping[src]
 
 
 @router.get("/email-config-status", include_in_schema=False)
@@ -184,21 +174,11 @@ def convert_to_enquiry(
 
     _apply_transition(msg, InboxStatus.converted)
 
-    enq_source = _inbox_source_to_enquiry_source(msg.source)
-
-    enquiry = Enquiry(
-        id=str(uuid.uuid4()),
-        company_id=msg.company_id,
-        title=data.title,
-        source=enq_source,
-        contact_name=msg.sender_name,
-        contact_email=msg.sender_email,
-        contact_phone=msg.sender_phone,
-        notes=msg.subject,
-        status=EnquiryStatus.new,
-    )
-    session.add(enquiry)
-    session.flush()
+    # Override title from the manual convert request; preserve original subject as notes
+    original_subject = msg.subject
+    msg.subject = data.title
+    enquiry = create_enquiry_from_message(session, msg, ctx.company_id, notes=original_subject)
+    msg.subject = original_subject
 
     msg.enquiry_id = enquiry.id
     session.add(msg)

@@ -85,6 +85,7 @@ def submit_enquiry(
         subject=form.subject,
         body=form.body,
         send_ack=bool(form.sender_email),
+        classify=True,
     )
 
     acknowledged = msg.processing_error is None and bool(form.sender_email)

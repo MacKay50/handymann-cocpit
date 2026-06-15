@@ -124,6 +124,7 @@ def classify_message(
     sender_name: Optional[str] = None,
     sender_email: Optional[str] = None,
     sender_phone: Optional[str] = None,
+    use_llm: bool = True,
 ) -> ClassificationResult:
     full_text = " ".join(filter(None, [subject, body]))
     lower = full_text.lower()
@@ -135,7 +136,7 @@ def classify_message(
     _derive_flags_and_priority(result)
 
     # NOTE: extract into llm_enrichment.py if Trin 2 reuses this pattern
-    if local_ai.is_enabled() and result.confidence < _LLM_CONFIDENCE_THRESHOLD:
+    if use_llm and local_ai.is_enabled() and result.confidence < _LLM_CONFIDENCE_THRESHOLD:
         _enrich_with_llm(result, full_text)
 
     return result

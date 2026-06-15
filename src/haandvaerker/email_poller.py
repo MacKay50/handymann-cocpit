@@ -11,13 +11,13 @@ import email.header
 import email.utils
 import imaplib
 import re
-import uuid
 from datetime import datetime, timezone
 
 from sqlmodel import Session, select
 
 from .models.inbox_message import InboxMessage, InboxSource
 from .services.config_resolver import EmailConfig
+from .services.inbox_ingest import ingest_message
 
 
 class EmailConfigError(Exception):
@@ -126,23 +126,25 @@ def poll_inbox(company_id: str, session: Session, cfg: EmailConfig) -> int:
                     imap.store(uid, "+FLAGS", "\\Seen")
                     continue
 
-                session.add(InboxMessage(
-                    id=str(uuid.uuid4()),
+                ingest_message(
+                    session=session,
                     company_id=company_id,
+                    company_name="",
                     source=InboxSource.email,
                     sender_name=sender_name or None,
                     sender_email=sender_email or None,
                     subject=subject,
                     body=body,
                     received_at=received_at,
-                ))
+                    classify=True,
+                    use_llm=False,
+                )
                 imap.store(uid, "+FLAGS", "\\Seen")
                 imported += 1
 
             except Exception:
                 continue  # skip broken messages, don't abort the whole poll
 
-        session.commit()
         return imported
 
     finally:

@@ -19,7 +19,8 @@ from pydantic import BaseModel
 
 from ..dependencies import CompanyContextDep
 from ..models.action_item import ActionItem, ActionItemPriority
-from ..models.inbox_message import InboxMessage, InboxSource
+from ..models.inbox_message import InboxSource
+from ..services.inbox_ingest import ingest_message
 
 router = APIRouter(prefix="/intake", tags=["intake"])
 
@@ -78,20 +79,19 @@ def create_intake(data: IntakeBody, ctx: CompanyContextDep) -> IntakeResult:
     session = ctx.session
 
     if data.type == "message":
-        msg = InboxMessage(
-            id=str(uuid.uuid4()),
+        msg = ingest_message(
+            session=session,
             company_id=ctx.company_id,
-            received_at=data.received_at or datetime.utcnow(),
+            company_name="",
             source=data.source,
             sender_name=data.sender_name,
             sender_email=data.sender_email,
             sender_phone=data.sender_phone,
             subject=data.subject,
             body=data.body,
+            received_at=data.received_at,
+            classify=True,
         )
-        session.add(msg)
-        session.commit()
-        session.refresh(msg)
         return IntakeResult(type="message", id=msg.id)
 
     if data.type == "project_task":
