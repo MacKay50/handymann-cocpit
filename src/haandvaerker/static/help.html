@@ -88,12 +88,14 @@
   <a href="#fakturaer">Fakturaer</a>
   <a href="#medarbejdere">Medarbejdere</a>
   <a href="#indbakke">Indbakke</a>
+  <a href="#kunde-intake">Kunde-intake pipeline</a>
   <a href="#tilbudsflow">Tilbudsflow</a>
   <a href="#kalender">Kalender</a>
   <a href="#erfaringsbank">Erfaringsbank</a>
   <a href="#bankafstemning">Bankafstemning</a>
   <a href="#economic-pipeline">e-conomic kundekartotek</a>
   <a href="#betalingsradar">Betalingsradar</a>
+  <a href="#faktura-pipeline">Faktura-pipeline guide</a>
   <a href="#print-eksport">Print &amp; Eksport</a>
 
   <h2>Konfiguration</h2>
@@ -250,12 +252,32 @@
 
   <h2 class="section" id="indbakke">Indbakke</h2>
   <div class="card">
-    <p>Samler alle indgående henvendelser — email, telefon, website og personligt fremmøde.</p>
-    <h3>Manuel besked</h3>
-    <p>Opret en besked manuelt via API eller ved at konvertere en eksisterende henvendelse.</p>
-    <h3>Email-polling (automatisk)</h3>
-    <p>Knappen <b>Hent ny post</b> i Indbakke-fanen henter ulæste emails fra din IMAP-postkasse.
-       Kræver opsætning — se <a href="#email-imap">Email / IMAP</a> nedenfor.</p>
+    <p>Indbakken samler alle indgående henvendelser fra <b>tre indgange</b> i ét fælles spor — ingen besked tabes uanset kanal.</p>
+    <div class="card-grid" style="margin-top:.6rem">
+      <div class="mod-card" style="border-color:#68d391">
+        <h4>🌐 Website-formular</h4>
+        <p>Kunde udfylder kontaktformularen på din hjemmeside. Beskeden oprettes automatisk i indbakken med kilde <code>website</code>.</p>
+      </div>
+      <div class="mod-card" style="border-color:#63b3ed">
+        <h4>📧 Email (IMAP)</h4>
+        <p>Klik <b>Hent ny post</b> — systemet poller din IMAP-postkasse og importerer ulæste emails som indbakke-beskeder.</p>
+      </div>
+      <div class="mod-card" style="border-color:#ed8936">
+        <h4>📞 Manuel (kontoret)</h4>
+        <p>Kontordamen opretter en besked direkte via <b>Ny besked</b>-knappen efter en telefonisk henvendelse eller fremmøde.</p>
+      </div>
+    </div>
+    <h3>Automatisk klassificering</h3>
+    <p>Alle beskeder klassificeres automatisk (regelbaseret — ingen AI i email-polling). Kategorier:</p>
+    <ul>
+      <li><b>new_quote_request</b> — ny tilbudsforespørgsel → opretter automatisk en Henvendelse</li>
+      <li><b>invoice_payment</b> — indgående faktura → <a href="#faktura-pipeline">videresender til Betalingsradar</a></li>
+      <li><b>general_inquiry</b>, <b>appointment_request</b> m.fl. — forbliver i indbakken til manuel behandling</li>
+    </ul>
+    <h3>Vedhæftninger</h3>
+    <p>Upload filer til en besked via papirclips-ikonet (max 10 MB pr. fil). Tilladte formater: PDF, Word, Excel, billeder (JPG, PNG, GIF, WEBP), CSV og TXT.</p>
+    <h3>Fejl ved sekundære trin</h3>
+    <p>Selve beskeden oprettes <em>altid</em> — også hvis klassificering eller auto-videresendelse fejler. En orange advarsel vises på beskeden hvis et sekundært trin fejlede. Brug <b>Prøv igen</b>-knappen til at gensende.</p>
     <h3>Statusser</h3>
     <ul>
       <li><span class="badge badge-red">ulæst</span> — ny besked, ikke åbnet</li>
@@ -263,6 +285,27 @@
       <li><span class="badge" style="background:#e9d8fd;color:#44337a">konverteret</span> — omdannet til en sag/henvendelse</li>
       <li><span class="badge" style="background:#e2e8f0;color:#4a5568">arkiveret</span> — lagt til side</li>
     </ul>
+  </div>
+
+  <h2 class="section" id="kunde-intake">Kunde-intake pipeline</h2>
+  <div class="card">
+    <p>Alle tre kanaler — website, email og manuel — funneler igennem det samme fælles lag. Det betyder at du som kontordame eller håndværker aldrig skal vælge hvilken skærm du starter i: resultatet er det samme uanset hvorfra henvendelsen kom.</p>
+    <div class="callout callout-green">
+      <b>Garanti:</b> En InboxMessage oprettes <em>altid</em> som første trin — synkront og ufejlbarligt. Sekundære trin (klassificering, auto-sag, bekræftelsesmail) fejler aldrig stille — de skriver en fejlbesked på beskeden som kan gensendes.
+    </div>
+    <h3>Fra besked til henvendelse — trin for trin</h3>
+    <ol class="steps">
+      <li>Besked ankommer via en af de tre kanaler og gemmes som <b>InboxMessage</b></li>
+      <li>Systemet klassificerer emne + beskedtekst med regelbaseret AI (aldrig LLM ved email-polling)</li>
+      <li>Kategori <b>new_quote_request</b>? → En <b>Henvendelse</b> oprettes automatisk med afsenders navn, email og emne som titel</li>
+      <li>Kategori <b>invoice_payment</b>? → Beskeden viderestilles til <b>Betalingsradar</b> (se nedenfor)</li>
+      <li>Alle andre kategorier → forbliver i indbakken til manuel behandling</li>
+      <li>En bekræftelsesmail sendes til afsender (hvis email er tilgængeligt og SMTP er konfigureret)</li>
+    </ol>
+    <h3>Manuelt omdannelse</h3>
+    <p>En besked der ikke er auto-konverteret kan altid omdannes manuelt: åbn beskeden og klik <b>Opret henvendelse</b>. Dette fungerer på alle kategorier.</p>
+    <h3>Opsætning af website-formularen</h3>
+    <p>Website-formularen poster til endpointet <code>POST /forespoergsel?company=&lt;uuid&gt;</code>. Indsæt din virksomheds ID i URL-parameteren. Formularen returnerer en bekræftelse uden at lække interne ID-er eller virksomhedsdata.</p>
   </div>
 
   <h2 class="section" id="tilbudsflow">Tilbudsflow (Indbakke → Tilbud)</h2>
@@ -924,7 +967,7 @@
             <td style="padding:.38rem .7rem;border-bottom:1px solid #f0f2f5">Forfald inden 7 dage, eller ukendt kreditor, eller lav konfidans</td>
             <td style="padding:.38rem .7rem;border-bottom:1px solid #f0f2f5">Planlæg betaling denne uge</td></tr>
         <tr><td style="padding:.38rem .7rem;border-bottom:1px solid #f0f2f5"><span class="badge" style="background:#fffff0;color:#b7791f">Gul</span></td>
-            <td style="padding:.38rem .7rem;border-bottom:1px solid #f0f2f5">Forfald inden 14 dage, eller beløb = 0 kr</td>
+            <td style="padding:.38rem .7rem;border-bottom:1px solid #f0f2f5">Forfald inden 14 dage</td>
             <td style="padding:.38rem .7rem;border-bottom:1px solid #f0f2f5">Hold øje — gennemgå inden for et par dage</td></tr>
         <tr><td style="padding:.38rem .7rem"><span class="badge badge-green">Grøn</span></td>
             <td style="padding:.38rem .7rem">Forfald mere end 14 dage ude, kendt kreditor, høj konfidans</td>
@@ -943,8 +986,12 @@
       <tbody>
         <tr><td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5"><code>payment_required</code></td>
             <td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5">Faktura klassificeret som relevant — afventer betaling</td></tr>
+        <tr><td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5"><code>needs_review</code> <span class="badge badge-red">Rød</span></td>
+            <td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5"><b>Datakvalitetsproblem</b> — beløb = 0 kr eller manglende forfaldsdato. Kræver manuel gennemgang og rettelse inden sagen kan behandles.</td></tr>
         <tr><td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5"><code>reminder_received</code></td>
             <td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5">Rykker modtaget for en allerede registreret faktura — prioritet hæves til rød</td></tr>
+        <tr><td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5"><code>reconciliation_pending</code> <span class="badge badge-yellow">Orange</span></td>
+            <td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5">En bankdebet matchede beløbet men ikke alle kriterier (reference eller dato). Afventer manuel bekræftelse fra bankafstemningsmodulet.</td></tr>
         <tr><td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5"><code>bank_opened</code></td>
             <td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5">Brugeren har klikket "Åbn bank" — netbanken er åbnet for at foretage betaling. Sagen er <em>ikke</em> afsluttet endnu.</td></tr>
         <tr><td style="padding:.35rem .7rem;border-bottom:1px solid #f0f2f5"><code>handled</code></td>
@@ -1002,6 +1049,86 @@
     <div class="callout callout-yellow">
       <b>Kun i development/test:</b> Endpoint'et <code>POST /invoice-monitoring/dev/ingest-sample</code> returnerer HTTP 403 i produktionsmiljø.
     </div>
+  </div>
+
+  <!-- ════════════════ FAKTURA-PIPELINE GUIDE ════════════════ -->
+  <h2 class="section" id="faktura-pipeline">Faktura-pipeline — komplet guide</h2>
+  <div class="card">
+    <p>Faktura-pipelinen sørger for at indgående kreditorfakturaer (leverandør → din virksomhed) aldrig ender i restance. Den dækker fire trin fra modtagelse til bekræftet betaling.</p>
+    <div class="callout callout-blue">
+      <b>Bemærk:</b> Dette gælder <em>indgående</em> fakturaer du <em>skylder</em> kreditorer — ikke de udgående fakturaer du sender til dine kunder.
+    </div>
+  </div>
+
+  <h3>Trin 1 — Automatisk opsamling fra email</h3>
+  <div class="card">
+    <p>Emails klassificeret som <code>invoice_payment</code> forfremmes automatisk til Betalingsradar-sager. Det sker ved hvert "Hent ny post"-klik — ingen manuel handling nødvendig.</p>
+    <ol class="steps">
+      <li>Email ankommer til din faktura-postkasse (f.eks. <code>faktura@din-virksomhed.dk</code>)</li>
+      <li>IMAP-polleren henter mailen og opretter en <b>InboxMessage</b> i indbakken</li>
+      <li>Klassificering genkender emne/indhold som faktura → kategori <code>invoice_payment</code></li>
+      <li>En <b>InvoiceCase</b> oprettes automatisk i Betalingsradar med udtrukne felter: beløb, forfaldsdato, fakturanummer og kreditor</li>
+      <li>En handlingssag åbnes — fakturaen er nu synlig i Betalingsradar med beregnet prioritet</li>
+    </ol>
+    <div class="callout callout-yellow">
+      <b>Idempotens:</b> Modtages den samme email igen (f.eks. ved gensendelse fra kreditor), oprettes der <em>ikke</em> en ekstra sag — systemet genkender kilden og returnerer den eksisterende sag.
+    </div>
+  </div>
+
+  <h3>Trin 2 — Daglig overdue-eskalering</h3>
+  <div class="card">
+    <p>Prioritet genberegnes for alle åbne sager baseret på dagens dato. Sager der nærmer sig eller overskrider forfaldsdatoen eskaleres automatisk til orange eller rød.</p>
+    <table style="width:100%;border-collapse:collapse;font-size:.87rem;margin-top:.5rem">
+      <thead><tr style="background:#f7fafc">
+        <th style="padding:.35rem .7rem;text-align:left;border-bottom:2px solid #e2e8f0">Hvornår</th>
+        <th style="padding:.35rem .7rem;text-align:left;border-bottom:2px solid #e2e8f0">Prioritet</th>
+        <th style="padding:.35rem .7rem;text-align:left;border-bottom:2px solid #e2e8f0">Anbefalet handling</th>
+      </tr></thead>
+      <tbody>
+        <tr><td style="padding:.32rem .7rem;border-bottom:1px solid #f0f2f5">&gt; 14 dage til forfald</td><td style="padding:.32rem .7rem;border-bottom:1px solid #f0f2f5"><span class="badge badge-green">Grøn</span></td><td style="padding:.32rem .7rem;border-bottom:1px solid #f0f2f5">Ingen haste-handling</td></tr>
+        <tr><td style="padding:.32rem .7rem;border-bottom:1px solid #f0f2f5">8–14 dage til forfald</td><td style="padding:.32rem .7rem;border-bottom:1px solid #f0f2f5"><span class="badge" style="background:#fffff0;color:#b7791f">Gul</span></td><td style="padding:.32rem .7rem;border-bottom:1px solid #f0f2f5">Planlæg betaling</td></tr>
+        <tr><td style="padding:.32rem .7rem;border-bottom:1px solid #f0f2f5">3–7 dage til forfald</td><td style="padding:.32rem .7rem;border-bottom:1px solid #f0f2f5"><span class="badge badge-yellow">Orange</span></td><td style="padding:.32rem .7rem;border-bottom:1px solid #f0f2f5">Betal denne uge</td></tr>
+        <tr><td style="padding:.32rem .7rem">Forfald i dag, overskredet, eller rykker modtaget</td><td style="padding:.32rem .7rem"><span class="badge badge-red">Rød</span></td><td style="padding:.32rem .7rem">Betal straks</td></tr>
+      </tbody>
+    </table>
+    <p style="margin-top:.7rem;font-size:.87rem;color:#4a5568">Eskalering sker kun ved faktiske ændringer — en sag der allerede er rød forbliver rød og emitterer ikke en ekstra hændelse.</p>
+  </div>
+
+  <h3>Trin 3 — Betalingsbekræftelse via bankdebet</h3>
+  <div class="card">
+    <p>Når du importerer bankposteringer og klikker <b>"Match debet"</b> på en debet-transaktion, forsøger systemet at matche den mod en åben InvoiceCase. Matchning kræver at <em>alle tre</em> kriterier er opfyldt:</p>
+    <ul>
+      <li><b>Eksakt beløb</b> — transaktion og faktura skal matche til øret</li>
+      <li><b>Betalingsreference</b> — skal matche hvis begge har en reference (springes over hvis begge er tomme)</li>
+      <li><b>Dato inden for 7 dage</b> — bankens bogføringsdato skal ligge inden for ±7 dage fra fakturans forfaldsdato</li>
+    </ul>
+    <div class="card-grid" style="margin-top:.8rem">
+      <div class="mod-card" style="border-color:#68d391">
+        <h4>Eksakt match</h4>
+        <p>Alle tre kriterier opfyldt → status sættes automatisk til <code>payment_confirmed</code>. Intet manuelt trin nødvendigt.</p>
+      </div>
+      <div class="mod-card" style="border-color:#ecc94b">
+        <h4>Delmatch</h4>
+        <p>Beløb passer men reference eller dato fejler → status sættes til <code>reconciliation_pending</code>. En bruger skal bekræfte manuelt.</p>
+      </div>
+      <div class="mod-card" style="border-color:#e2e8f0">
+        <h4>Intet match</h4>
+        <p>Ingen åben sag med samme beløb → transaktionen forbliver uafstem i bankafstemningsmodulet.</p>
+      </div>
+    </div>
+    <div class="callout callout-yellow" style="margin-top:.8rem">
+      <b>Sikkerhed:</b> Auto-bekræftelse sker <em>kun</em> ved eksakt match på alle tre kriterier. En bruger kan aldrig ved et uheld bekræfte en betaling der ikke stemmer — systemet kræver manuel godkendelse ved tvivl.
+    </div>
+  </div>
+
+  <h3>Trin 4 — Datakvalitet: needs_review</h3>
+  <div class="card">
+    <p>En relevant faktura-email der mangler kritiske data sættes automatisk til <code>needs_review</code> med rød prioritet — den glider <em>ikke</em> stille til lav prioritet. To situationer udløser needs_review:</p>
+    <ul>
+      <li><b>Beløb = 0 kr</b> — systemet kunne ikke udtrække et beløb fra mailen. Ret feltet via "Ret felt"-knappen i Betalingsradar.</li>
+      <li><b>Manglende forfaldsdato</b> — ingen dato fundet i mailen. Prioritet sættes til orange (ukendt risiko) og sagen kræver manuel dato-angivelse.</li>
+    </ul>
+    <p>Brug <b>"Ret felt"</b> i Betalingsradar-skuffen til at korrigere beløb eller forfaldsdato. Derefter genberegnes prioritet ved næste overdue-eskalering.</p>
   </div>
 
   <!-- ════════════════ PRINT & EKSPORT ════════════════ -->
